@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Card, List, Tag, Typography, Empty } from 'antd';
+import { HomeOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
+
+const { Title } = Typography;
 
 interface MeuApartamento {
   tipo: 'proprietario' | 'inquilino';
@@ -18,16 +22,24 @@ export function MeusApartamentos() {
   }, []);
 
   return (
-    <div className="page page-meus-apartamentos">
-      <h2>Meus Apartamentos</h2>
-      <ul data-testid="lista-meus-apartamentos">
-        {apartamentos.map((apto) => (
-          <li key={`${apto.bloco_numero}-${apto.apartamento_numero}`} data-testid="item-apartamento">
-            Bloco {apto.bloco_numero} / Apto {apto.apartamento_numero} — {apto.tipo}
-          </li>
-        ))}
-        {apartamentos.length === 0 && <li data-testid="lista-vazia">Nenhum apartamento vinculado.</li>}
-      </ul>
-    </div>
+    <Card>
+      <Title level={4}>Meus Apartamentos</Title>
+      <List
+        data-testid="lista-meus-apartamentos"
+        dataSource={apartamentos}
+        locale={{ emptyText: <Empty description="Nenhum apartamento vinculado." data-testid="lista-vazia" /> }}
+        renderItem={(apto) => (
+          <List.Item data-testid="item-apartamento">
+            <List.Item.Meta
+              avatar={<HomeOutlined style={{ fontSize: 20 }} />}
+              title={`Bloco ${apto.bloco_numero} / Apto ${apto.apartamento_numero}`}
+              description={
+                <Tag color={apto.tipo === 'proprietario' ? 'blue' : 'green'}>{apto.tipo}</Tag>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </Card>
   );
 }
