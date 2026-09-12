@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
@@ -17,8 +18,20 @@ export function Login() {
     try {
       await login(email, senha);
       navigate('/');
-    } catch {
-      setErro('E-mail ou senha inválidos.');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setErro('E-mail ou senha inválidos.');
+        } else if (!err.response) {
+          setErro('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
+        } else {
+          setErro(`Erro inesperado (${err.response.status}). Veja o console para detalhes.`);
+        }
+        console.error('Falha no login:', err);
+      } else {
+        setErro('Erro inesperado ao entrar.');
+        console.error(err);
+      }
     } finally {
       setCarregando(false);
     }
