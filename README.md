@@ -9,7 +9,7 @@ teste sugeridos.
 
 ## Stack
 
-- **Frontend**: React + TypeScript + Vite + React Router
+- **Frontend**: React + TypeScript + Vite + React Router + Ant Design (menus/submenus, tabelas com filtro e paginação)
 - **Backend**: Node.js + Express
 - **Banco de dados**: SQLite, via o módulo nativo [`node:sqlite`](https://nodejs.org/api/sqlite.html)
   (sem dependências binárias — evita problemas de compilação nativa em ambientes restritos)
