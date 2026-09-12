@@ -1,0 +1,21 @@
+{
+  "name": "condominio-morada-da-lagoa",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:seed": "npm run db:seed -w server",
+    "test:e2e": "npm run test:e2e -w client",
+    "build": "npm run build -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
