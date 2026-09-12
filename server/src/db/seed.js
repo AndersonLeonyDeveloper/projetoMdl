@@ -32,6 +32,17 @@ const SENHA_PADRAO = 'senha123';
 const senhaHash = bcrypt.hashSync(SENHA_PADRAO, 10);
 
 const seed = () => withTransaction(() => {
+  // Torna o seed idempotente: limpa os dados antes de repovoar (útil para reset em dev/QA).
+  // Graças ao ON DELETE CASCADE do schema, apagar usuarios/pessoas/apartamentos/blocos
+  // já arrasta moradores, password_reset_tokens e taxas_condominio junto.
+  db.exec('DELETE FROM usuarios');
+  db.exec('DELETE FROM pessoas');
+  db.exec('DELETE FROM apartamentos');
+  db.exec('DELETE FROM blocos');
+  db.exec('DELETE FROM outras_receitas');
+  db.exec('DELETE FROM despesas');
+  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('blocos','apartamentos','pessoas','moradores','usuarios','password_reset_tokens','taxas_condominio','outras_receitas','despesas')");
+
   // Blocos
   const bloco08 = insertBloco.run('08').lastInsertRowid;
   const bloco09 = insertBloco.run('09').lastInsertRowid;
