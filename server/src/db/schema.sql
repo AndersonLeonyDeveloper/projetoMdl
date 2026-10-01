@@ -31,11 +31,13 @@ CREATE TABLE IF NOT EXISTS moradores (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Garante no máximo 1 proprietário e 1 inquilino ATIVOS por apartamento,
--- sem travar o histórico de vínculos desativados (ver modelagem-dados.md, seção 4).
-CREATE UNIQUE INDEX IF NOT EXISTS idx_morador_ativo_unico
-  ON moradores(apartamento_id, tipo)
-  WHERE ativo = 1;
+-- Garante no máximo 1 proprietário ATIVO por apartamento, sem travar o histórico
+-- de vínculos desativados (ver modelagem-dados.md, seção 4). Inquilinos ativos não têm limite.
+-- O DROP remove o índice antigo (1 proprietário + 1 inquilino) de bancos já criados.
+DROP INDEX IF EXISTS idx_morador_ativo_unico;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_proprietario_ativo_unico
+  ON moradores(apartamento_id)
+  WHERE ativo = 1 AND tipo = 'proprietario';
 
 CREATE TABLE IF NOT EXISTS usuarios (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

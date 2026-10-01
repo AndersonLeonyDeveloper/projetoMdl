@@ -123,7 +123,7 @@ cadastroRouter.post('/moradores', requireRole('admin'), (req, res) => {
   } catch (err) {
     if (isUniqueConstraintError(err)) {
       return res.status(409).json({
-        error: `Já existe um ${tipo} ativo para este apartamento.`,
+        error: 'Já existe um proprietário ativo para este apartamento.',
       });
     }
     throw err;
