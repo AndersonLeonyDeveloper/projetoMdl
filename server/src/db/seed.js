@@ -3,10 +3,11 @@ import { db, runMigrations, withTransaction } from './index.js';
 
 runMigrations();
 
-const insertBloco = db.prepare('INSERT INTO blocos (numero) VALUES (?)');
-const insertApartamento = db.prepare(
-  'INSERT INTO apartamentos (bloco_id, numero) VALUES (?, ?)'
-);
+const buscarApartamento = db.prepare(`
+  SELECT a.id FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id
+  WHERE b.numero = ? AND a.numero = ?
+`);
+const apartamentoId = (bloco, numero) => buscarApartamento.get(bloco, numero).id;
 const insertPessoa = db.prepare(
   'INSERT INTO pessoas (nome, telefone, cpf, email) VALUES (?, ?, ?, ?)'
 );
@@ -33,26 +34,21 @@ const senhaHash = bcrypt.hashSync(SENHA_PADRAO, 10);
 
 const seed = () => withTransaction(() => {
   // Torna o seed idempotente: limpa os dados antes de repovoar (útil para reset em dev/QA).
-  // Graças ao ON DELETE CASCADE do schema, apagar usuarios/pessoas/apartamentos/blocos
-  // já arrasta moradores, password_reset_tokens e taxas_condominio junto.
+  // Blocos e apartamentos são estrutura fixa (ver garantirEstrutura) e não são apagados.
+  db.exec('DELETE FROM taxas_condominio');
+  db.exec('DELETE FROM moradores');
   db.exec('DELETE FROM usuarios');
   db.exec('DELETE FROM pessoas');
-  db.exec('DELETE FROM apartamentos');
-  db.exec('DELETE FROM blocos');
   db.exec('DELETE FROM outras_receitas');
   db.exec('DELETE FROM despesas');
-  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('blocos','apartamentos','pessoas','moradores','usuarios','password_reset_tokens','taxas_condominio','outras_receitas','despesas')");
+  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('pessoas','moradores','usuarios','password_reset_tokens','taxas_condominio','outras_receitas','despesas')");
 
-  // Blocos
-  const bloco08 = insertBloco.run('08').lastInsertRowid;
-  const bloco09 = insertBloco.run('09').lastInsertRowid;
-
-  // Apartamentos
-  const apto08_101 = insertApartamento.run(bloco08, '101').lastInsertRowid; // proprietário único
-  const apto08_203 = insertApartamento.run(bloco08, '203').lastInsertRowid; // proprietário + inquilino
-  insertApartamento.run(bloco08, '305'); // órfão: sem morador (edge case)
-  const apto09_101 = insertApartamento.run(bloco09, '101').lastInsertRowid; // 2º apto do mesmo proprietário
-  const apto09_204 = insertApartamento.run(bloco09, '204').lastInsertRowid; // troca de inquilino (histórico)
+  // Apartamentos (já existem; só buscamos os usados nos cenários)
+  const apto08_101 = apartamentoId('08', '101'); // proprietário único
+  const apto08_203 = apartamentoId('08', '203'); // proprietário + inquilino
+  const apto09_101 = apartamentoId('09', '101'); // 2º apto do mesmo proprietário
+  const apto09_204 = apartamentoId('09', '204'); // troca de inquilino (histórico)
+  // Bloco 08, apto 301 permanece sem morador (edge case de apartamento órfão)
 
   // Pessoas
   const anderson = insertPessoa.run(

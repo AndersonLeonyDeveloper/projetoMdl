@@ -16,8 +16,6 @@ withTransaction(() => {
   db.exec('DELETE FROM password_reset_tokens');
   db.exec('DELETE FROM taxas_condominio');
   db.exec('DELETE FROM moradores');
-  db.exec('DELETE FROM apartamentos');
-  db.exec('DELETE FROM blocos');
   db.exec('DELETE FROM outras_receitas');
   db.exec('DELETE FROM despesas');
 
@@ -29,10 +27,10 @@ withTransaction(() => {
 
   db.exec(`
     DELETE FROM sqlite_sequence
-    WHERE name IN ('blocos','apartamentos','moradores','password_reset_tokens','taxas_condominio','outras_receitas','despesas')
+    WHERE name IN ('moradores','password_reset_tokens','taxas_condominio','outras_receitas','despesas')
   `);
 });
 
 const admins = db.prepare("SELECT email FROM usuarios WHERE role = 'admin'").all();
-console.log('Banco zerado com sucesso. Mantido(s) apenas o(s) administrador(es):');
+console.log('Banco zerado com sucesso. Mantidos a estrutura (blocos/apartamentos) e o(s) administrador(es):');
 for (const { email } of admins) console.log(`  ${email}`);
