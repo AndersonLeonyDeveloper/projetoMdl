@@ -208,3 +208,61 @@ financeiroRouter.get('/resumo/inadimplencia', requireRole('admin'), (req, res) =
 
   res.json(linhas);
 });
+
+// Evolução mês a mês (para a tela "Evolução"): receitas, despesas e inadimplência no período.
+// Taxas entram pela competência (mês de referência), como em /resumo/mensal.
+// "atrasadas" = pagas depois do dia 10 ou ainda em aberto (a inadimplência no vencimento).
+financeiroRouter.get('/resumo/evolucao', requireRole('admin'), (req, res) => {
+  const anoInicio = Number(req.query.ano_inicio);
+  const anoFim = Number(req.query.ano_fim);
+  if (!anoInicio || !anoFim || anoInicio > anoFim) {
+    return res.status(400).json({ error: 'ano_inicio e ano_fim são obrigatórios (ano_inicio <= ano_fim).' });
+  }
+
+  const taxas = db
+    .prepare(
+      `SELECT
+         ano_referencia AS ano,
+         mes_referencia AS mes,
+         COUNT(*) AS unidades,
+         COALESCE(SUM(valor), 0) AS faturamento,
+         COALESCE(SUM(CASE WHEN situacao = 'adimplente' THEN valor + juros ELSE 0 END), 0) AS receitas_taxas,
+         SUM(CASE WHEN data_pagamento IS NULL
+                    OR data_pagamento > printf('%04d-%02d-10', ano_referencia, mes_referencia)
+                  THEN 1 ELSE 0 END) AS atrasadas,
+         SUM(CASE WHEN situacao = 'inadimplente' THEN 1 ELSE 0 END) AS em_aberto,
+         SUM(CASE WHEN situacao = 'inadimplente' AND meses_atraso >= 3 THEN 1 ELSE 0 END) AS em_aberto_3_meses
+       FROM taxas_condominio
+       WHERE ano_referencia BETWEEN ? AND ?
+       GROUP BY ano_referencia, mes_referencia`
+    )
+    .all(anoInicio, anoFim);
+
+  const somaPorMes = (tabela) =>
+    new Map(
+      db
+        .prepare(
+          `SELECT strftime('%Y', data) AS ano, strftime('%m', data) AS mes, SUM(valor) AS total
+           FROM ${tabela}
+           WHERE CAST(strftime('%Y', data) AS INTEGER) BETWEEN ? AND ?
+           GROUP BY ano, mes`
+        )
+        .all(anoInicio, anoFim)
+        .map((l) => [`${Number(l.ano)}-${Number(l.mes)}`, l.total])
+    );
+  const outrasReceitas = somaPorMes('outras_receitas');
+  const despesas = somaPorMes('despesas');
+
+  res.json(
+    taxas
+      .sort((a, b) => a.ano - b.ano || a.mes - b.mes)
+      .map((t) => {
+        const chave = `${t.ano}-${t.mes}`;
+        return {
+          ...t,
+          receitas_outras: outrasReceitas.get(chave) ?? 0,
+          despesas: despesas.get(chave) ?? 0,
+        };
+      })
+  );
+});

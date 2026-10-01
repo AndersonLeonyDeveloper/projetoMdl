@@ -7,6 +7,7 @@ import {
   HomeOutlined,
   IdcardOutlined,
   WarningOutlined,
+  LineChartOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import './App.css';
@@ -20,6 +21,7 @@ import { CadastroFinanceiro } from './pages/admin/CadastroFinanceiro';
 import { VisualizarFinanceiro } from './pages/admin/VisualizarFinanceiro';
 import { VisualizarMoradores } from './pages/admin/VisualizarMoradores';
 import { VisualizarInadimplencia } from './pages/admin/VisualizarInadimplencia';
+import { VisualizarEvolucao } from './pages/admin/VisualizarEvolucao';
 import { MeusApartamentos } from './pages/morador/MeusApartamentos';
 import { MeusDados } from './pages/morador/MeusDados';
 import { FinanceiroCondominio } from './pages/morador/FinanceiroCondominio';
@@ -40,6 +42,7 @@ const ADMIN_MENU: MenuProps['items'] = [
     icon: <EyeOutlined />,
     children: [
       { key: '/admin/visualizar/financeiro', label: 'Financeiro', icon: <DollarCircleOutlined /> },
+      { key: '/admin/visualizar/evolucao', label: 'Evolução', icon: <LineChartOutlined /> },
       { key: '/admin/visualizar/moradores', label: 'Dados dos Moradores', icon: <TeamOutlined /> },
       { key: '/admin/visualizar/inadimplencia', label: 'Taxa de Inadimplência', icon: <WarningOutlined /> },
     ],
@@ -71,6 +74,7 @@ function App() {
         <Route path="cadastro/moradores" element={<CadastroMoradores />} />
         <Route path="cadastro/financeiro" element={<CadastroFinanceiro />} />
         <Route path="visualizar/financeiro" element={<VisualizarFinanceiro />} />
+        <Route path="visualizar/evolucao" element={<VisualizarEvolucao />} />
         <Route path="visualizar/moradores" element={<VisualizarMoradores />} />
         <Route path="visualizar/inadimplencia" element={<VisualizarInadimplencia />} />
       </Route>
