@@ -69,3 +69,15 @@ As taxas, receitas e despesas geradas não têm comprovante. Arquivos fictícios
 
 ### [ ] 3.6 Agente escriba de casos de teste (skill ou subagente) — esforço M
 *Identificada em 01/10/2026.* Um agente que, dada uma funcionalidade nova ou alterada, adiciona cenários em `sugestoes-de-testes.md` no formato já usado. É o primeiro passo sugerido em `ia-generativa-em-testes.md`, que também lista os agentes seguintes (critérios de aceite, TCs combinatórios, testes automatizados, massa de dados, seleção de regressão).
+
+### [ ] 3.7 Pipeline de CI (GitHub Actions) — esforço M
+*Identificada em 01/10/2026, ao organizar o repositório para entrevistas.* Subir a aplicação, popular o banco (`db:reset` + `db:seed:moradores` + `db:seed:financeiro`) e rodar as suítes de `testes/`. O workflow fica em `.github/workflows/`, na raiz.
+
+### [ ] 3.8 docker-compose para subir a aplicação — esforço M
+*Identificada em 01/10/2026.* Um comando para subir client e server em ambiente isolado, útil para quem vai avaliar o repositório e para o CI.
+
+### [ ] 3.9 Especificação OpenAPI da API — esforço M
+*Identificada em 01/10/2026.* Documenta as rotas e serve de base para testes de contrato (RestAssured).
+
+### [ ] 3.10 Testes de performance (k6) — esforço M
+*Identificada em 01/10/2026.* Usar o volume de 192 apartamentos e 768 moradores para medir listagens e o endpoint de evolução.
