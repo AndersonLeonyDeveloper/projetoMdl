@@ -147,15 +147,15 @@ CREATE TABLE moradores (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Garante no máximo 1 proprietário e 1 inquilino ATIVOS por apartamento,
+-- Garante no máximo 1 proprietário ATIVO por apartamento (inquilinos ativos: sem limite),
 -- sem travar o histórico de vínculos desativados (ativo = 0).
 -- Um UNIQUE(apartamento_id, tipo, ativo) comum NÃO funcionaria aqui: SQLite só
 -- trata NULL como distinto em constraints únicas, e 0/1 são valores normais —
 -- duas linhas históricas com ativo=0 para o mesmo (apartamento_id, tipo) violariam
 -- a constraint. O índice parcial abaixo resolve isso ao indexar só as linhas ativas.
-CREATE UNIQUE INDEX idx_morador_ativo_unico
-  ON moradores(apartamento_id, tipo)
-  WHERE ativo = 1;
+CREATE UNIQUE INDEX idx_proprietario_ativo_unico
+  ON moradores(apartamento_id)
+  WHERE ativo = 1 AND tipo = 'proprietario';
 ```
 
 ## 5. `usuarios`
@@ -320,6 +320,10 @@ Para exercitar os cenários de teste automatizado, o seed inicial deve cobrir:
 - Ao menos uma `outras_receitas` e uma `despesa` com `comprovante_path` preenchido e outra sem, para testar o fluxo de visualização de comprovante.
 
 ## 13. Changelog
+
+- **Rev. 3**: O índice `idx_morador_ativo_unico` (1 proprietário + 1 inquilino ativos) foi substituído por
+  `idx_proprietario_ativo_unico`, que limita só o proprietário. Um apartamento pode ter vários
+  inquilinos ativos.
 
 - **Rev. 2**: Corrigido índice único de `moradores` (era `UNIQUE(apartamento_id, tipo, ativo)`,
   que quebraria ao registrar histórico de vínculos desativados) para um índice único parcial

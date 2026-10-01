@@ -60,4 +60,12 @@ Acesse `http://localhost:5173`.
 - `npm run db:migrate` — aplica o schema (`server/src/db/schema.sql`)
 - `npm run db:seed` — popula o banco com dados cobrindo os cenários de `regras-de-negocio/sugestoes-de-testes.md`
 - `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
+- `npm run db:seed:moradores` — 1 proprietário + 3 inquilinos em cada um dos 192 apartamentos
+- `npm run db:seed:financeiro` — histórico financeiro de jan/2020 a set/2026
 - `npm run build` — build de produção do client
+
+Detalhes e contexto dos dados de demonstração: [`regras-de-negocio/dados-de-demonstracao.md`](regras-de-negocio/dados-de-demonstracao.md)
+
+Melhorias e ideias ainda não implementadas: [`regras-de-negocio/melhorias-e-ideias.md`](regras-de-negocio/melhorias-e-ideias.md)
+
+IA generativa em testes (padrões de prompt e agentes possíveis): [`regras-de-negocio/ia-generativa-em-testes.md`](regras-de-negocio/ia-generativa-em-testes.md)

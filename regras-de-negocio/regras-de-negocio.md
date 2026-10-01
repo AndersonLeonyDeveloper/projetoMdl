@@ -36,7 +36,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 |---|---|---|
 | Bloco | Sim | Deve existir |
 | Apartamento | Sim | Deve existir dentro do bloco |
-| Tipo (Proprietário/Inquilino) | Sim | Um apartamento pode ter 1 proprietário e 1 inquilino ativos simultaneamente |
+| Tipo (Proprietário/Inquilino) | Sim | Um apartamento pode ter 1 proprietário ativo e vários inquilinos ativos simultaneamente |
 | Nome | Sim | — |
 | Telefone | Sim | Formato (DD) 9XXXX-XXXX |
 | CPF | Sim, apenas se a pessoa possuir algum vínculo do tipo Proprietário | Validação de dígito verificador |
@@ -47,7 +47,8 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Um apartamento pode existir sem inquilino cadastrado (apenas proprietário).
 - Editar o morador exige reconfirmação do e-mail (campo "Confirmar e-mail").
 - Exclusão/desativação de vínculo é uma ação restrita ao Admin; o histórico de vínculos desativados é preservado (não é hard delete).
-- Trocar o inquilino de um apartamento desativa o vínculo anterior e cria um novo — não sobrescreve o registro existente.
+- Um apartamento tem no máximo 1 proprietário ativo, mas pode ter vários inquilinos ativos ao mesmo tempo.
+- Trocar um inquilino de um apartamento desativa o vínculo dele e cria um novo — não sobrescreve o registro existente.
 
 ## 4. Módulo Financeiro
 
@@ -75,6 +76,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.5 Consultas / Filtros
 - Financeiro pode ser filtrado por Ano → Mês → Tipo de receita (Taxa de Condomínio / Outras Receitas) → Bloco.
+- Tela de Evolução (Admin): tendência mensal/anual de receitas, despesas, saldo e inadimplência em vários anos (ano inicial/final), com cartões dos últimos 12 meses.
 - Tela de Inadimplência: consolidado anual, com drill-down por mês → bloco → apartamento (lista de proprietário/inquilino e situação).
 
 ## 5. Autenticação
@@ -94,5 +96,5 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 - Regra de rateio de despesas condominiais entre os blocos.
 - Regra exata de cálculo de juros por atraso (percentual fixo? progressivo por mês?).
-- Se um apartamento pode ter mais de um proprietário/inquilino (histórico de troca de morador).
+- ~~Se um apartamento pode ter mais de um inquilino~~ — definido: sim, vários inquilinos ativos. Segue em aberto se pode haver mais de um proprietário (hoje: no máximo 1 ativo).
 - Regra de expiração/validade da "nova senha" enviada por e-mail.
