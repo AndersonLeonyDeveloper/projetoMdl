@@ -40,3 +40,6 @@ Contexto (projeto, documento de regras) + Objetivo + Restrições (únicos, idem
 1. Começar pelo **Escriba de TCs**, como skill ou subagente do Claude Code (`.claude/agents/` ou `.claude/skills/`), gravando em `sugestoes-de-testes.md`.
 2. Medir: apagar uma seção de TCs existente, pedir ao agente que a recrie e comparar cobertura.
 3. Evoluir para ACs (agente 2) e depois testes automatizados (agente 4), sempre com um ponto de aprovação humana.
+
+## Esteira completa com Jira
+O desenho da esteira que lê regras no Jira e gera ACs, TCs, testes e bugs rastreáveis está no repositório vizinho `qa-orchestrator` (`docs/desenho-da-esteira.md`). Este projeto é o primeiro projeto-alvo, descrito em `examples/projetomdl.md` naquele repositório.

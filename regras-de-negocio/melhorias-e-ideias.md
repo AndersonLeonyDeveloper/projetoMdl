@@ -81,3 +81,6 @@ As taxas, receitas e despesas geradas não têm comprovante. Arquivos fictícios
 
 ### [ ] 3.10 Testes de performance (k6) — esforço M
 *Identificada em 01/10/2026.* Usar o volume de 192 apartamentos e 768 moradores para medir listagens e o endpoint de evolução.
+
+### [ ] 3.11 Esteira de testes com Jira (repositório `qa-orchestrator`) — esforço G
+*Identificada em 01/10/2026.* Agentes que leem as regras no Jira e geram ACs, TCs, testes automatizados e bugs rastreáveis, com um teste de regressão por bug. Mora no repositório vizinho `qa-orchestrator` (desenho em `docs/desenho-da-esteira.md`), e este projeto é o primeiro projeto-alvo. Fases: [ ] 0 regras em arquivo, [ ] 1 Jira somente leitura, [ ] 2 escrita controlada, [ ] 3 bugs com rastreabilidade completa.
