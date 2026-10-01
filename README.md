@@ -59,4 +59,5 @@ Acesse `http://localhost:5173`.
 - `npm run dev:server` / `npm run dev:client` — sobem individualmente
 - `npm run db:migrate` — aplica o schema (`server/src/db/schema.sql`)
 - `npm run db:seed` — popula o banco com dados cobrindo os cenários de `regras-de-negocio/sugestoes-de-testes.md`
+- `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
 - `npm run build` — build de produção do client
