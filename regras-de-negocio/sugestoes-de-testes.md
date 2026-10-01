@@ -125,7 +125,7 @@
 - [ ] **Estrutura sobrevive ao reset**: após `db:reset`, devem existir 12 blocos (01–12) e 192 apartamentos
   (16 por bloco: `01–04`, `101–104`, `201–204`, `301–304`); a tela de cadastro de morador lista blocos e
   apartamentos (regressão do bug de listas vazias). `DB/Integridade` / `E2E`
-- [ ] **Estrutura é idempotente**: subir o servidor várias vezes não duplica nem apaga blocos/apartamentos.
+- [ ] **Estrutura é idempotente** (rodar várias vezes dá o mesmo resultado): subir o servidor várias vezes não duplica nem apaga blocos/apartamentos.
   `DB/Integridade`
 - [ ] **Vários inquilinos ativos**: inserir 3 ou mais inquilinos ativos no mesmo apartamento funciona; um 2º
   proprietário ativo retorna 409 ("Já existe um proprietário ativo para este apartamento."). `API`

@@ -10,7 +10,7 @@
 |---|---|---|---|
 | 1 | Sintoma + evidência + "por quê?" ("após o db:reset os campos ficaram vazios", com print) | Leu o print, achou `reset.js` apagando blocos e apartamentos, explicou a causa | **Triagem de bug / causa raiz** |
 | 2 | "Faz sentido? O que mudaria nas regras de negócio?" | Comparou o pedido com schema e regras e listou impactos | **Análise de impacto de mudança** |
-| 3 | Dados com restrições ("1 proprietário por apto, 3 inquilinos, nomes únicos e americanizados") | Escreveu script determinístico e idempotente e conferiu por SQL | **Gerador de massa de dados com invariantes** |
+| 3 | Dados com restrições ("1 proprietário por apto, 3 inquilinos, nomes únicos e americanizados") | Escreveu script determinístico (mesma entrada, mesmo resultado) e idempotente (pode rodar de novo sem duplicar dados) e conferiu por SQL | **Gerador de massa de dados com invariantes** |
 | 4 | "Realista, respaldado na realidade" | Calibrou taxa, inadimplência e despesas com premissas explícitas | **Gerador de cenários de domínio** |
 | 5 | Pedido que contradiz o sistema (3 inquilinos ativos × índice único; "12 aptos" × lista de 16; apto 305 inexistente) | Apontou o conflito antes de implementar | **Crítico de requisitos** (ambiguidades e contradições) |
 | 6 | "Registre melhorias/cenários de teste num documento, com `[ ]`" | Passou a alimentar `melhorias-e-ideias.md` e `sugestoes-de-testes.md` | **Escriba de documentação viva** |
@@ -31,7 +31,7 @@ Contexto (projeto, documento de regras) + Objetivo + Restrições (únicos, idem
 6. **Seletor de regressão**: dado um diff, indica quais TCs revisitar (usa o mapa regra → TC).
 
 ## 4. Riscos e como tratar
-- **Problema do oráculo**: testes gerados só a partir do código repetem os bugs do código. A fonte de verdade deve ser a regra de negócio, e o agente deve sinalizar divergência código × regra.
+- **Problema do oráculo** (como saber qual é o resultado esperado correto): testes gerados só a partir do código repetem os bugs do código. A fonte de verdade deve ser a regra de negócio, e o agente deve sinalizar divergência código × regra.
 - **Alucinação diante de ambiguidade**: o agente deve perguntar ou registrar a dúvida (como na regra "12 ou 16 aptos?").
 - **Como avaliar o agente**: o próprio projeto tem casos de avaliação prontos. O bug do reset (diagnóstico esperado conhecido), a contradição do índice único e os invariantes do seed financeiro. Também dá para semear bugs e medir quantos o conjunto de testes gerado pega (teste de mutação).
 - **Determinismo**: saída estruturada, formato fixo e semente fixa para dados, para poder comparar execuções.
