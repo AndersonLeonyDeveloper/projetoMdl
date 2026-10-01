@@ -48,7 +48,7 @@ A mudança foi feita no banco (índice `idx_proprietario_ativo_unico`), na mensa
 
 ## 3. Script de moradores — `db:seed:moradores`
 
-Arquivos: `server/src/db/seed-moradores.js` e `server/src/db/fake-data.js`.
+Arquivos: `aplicacao/server/src/db/seed-moradores.js` e `aplicacao/server/src/db/fake-data.js`.
 
 O que faz:
 
@@ -60,7 +60,7 @@ O que faz:
 
 ## 4. Script financeiro — `db:seed:financeiro`
 
-Arquivo: `server/src/db/seed-financeiro.js`.
+Arquivo: `aplicacao/server/src/db/seed-financeiro.js`.
 
 O objetivo é que o histórico seja **crível para quem conhece condomínio**. Por isso ele não é uma sequência de valores aleatórios. Ele simula as situações que um síndico enfrenta ao longo de anos. Os parâmetros ficam no topo do arquivo e podem ser ajustados.
 

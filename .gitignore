@@ -4,7 +4,10 @@ build/
 .env
 *.sqlite
 *.sqlite3
-server/data/
-client/test-results/
-client/playwright-report/
+aplicacao/server/data/
+
+# Suítes de teste
+target/
+test-results/
+playwright-report/
 .DS_Store

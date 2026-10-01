@@ -11,7 +11,7 @@ Legenda de esforço: **P** (pequeno, até meio dia), **M** (médio, alguns dias)
 ## 1. Telas e visualizações
 
 ### [x] 1.1 Tela "Evolução" (tendência multi-ano do financeiro) — esforço M
-*Identificada em 01/10/2026, ao popular o histórico de 2020 a 2026. **Implementada em 01/10/2026** (`client/src/pages/admin/VisualizarEvolucao.tsx` e `GET /financeiro/resumo/evolucao`; gráficos com `recharts`).*
+*Identificada em 01/10/2026, ao popular o histórico de 2020 a 2026. **Implementada em 01/10/2026** (`aplicacao/client/src/pages/admin/VisualizarEvolucao.tsx` e `GET /financeiro/resumo/evolucao`; gráficos com `recharts`).*
 
 Hoje o app mostra um mês (Financeiro) ou um ano (Taxa de Inadimplência) por vez. A história do condomínio (pandemia, cobrança jurídica, obra de 2023) só aparece trocando o ano manualmente.
 
