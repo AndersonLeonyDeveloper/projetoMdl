@@ -19,7 +19,7 @@ const SOBRENOMES = [
 ];
 
 // mulberry32: PRNG pequeno e determinístico.
-function criarPrng(semente) {
+export function criarPrng(semente) {
   let a = semente >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;

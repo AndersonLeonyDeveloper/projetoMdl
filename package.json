@@ -14,6 +14,7 @@
     "db:seed": "npm run db:seed -w server",
     "db:reset": "npm run db:reset -w server",
     "db:seed:moradores": "npm run db:seed:moradores -w server",
+    "db:seed:financeiro": "npm run db:seed:financeiro -w server",
     "test:e2e": "npm run test:e2e -w client",
     "build": "npm run build -w client"
   },
