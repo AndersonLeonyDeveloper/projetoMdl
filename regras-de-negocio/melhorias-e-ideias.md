@@ -11,7 +11,7 @@ Legenda de esforço: **P** (pequeno, até meio dia), **M** (médio, alguns dias)
 ## 1. Telas e visualizações
 
 ### [x] 1.1 Tela "Evolução" (tendência multi-ano do financeiro) — esforço M
-*Identificada em 01/10/2026, ao popular o histórico de 2020 a 2026. **Implementada em 01/10/2026** (`aplicacao/client/src/pages/admin/VisualizarEvolucao.tsx` e `GET /financeiro/resumo/evolucao`; gráficos com `recharts`).*
+*Identificada em 01/10/2026, ao popular o histórico de 2020 a 2026. **Implementada em 01/10/2026** (`app/client/src/pages/admin/VisualizarEvolucao.tsx` e `GET /financeiro/resumo/evolucao`; gráficos com `recharts`).*
 
 Hoje o app mostra um mês (Financeiro) ou um ano (Taxa de Inadimplência) por vez. A história do condomínio (pandemia, cobrança jurídica, obra de 2023) só aparece trocando o ano manualmente.
 
@@ -71,7 +71,7 @@ As taxas, receitas e despesas geradas não têm comprovante. Arquivos fictícios
 *Identificada em 01/10/2026.* Um agente que, dada uma funcionalidade nova ou alterada, adiciona cenários em `sugestoes-de-testes.md` no formato já usado. É o primeiro passo sugerido em `ia-generativa-em-testes.md`, que também lista os agentes seguintes (critérios de aceite, TCs combinatórios, testes automatizados, massa de dados, seleção de regressão).
 
 ### [ ] 3.7 Pipeline de CI (GitHub Actions) — esforço M
-*Identificada em 01/10/2026, ao organizar o repositório para entrevistas.* Subir a aplicação, popular o banco (`db:reset` + `db:seed:moradores` + `db:seed:financeiro`) e rodar as suítes de `testes/`. O workflow fica em `.github/workflows/`, na raiz.
+*Identificada em 01/10/2026, ao organizar o repositório para entrevistas.* Subir a aplicação, popular o banco (`db:reset` + `db:seed:moradores` + `db:seed:financeiro`) e rodar as suítes de `test/`. O workflow fica em `.github/workflows/`, na raiz.
 
 ### [ ] 3.8 docker-compose para subir a aplicação — esforço M
 *Identificada em 01/10/2026.* Um comando para subir client e server em ambiente isolado, útil para quem vai avaliar o repositório e para o CI.

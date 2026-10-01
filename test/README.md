@@ -1,6 +1,6 @@
 # Testes
 
-Suítes de teste do sistema em [`../aplicacao`](../aplicacao), uma pasta por ferramenta. Cada suíte é independente e conhece a aplicação só pelas URLs: client em `http://localhost:5173` e API em `http://localhost:3001/api`.
+Suítes de teste do sistema em [`../app`](../app), uma pasta por ferramenta. Cada suíte é independente e conhece a aplicação só pelas URLs: client em `http://localhost:5173` e API em `http://localhost:3001/api`.
 
 | Pasta | Ferramenta | Tipo | Status |
 |---|---|---|---|
@@ -8,7 +8,7 @@ Suítes de teste do sistema em [`../aplicacao`](../aplicacao), uma pasta por fer
 | [`restassured/`](./restassured) | RestAssured (Java/Maven) | API | [ ] a criar |
 
 ## Pré-requisitos para qualquer suíte
-1. Subir a aplicação (`cd aplicacao && npm run dev`).
+1. Subir a aplicação (`cd app && npm run dev`).
 2. Popular o banco: `npm run db:reset && npm run db:seed:moradores && npm run db:seed:financeiro`.
 3. Usuário administrador: `admin@condominio.com` (senha padrão no README da raiz).
 

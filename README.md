@@ -19,17 +19,17 @@ teste sugeridos.
 ## Estrutura
 
 ```
-aplicacao/            sistema sob teste
+app/                  sistema sob teste
   server/             API Express + SQLite
   client/             SPA React (Vite)
-testes/               suítes de teste, uma pasta por ferramenta (ver testes/README.md)
+test/                 suítes de teste, uma pasta por ferramenta (ver test/README.md)
 regras-de-negocio/    documentação de domínio, modelagem e casos de teste sugeridos
 ```
 
 ## Como rodar
 
 ```bash
-cd aplicacao
+cd app
 npm install          # instala as dependências dos workspaces (server + client)
 
 # configurar variáveis de ambiente
@@ -55,11 +55,11 @@ Acesse `http://localhost:5173`.
 | maria@example.com | proprietario | Bl.08/101 |
 | carlos.inquilino@example.com | inquilino | Bl.08/203 |
 
-## Scripts úteis (rodar dentro de `aplicacao/`)
+## Scripts úteis (rodar dentro de `app/`)
 
 - `npm run dev` — sobe server + client em paralelo
 - `npm run dev:server` / `npm run dev:client` — sobem individualmente
-- `npm run db:migrate` — aplica o schema (`aplicacao/server/src/db/schema.sql`)
+- `npm run db:migrate` — aplica o schema (`app/server/src/db/schema.sql`)
 - `npm run db:seed` — popula o banco com dados cobrindo os cenários de `regras-de-negocio/sugestoes-de-testes.md`
 - `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
 - `npm run db:seed:moradores` — 1 proprietário + 3 inquilinos em cada um dos 192 apartamentos

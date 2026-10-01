@@ -4,7 +4,7 @@ build/
 .env
 *.sqlite
 *.sqlite3
-aplicacao/server/data/
+app/server/data/
 
 # Suítes de teste
 target/
