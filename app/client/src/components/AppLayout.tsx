@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Layout, Menu, Button, Typography, Space, Avatar } from 'antd';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { Layout, Menu, Button, Typography, Space, Avatar, Switch, Tooltip } from 'antd';
+import { LogoutOutlined, QuestionCircleOutlined, UserOutlined } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../context/AuthContext';
+import { useAjuda } from '../ajuda/AjudaContext';
+import { PainelAjuda } from '../ajuda/PainelAjuda';
+import { TourDaTela } from '../ajuda/TourDaTela';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -17,6 +20,7 @@ export function AppLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const { usuario, logout } = useAuth();
+  const { ativa, alternarAtiva, abrirPainel } = useAjuda();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -66,6 +70,26 @@ export function AppLayout({
             {title}
           </Text>
           <Space>
+            <Tooltip title="Liga ou desliga a ajuda guiada (ícone de ajuda e tours)">
+              <Switch
+                checked={ativa}
+                onChange={alternarAtiva}
+                checkedChildren="Ajuda"
+                unCheckedChildren="Ajuda"
+                data-testid="switch-ajuda"
+              />
+            </Tooltip>
+            {ativa && (
+              <Tooltip title="Como usar esta tela">
+                <Button
+                  shape="circle"
+                  icon={<QuestionCircleOutlined />}
+                  onClick={abrirPainel}
+                  aria-label="Abrir ajuda"
+                  data-testid="botao-ajuda"
+                />
+              </Tooltip>
+            )}
             <Avatar icon={<UserOutlined />} size="small" />
             <Text data-testid="usuario-logado">{usuario?.email}</Text>
             <Button icon={<LogoutOutlined />} onClick={logout} data-testid="botao-logout">
@@ -76,6 +100,8 @@ export function AppLayout({
         <Content style={{ margin: 24 }}>
           <Outlet />
         </Content>
+        <PainelAjuda />
+        <TourDaTela />
       </Layout>
     </Layout>
   );

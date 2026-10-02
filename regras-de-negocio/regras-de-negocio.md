@@ -155,3 +155,18 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - ~~Se um apartamento pode ter mais de um inquilino~~ — definido: sim, vários inquilinos ativos. Segue em aberto se pode haver mais de um proprietário (hoje: no máximo 1 ativo).
 - Regra de expiração/validade da "nova senha" enviada por e-mail.
 - Contagem de `meses_atraso` ao remover um pagamento ou ao pagar uma taxa antiga com outras em aberto: hoje o registro de pagamento zera o contador da própria taxa, e a remoção do pagamento mantém o valor anterior.
+
+## 8. Ajuda guiada (Admin e moradores)
+
+> Implementada em 02/10/2026 (item 1.4 de [`melhorias-e-ideias.md`](./melhorias-e-ideias.md)). Só existe no cliente; não há regra nem endpoint no servidor.
+
+- **Switch "Ajuda":** fica no cabeçalho, ao lado do e-mail do usuário, em todas as telas logadas. **Ligado** (padrão), mostra o ícone de ajuda (`?`) e abre tours sozinho. **Desligado**, o ícone some, o painel fecha e nenhum tour abre sozinho.
+- **Preferência por usuário:** é guardada no navegador (`localStorage`), separada para cada pessoa que entra no mesmo navegador. Não vai para o banco, então não acompanha o usuário em outro computador.
+- **Ícone de ajuda:** abre um painel lateral com duas abas.
+  - **Nesta tela:** resumo do que a tela faz e o botão "Iniciar tour da tela". Telas sem conteúdo mostram "Esta tela ainda não tem tour".
+  - **Como fazer…:** guias por tarefa do perfil. Cada guia lista os passos em ordem, e os passos que mudam de tela têm o botão "Ir para a tela", que navega e fecha o painel.
+- **Tour da tela:** destaca, um por vez, os elementos principais da tela, com título, explicação, "Anterior", "Próximo", "Concluir" e botão de fechar. Se o elemento ainda não estiver na tela (por exemplo, tabela carregando), o passo aparece centralizado.
+- **Primeira visita:** com a ajuda ligada, o tour de cada tela **abre sozinho uma vez** por usuário. Depois de fechado ou concluído, a tela é marcada como vista e não abre mais sozinha; o tour continua disponível pelo painel.
+- **Conteúdo por perfil:** o admin vê guias de cadastro de morador, lançamento de despesas e receitas, geração de taxas e registro de pagamentos, correção de lançamentos, configurações financeiras e inadimplência/evolução. Proprietário e inquilino veem guias de Meus Apartamentos, Meus Dados e Financeiro.
+- **Manutenção:** os textos e os alvos ficam em `app/client/src/ajuda/conteudo.ts`. Os alvos são os `data-testid` das telas, então renomear um `data-testid` ou mudar um fluxo exige revisar o conteúdo da ajuda.
+- **Automação de testes:** como o tour abre sozinho na primeira visita e cobre parte da tela, testes E2E devem desligar a ajuda antes (`localStorage` `ajuda:ativa:<id do usuário>` = `false`) ou fechar o tour.

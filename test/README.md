@@ -14,3 +14,6 @@ Suítes de teste do sistema em [`../app`](../app), uma pasta por ferramenta. Cad
 
 ## De onde vêm os casos de teste
 Os cenários estão em [`../regras-de-negocio/sugestoes-de-testes.md`](../regras-de-negocio/sugestoes-de-testes.md), com o tipo de teste indicado em cada item (`E2E`, `API`, `DB/Integridade`).
+
+## Ajuda guiada nos testes E2E
+O tour da ajuda abre sozinho na primeira visita a cada tela e cobre parte do conteúdo. Nos testes E2E, desligue a ajuda antes de interagir: grave `localStorage['ajuda:ativa:<id do usuário>'] = 'false'` (ou feche o tour). Os cenários da própria ajuda estão em `sugestoes-de-testes.md`, seção 7.6.

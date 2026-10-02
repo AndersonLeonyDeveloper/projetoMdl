@@ -11,6 +11,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import './App.css';
+import { AjudaProvider } from './ajuda/AjudaContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppLayout } from './components/AppLayout';
 import { Login } from './pages/Login';
@@ -61,6 +62,7 @@ const MORADOR_MENU: MenuProps['items'] = [
 
 function App() {
   return (
+    <AjudaProvider>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/esqueci-senha" element={<EsqueciSenha />} />
@@ -99,6 +101,7 @@ function App() {
         <Route path="financeiro" element={<FinanceiroCondominio />} />
       </Route>
     </Routes>
+    </AjudaProvider>
   );
 }
 

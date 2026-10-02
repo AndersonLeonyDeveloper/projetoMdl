@@ -314,6 +314,47 @@
 - [ ] **Total do morador** = valor + juros, e os resumos (adimplente, receitas) usam esse total. `API`
 - [ ] **Data de pagamento inválida ou futura**: comportamento definido (recusa ou aceita), sem erro 500. `API`
 
+### 7.6 Ajuda guiada (ícone de ajuda, tour e guias)
+
+> Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seção 8 (item 1.4 do
+> backlog). Só há interface, então todos os cenários são `E2E`. Ainda sem teste automatizado, e as telas ainda não foram
+> abertas em navegador. **Para os testes dos outros cenários, desligue a ajuda antes**, porque o tour abre sozinho na
+> primeira visita a cada tela.
+
+**Switch**
+- [ ] **Padrão ligado**: em um navegador limpo, o switch "Ajuda" vem ligado e o ícone `?` aparece. `E2E`
+- [ ] **Desligar**: ao desligar, o ícone `?` some, o painel (se aberto) fecha e nenhum tour abre. `E2E`
+- [ ] **Persistência**: a escolha sobrevive a recarregar a página e a sair e entrar de novo com o mesmo usuário. `E2E`
+- [ ] **Isolamento por usuário**: desligar a ajuda com o admin não desliga para um morador que entra no mesmo navegador. `E2E`
+- [ ] **Religar**: ao religar, o ícone volta; telas já vistas não abrem o tour sozinhas de novo. `E2E`
+
+**Tour**
+- [ ] **Primeira visita**: com a ajuda ligada, a primeira visita a cada tela abre o tour sozinho; a segunda visita (mesmo
+  recarregando) não abre. `E2E`
+- [ ] **Navegação do tour**: "Próximo" e "Anterior" andam pelos passos, o indicador mostra "N de M", o último passo traz
+  "Concluir", e fechar (X) encerra e marca a tela como vista. `E2E`
+- [ ] **Destaque**: cada passo com alvo destaca o elemento certo (ex.: em Taxas de condomínio, o bloco "Gerar taxas do mês"
+  e o botão "Gerar taxas"). `E2E`
+- [ ] **Alvo ausente**: com a tabela ainda carregando (ou sem linhas, como o botão "Editar" de uma lista vazia), o passo
+  aparece centralizado e o tour não quebra. `E2E`
+- [ ] **Início manual**: pelo painel, "Iniciar tour da tela" fecha o painel e inicia o tour mesmo em tela já vista. `E2E`
+- [ ] **Telas sem conteúdo**: uma rota sem tour mostra "Esta tela ainda não tem tour" no painel e não abre tour sozinho. `E2E`
+- [ ] **Todos os alvos existem**: percorrer o tour de todas as telas de cada perfil confirma que cada passo com alvo encontra o
+  elemento na tela (protege contra renomear `data-testid`). `E2E`
+- [ ] **Não bloqueia o uso**: com o tour fechado, formulários e botões funcionam normalmente; com o tour aberto, ele cobre a
+  tela (esperado). `E2E`
+
+**Painel e guias**
+- [ ] **Abrir e fechar**: o ícone `?` abre o painel com as abas "Nesta tela" e "Como fazer…"; fechar pelo X ou clicando fora. `E2E`
+- [ ] **Resumo da tela**: a aba "Nesta tela" mostra o resumo da tela atual e muda ao navegar. `E2E`
+- [ ] **Conteúdo por perfil**: o admin vê 6 guias (cadastrar morador, taxas do mês, despesa/receita, corrigir lançamento,
+  configurar taxa, inadimplência e evolução); proprietário e inquilino veem 3 (apartamentos, dados, financeiro). `E2E`
+- [ ] **Ir para a tela**: o botão de um passo navega para a rota certa e fecha o painel (ex.: guia "Gerar as taxas do mês",
+  passo 2 → Cadastro → Taxas de condomínio). `E2E`
+- [ ] **Texto confere com a tela**: os passos de cada guia batem com os nomes reais de menus e botões (revisar quando
+  uma tela mudar). `E2E` / revisão manual
+- [ ] **Morador não vê conteúdo de admin**: a ajuda de um morador não traz guias nem links de rotas de admin. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

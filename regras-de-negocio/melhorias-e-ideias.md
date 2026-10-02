@@ -27,6 +27,12 @@ Uma versão da tela de evolução, sem dados de inadimplência por apartamento, 
 ### [ ] 1.3 Tela para cadastrar blocos e apartamentos — esforço P
 As rotas `POST /blocos` e `POST /apartamentos` existem, mas não há tela. Hoje a estrutura é criada automaticamente (12 blocos × 16 apartamentos). Uma tela seria útil se o condomínio mudar de estrutura.
 
+### [x] 1.4 Ajuda guiada (ícone de ajuda com tour e guias por tarefa) — esforço M
+*Identificada em 02/10/2026, depois que o admin teve dificuldade para seguir o ciclo da taxa entre telas.* *Implementada em 02/10/2026* em `app/client/src/ajuda/`: switch "Ajuda" e ícone `?` no cabeçalho, painel com "Nesta tela" (tour que destaca os elementos) e "Como fazer…" (guias por tarefa com "Ir para a tela"), tour automático na primeira visita e conteúdo separado para admin e moradores. Regras na seção 8 de `regras-de-negocio.md`.
+
+### [ ] 1.5 Ajuda guiada: manter o conteúdo em dia — esforço P
+*Identificada em 02/10/2026.* O conteúdo da ajuda (`ajuda/conteudo.ts`) desatualiza quando uma tela muda. Ideias: um teste E2E que percorra todas as telas e confirme que cada alvo de tour existe; guias que, em vez de só listar os cliques, conduzam o usuário entre telas (tour contínuo); botão de "esta ajuda foi útil?" para saber quais guias confundem.
+
 ## 2. Modelo de dados e regras
 
 ### [ ] 2.1 Fundo de reserva como entidade — esforço G
