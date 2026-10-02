@@ -216,8 +216,8 @@
 - [ ] **Validação no cliente**: arquivo de tipo inválido ou acima de 5 MB mostra o erro sem chamar a API. `E2E`
 - [ ] **Link "Ver comprovante"**: abre uma nova aba com o PDF ou a imagem; lançamento sem comprovante mostra "—".
   `E2E`
-- [ ] **Link em todas as telas**: tabela de taxas (admin) e listas de receitas/despesas nas telas de Financeiro dos
-  dois perfis. `E2E`
+- [ ] **Link em todas as telas**: tabela de taxas (tela Taxas do mês, admin) e listas de receitas/despesas nas telas de
+  Financeiro dos dois perfis. `E2E`
 - [ ] **Sessão expirada** ao abrir o comprovante redireciona para o login e não deixa aba em branco aberta. `E2E`
 
 **Dados de demonstração**
@@ -286,8 +286,8 @@
 - [ ] **Prévia sem valor**: ano sem padrão devolve `valor = null`. `API`
 - [ ] **Prévia: validação e RBAC**: mês 0 ou 13, mês ou ano ausentes retornam 400; morador 403; sem token 401. `API`
 - [ ] **Prévia não grava**: chamar a prévia várias vezes não cria taxas. `API`
-- [ ] **Interface — localização**: a geração fica em Cadastro → Taxas de condomínio (e não em Receitas / Despesas, que
-  fica só com Outras Receitas e Despesas). `E2E`
+- [ ] **Interface — localização**: a geração fica na tela Taxas do mês (e não em Receitas / Despesas, que fica só com
+  Outras Receitas e Despesas). `E2E`
 - [ ] **Interface — valor do ano editável**: o campo vem preenchido com o padrão do ano e muda ao trocar o ano. Em ano sem
   valor vem vazio e o botão fica desabilitado até informar um valor. `E2E`
 - [ ] **Interface — salva o padrão**: gerar com um valor diferente do configurado atualiza o padrão do ano
@@ -295,8 +295,8 @@
   lançadas. `E2E`
 - [ ] **Interface — confirmação**: o diálogo informa quantidade, valor, mês e ignoradas; cancelar não cria nada; mês já
   totalmente gerado mostra "nada a gerar" sem diálogo. `E2E`
-- [ ] **Interface — resultado**: informa quantas taxas foram criadas e quantas ignoradas, e o link "Ver taxas do mês"
-  abre Visualizar → Financeiro já no mês e ano gerados, com a tabela de taxas e o total inadimplente. `E2E`
+- [ ] **Interface — resultado**: informa quantas taxas foram criadas e quantas ignoradas, e a mesma tela já mostra as taxas
+  criadas e o resumo atualizado (a geração usa o mês e o ano escolhidos no topo). `E2E`
 
 **Juros e multa no pagamento**
 - [ ] **Sem atraso**: pagar no dia do vencimento ou antes resulta em juros 0. `API`
@@ -330,8 +330,8 @@
 - [ ] **Início**: pelo painel, "Iniciar tour da tela" fecha o painel e inicia o tour da tela atual, também em visitas repetidas. `E2E`
 - [ ] **Navegação do tour**: "Próximo" e "Anterior" andam pelos passos, o indicador mostra "N de M", o último passo traz
   "Concluir", e fechar (X) encerra o tour. `E2E`
-- [ ] **Destaque**: cada passo com alvo destaca o elemento certo (ex.: em Taxas de condomínio, o bloco "Gerar taxas do mês"
-  e o botão "Gerar taxas"). `E2E`
+- [ ] **Destaque**: cada passo com alvo destaca o elemento certo (ex.: em Taxas do mês, o resumo, o bloco "Gerar taxas" e
+  a tabela de taxas). `E2E`
 - [ ] **Alvo ausente**: com a tabela ainda carregando (ou sem linhas, como o botão "Editar" de uma lista vazia), o passo
   aparece centralizado e o tour não quebra. `E2E`
 - [ ] **Telas sem conteúdo**: uma rota sem tour mostra "Esta tela ainda não tem tour" no painel e não inicia tour. `E2E`
@@ -349,7 +349,7 @@
 - [ ] **Conteúdo por perfil**: o admin vê 6 guias (cadastrar morador, taxas do mês, despesa/receita, corrigir lançamento,
   configurar taxa, inadimplência e evolução); proprietário e inquilino veem 3 (apartamentos, dados, financeiro). `E2E`
 - [ ] **Ir para a tela**: o botão de um passo navega para a rota certa e fecha o painel (ex.: guia "Gerar as taxas do mês",
-  passo 2 → Cadastro → Taxas de condomínio). `E2E`
+  passo 1 → Taxas do mês). `E2E`
 - [ ] **Texto confere com a tela**: os passos de cada guia batem com os nomes reais de menus e botões (revisar quando
   uma tela mudar). `E2E` / revisão manual
 - [ ] **Morador não vê conteúdo de admin**: a ajuda de um morador não traz guias nem links de rotas de admin. `E2E`
@@ -401,8 +401,8 @@
   uma lista vazia para um apartamento inexistente. `API`
 - [ ] **Popover com valores**: mostra valor, juros e total por mês e o "Total devido hoje" (soma dos totais), com a nota de
   que é estimativa. `E2E`
-- [ ] **Link do mês**: clicar em um mês abre Visualizar → Financeiro no mês e ano certos, com o aviso "Mostrando só as taxas do
-  apartamento BB/AAA" e uma única taxa na tabela; os resumos do mês não mudam com o filtro. `E2E`
+- [ ] **Link do mês**: clicar em um mês abre Taxas do mês no mês e ano certos, com o aviso "Mostrando só as taxas do
+  apartamento BB/AAA" e uma única taxa na tabela; o resumo do mês não muda com o filtro. `E2E`
 - [ ] **Limpar o filtro**: "Ver todos os apartamentos" remove o aviso e volta à lista completa do mês. `E2E`
 - [ ] **Fluxo completo**: do link, "Registrar pagamento" funciona e, ao voltar para Dados dos Moradores, aquele mês saiu da
   lista e do total. `E2E`
@@ -596,6 +596,33 @@
 - [ ] **Seletor**: "Competência | Caixa" aparece no resumo do mês, nas telas do admin e do morador; trocar atualiza os cartões
   de receitas, despesas e saldo e a explicação ao lado, sem mudar o resumo por bloco nem as listas. `E2E`
 - [ ] **Valor inicial**: a tela abre sempre em Competência. `E2E`
+
+### 7.17 Tela única "Taxas do mês"
+
+> Cenários levantados em 02/10/2026 (item 2.15 do backlog). Regras na seção 4.12 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Só interface (sem mudança de API); todos `E2E`, ainda sem teste automatizado, e a tela ainda não foi aberta em navegador.
+
+- [ ] **Menu**: "Taxas do mês" aparece como item do menu principal do admin e não aparece para morador; Cadastro não tem mais
+  "Taxas de condomínio". O endereço antigo `/admin/cadastro/taxas` redireciona para `/admin/taxas`, mantendo `ano`, `mes` e
+  `apartamento_id`. `E2E`
+- [ ] **Resumo do mês**: mostra geradas, adimplentes, a vencer e em atraso (quantidade e valor de cada grupo); "Canceladas"
+  só aparece quando houver; trocar mês ou ano atualiza o resumo e a tabela. `E2E`
+- [ ] **Resumo não depende do filtro**: com o filtro por apartamento ativo, o resumo continua sendo do mês inteiro. `E2E`
+- [ ] **Resumo bate com a tabela**: a soma das linhas por situação é igual aos números do resumo. `E2E`
+- [ ] **Gerar no mesmo lugar**: gerar as taxas do mês escolhido mostra a confirmação, e depois as linhas novas aparecem na tabela e
+  o resumo sobe, sem trocar de tela. `E2E`
+- [ ] **Registrar pagamento no mesmo lugar**: na linha de uma taxa em aberto, registrar o pagamento muda a situação para
+  adimplente, atualiza o resumo (sai de "A vencer"/"Em atraso" e entra em "Adimplentes") e mostra o juros calculado. `E2E`
+- [ ] **Cancelar e restaurar**: cancelar uma taxa a tira da tabela e do resumo (e conta em "Canceladas"); "Mostrar canceladas" a
+  traz de volta riscada, e Restaurar a devolve; taxa paga tem o botão Cancelar desabilitado. `E2E`
+- [ ] **Filtro por apartamento**: abrir pelo mês em atraso de Dados dos Moradores mostra só aquele apartamento, com o aviso e o botão
+  "Ver todos os apartamentos". `E2E`
+- [ ] **Lançar taxa individual**: a seção recolhida abre, vem com o valor padrão do ano, e uma taxa lançada aparece na tabela do
+  mês correspondente (se for o mês aberto). `E2E`
+- [ ] **Visualizar → Financeiro**: não tem mais a tabela de taxas; tem o atalho "Abrir Taxas de MM/AAAA" que leva à tela nova no
+  mesmo mês e ano. As listas de despesas e outras receitas e o resumo por bloco continuam. `E2E`
+- [ ] **Mês sem taxas**: a tabela mostra "Nenhuma taxa neste mês" e o resumo mostra zeros, sem erro. `E2E`
+- [ ] **Ajuda**: o tour de Taxas do mês e o guia "Gerar as taxas do mês e registrar os pagamentos" descrevem a tela nova. `E2E` / revisão manual
 
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 

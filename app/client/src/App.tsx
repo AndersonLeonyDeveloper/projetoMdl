@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import {
   UserAddOutlined,
@@ -11,6 +11,7 @@ import {
   LineChartOutlined,
   TeamOutlined,
   HistoryOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import './App.css';
 import { AjudaProvider } from './ajuda/AjudaContext';
@@ -24,7 +25,7 @@ import { Home } from './pages/Home';
 const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
 const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
 const HistoricoAlteracoes = lazy(() => import('./pages/admin/HistoricoAlteracoes').then((m) => ({ default: m.HistoricoAlteracoes })));
-const CadastroTaxas = lazy(() => import('./pages/admin/CadastroTaxas').then((m) => ({ default: m.CadastroTaxas })));
+const TaxasDoMes = lazy(() => import('./pages/admin/TaxasDoMes').then((m) => ({ default: m.TaxasDoMes })));
 const ConfiguracoesFinanceiras = lazy(() => import('./pages/admin/ConfiguracoesFinanceiras').then((m) => ({ default: m.ConfiguracoesFinanceiras })));
 const VisualizarFinanceiro = lazy(() => import('./pages/admin/VisualizarFinanceiro').then((m) => ({ default: m.VisualizarFinanceiro })));
 const VisualizarMoradores = lazy(() => import('./pages/admin/VisualizarMoradores').then((m) => ({ default: m.VisualizarMoradores })));
@@ -35,13 +36,13 @@ const MeusDados = lazy(() => import('./pages/morador/MeusDados').then((m) => ({ 
 const FinanceiroCondominio = lazy(() => import('./pages/morador/FinanceiroCondominio').then((m) => ({ default: m.FinanceiroCondominio })));
 
 const ADMIN_MENU: MenuProps['items'] = [
+  { key: '/admin/taxas', label: 'Taxas do mês', icon: <CalendarOutlined /> },
   {
     key: 'cadastro',
     label: 'Cadastro',
     icon: <UserAddOutlined />,
     children: [
       { key: '/admin/cadastro/moradores', label: 'Moradores' },
-      { key: '/admin/cadastro/taxas', label: 'Taxas de condomínio' },
       { key: '/admin/cadastro/financeiro', label: 'Receitas / Despesas' },
       { key: '/admin/cadastro/configuracoes', label: 'Configurações financeiras' },
     ],
@@ -66,6 +67,12 @@ const MORADOR_MENU: MenuProps['items'] = [
   { key: '/minha-area/financeiro', label: 'Financeiro', icon: <DollarCircleOutlined /> },
 ];
 
+// O endereço antigo da tela de taxas continua funcionando e leva para a tela única, mantendo os filtros da URL.
+function RedirecionarParaTaxasDoMes() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: '/admin/taxas', search }} replace />;
+}
+
 function App() {
   return (
     <AjudaProvider>
@@ -84,7 +91,8 @@ function App() {
       >
         <Route index element={<Navigate to="cadastro/moradores" replace />} />
         <Route path="cadastro/moradores" element={<CadastroMoradores />} />
-        <Route path="cadastro/taxas" element={<CadastroTaxas />} />
+        <Route path="taxas" element={<TaxasDoMes />} />
+        <Route path="cadastro/taxas" element={<RedirecionarParaTaxasDoMes />} />
         <Route path="cadastro/financeiro" element={<CadastroFinanceiro />} />
         <Route path="cadastro/configuracoes" element={<ConfiguracoesFinanceiras />} />
         <Route path="visualizar/financeiro" element={<VisualizarFinanceiro />} />

@@ -37,20 +37,22 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Salvar', descricao: 'Clique em Salvar. Uma mensagem confirma o cadastro ou explica o que precisa ser corrigido.', alvo: 'botao-salvar-morador' },
     ],
   },
-  '/admin/cadastro/taxas': {
+  '/admin/taxas': {
     resumo:
-      'Cria as taxas de condomínio. O normal é gerar o mês inteiro de uma vez; o lançamento individual serve para casos pontuais.',
+      'Reúne o ciclo da taxa de condomínio de um mês: o resumo, gerar as taxas, registrar os pagamentos, editar, cancelar e lançar uma taxa avulsa.',
     passos: [
-      { titulo: 'Gerar taxas do mês', descricao: 'Cria a taxa de todos os apartamentos que ainda não têm uma no mês. Taxas já lançadas não mudam.', alvo: 'gerar-taxas-mes' },
-      { titulo: 'Mês, ano e valor', descricao: 'Escolha o mês e o ano. O valor vem do padrão do ano; se mudar, ele passa a ser o novo padrão (taxas antigas não mudam).', alvo: 'input-gerar-valor' },
-      { titulo: 'Gerar', descricao: 'Clique em Gerar taxas. O sistema mostra quantas serão criadas e pede confirmação. Depois, o link "Ver taxas do mês" leva ao registro dos pagamentos.', alvo: 'botao-gerar-taxas' },
-      { titulo: 'Lançamento individual', descricao: 'Para uma taxa avulsa (por exemplo, com valor diferente), escolha bloco, apartamento, mês, ano e valor aqui.', alvo: 'form-lancar-taxa' },
+      { titulo: 'Mês e ano', descricao: 'Escolha o mês que quer trabalhar. O resumo, a geração e a tabela passam a ser desse mês.', alvo: 'input-ano' },
+      { titulo: 'Resumo do mês', descricao: 'Quantas taxas foram geradas e quantas estão adimplentes, a vencer ou em atraso, com o valor de cada grupo.', alvo: 'resumo-taxas-do-mes' },
+      { titulo: 'Gerar taxas', descricao: 'Cria a taxa de todos os apartamentos que ainda não têm uma no mês. O valor vem do padrão do ano; se mudar, ele passa a ser o novo padrão. O sistema mostra quantas serão criadas e pede confirmação.', alvo: 'gerar-taxas-mes' },
+      { titulo: 'Taxas do mês', descricao: 'Cada linha é um apartamento. Em "Registrar pagamento", informe a data: o sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Nas pagas, o botão é Editar. Se você chegou por um mês em atraso de Dados dos Moradores, a tabela mostra só aquele apartamento.', alvo: 'tabela-taxas' },
+      { titulo: 'Cancelar uma taxa', descricao: 'Para uma taxa gerada por engano use Cancelar, com o motivo. Ela sai dos totais, mas pode ser restaurada com "Mostrar canceladas". Taxa paga só cancela depois de remover o pagamento.', alvo: 'switch-mostrar-canceladas' },
+      { titulo: 'Lançar taxa avulsa', descricao: 'Para uma taxa fora da geração em lote (por exemplo, com valor diferente), abra esta seção e informe bloco, apartamento, mês, ano e valor.', alvo: 'lancar-taxa-individual' },
     ],
   },
   '/admin/cadastro/financeiro': {
     resumo: 'Lança outras receitas (aluguel do salão, multas, eventos) e despesas do condomínio, com comprovante opcional.',
     passos: [
-      { titulo: 'Escolha o tipo', descricao: 'Use as abas para lançar uma outra receita ou uma despesa. As taxas de condomínio ficam em Cadastro → Taxas de condomínio.', alvo: 'tabs-cadastro-financeiro' },
+      { titulo: 'Escolha o tipo', descricao: 'Use as abas para lançar uma outra receita ou uma despesa. As taxas de condomínio ficam em Taxas do mês.', alvo: 'tabs-cadastro-financeiro' },
       { titulo: 'Descrição, valor e data', descricao: 'Preencha o que foi, quanto e quando. O valor não pode ser negativo.' },
       { titulo: 'Comprovante (opcional)', descricao: 'Anexe um PDF, JPEG ou PNG de até 5 MB. Depois de salvar, ele pode ser aberto pelo link "Ver comprovante".' },
     ],
@@ -66,13 +68,12 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
   },
   '/admin/visualizar/financeiro': {
     resumo:
-      'Mostra o financeiro de um mês. É aqui que você registra o pagamento das taxas, corrige lançamentos e abre os comprovantes.',
+      'Mostra o financeiro de um mês: resumo, resumo por bloco, despesas e outras receitas. A lista de taxas e o registro de pagamentos ficam em Taxas do mês.',
     passos: [
       { titulo: 'Período', descricao: 'Escolha o ano e o mês que quer consultar.', alvo: 'input-ano' },
       { titulo: 'Regime: competência ou caixa', descricao: 'Competência conta a taxa no mês a que ela se refere; Caixa conta no mês em que foi paga. Isso muda as receitas e o saldo do mês (despesas e outras receitas não mudam).', alvo: 'segmented-regime' },
       { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido, no regime selecionado.', alvo: 'resumo-mensal' },
-      { titulo: 'Taxas do mês', descricao: 'A situação mostra Adimplente, A vencer (em aberto, ainda no prazo) ou Em atraso (vencida). Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Se você chegou por um mês em atraso de Dados dos Moradores, a lista mostra só aquele apartamento; use "Ver todos os apartamentos" para voltar.', alvo: 'tabela-taxas' },
-      { titulo: 'Corrigir uma taxa', descricao: 'Nas taxas já pagas o botão é Editar: corrija o valor, a data ou o comprovante.', alvo: 'botao-editar-taxa' },
+      { titulo: 'Taxas do mês', descricao: 'Este atalho abre a tela Taxas do mês já no mês e ano escolhidos, onde ficam a geração, o registro de pagamentos, a edição e o cancelamento das taxas.', alvo: 'atalho-taxas-do-mes' },
       { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento, o Cancelar (com motivo; some dos totais e pode ser restaurado com "Mostrar cancelados") e o link para ver o comprovante.', alvo: 'tabela-despesas' },
     ],
   },
@@ -91,7 +92,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     passos: [
       { titulo: 'Lista de moradores', descricao: 'Use os filtros e a paginação da tabela para localizar uma pessoa.', alvo: 'tabela-visualizar-moradores' },
       { titulo: 'Apartamentos sem proprietário', descricao: 'Quando existe algum apartamento vazio ou só com inquilinos, um aviso amarelo aparece no topo, com o botão "Mostrar apenas esses". Nesses apartamentos, a coluna Mensalidades mostra "Sem proprietário" (e o atraso, se houver).', alvo: 'tabela-visualizar-moradores' },
-      { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver cada mensalidade vencida com valor, juros até hoje e total, mais o total devido. Clique em um mês para abrir a taxa em Visualizar → Financeiro. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
+      { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver cada mensalidade vencida com valor, juros até hoje e total, mais o total devido. Clique em um mês para abrir a taxa em Taxas do mês. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
     ],
   },
   '/admin/visualizar/inadimplencia': {
@@ -157,9 +158,9 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
       descricao: 'O ciclo completo da taxa de condomínio, do valor ao pagamento.',
       passos: [
         { texto: 'Confira o valor da taxa do ano, a multa, o juros e o vencimento em Cadastro → Configurações financeiras.', rota: '/admin/cadastro/configuracoes' },
-        { texto: 'Abra Cadastro → Taxas de condomínio, escolha o mês e o ano, confira o valor e clique em Gerar taxas. Confirme a quantidade.', rota: '/admin/cadastro/taxas' },
-        { texto: 'Clique em "Ver taxas do mês" (ou abra Visualizar → Financeiro e escolha o mês).', rota: '/admin/visualizar/financeiro' },
-        { texto: 'Na tabela de taxas, clique em "Registrar pagamento" na linha do apartamento. Informe a data (multa e juros são calculados se houve atraso), anexe o comprovante se houver e salve.' },
+        { texto: 'Abra Taxas do mês e escolha o mês e o ano. O resumo mostra quantas taxas já existem.', rota: '/admin/taxas' },
+        { texto: 'Em "Gerar taxas", confira o valor e clique em Gerar taxas. Confirme a quantidade.' },
+        { texto: 'Conforme os moradores pagam, clique em "Registrar pagamento" na linha do apartamento, na mesma tela. Informe a data (multa e juros são calculados se houve atraso), anexe o comprovante se houver e salve.' },
       ],
     },
     {
@@ -178,8 +179,8 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
       titulo: 'Corrigir um lançamento digitado errado',
       descricao: 'Vale para taxas, despesas e outras receitas.',
       passos: [
-        { texto: 'Abra Visualizar → Financeiro e escolha o ano e o mês do lançamento.', rota: '/admin/visualizar/financeiro' },
-        { texto: 'Taxa: clique em Editar (ou Registrar pagamento) na linha. Despesa ou receita: clique em Editar na lista, mais abaixo na página.' },
+        { texto: 'Taxa: abra Taxas do mês, escolha o mês e clique em Editar (ou Registrar pagamento) na linha.', rota: '/admin/taxas' },
+        { texto: 'Despesa ou receita: abra Visualizar → Financeiro, escolha o mês e clique em Editar na lista, mais abaixo na página.', rota: '/admin/visualizar/financeiro' },
         { texto: 'Corrija os campos. Para o comprovante, você pode manter, substituir ou remover.' },
         { texto: 'Clique em Salvar. Os resumos do mês já mostram o novo valor.' },
         { texto: 'Se o lançamento nem deveria existir (duplicado, apartamento errado), use Cancelar e informe o motivo: ele sai dos totais, mas pode ser restaurado. Taxa já paga só cancela depois de remover o pagamento.' },

@@ -105,7 +105,7 @@ export function VisualizarMoradores() {
                   {atrasos.map((t) => (
                     <li key={t.id}>
                       <Link
-                        to={`/admin/visualizar/financeiro?ano=${t.ano_referencia}&mes=${t.mes_referencia}&apartamento_id=${linha.apartamento_id}`}
+                        to={`/admin/taxas?ano=${t.ano_referencia}&mes=${t.mes_referencia}&apartamento_id=${linha.apartamento_id}`}
                         data-testid="link-taxa-em-atraso"
                       >
                         {MESES[t.mes_referencia - 1]}/{t.ano_referencia}

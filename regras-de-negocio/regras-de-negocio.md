@@ -83,7 +83,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **O valor calculado fica gravado na taxa.** Alterar os percentuais depois **não recalcula** pagamentos já registrados.
 - **Ajuste manual:** o admin pode informar o juros manualmente (ex.: acordo ou negociação), e o valor informado prevalece sobre o cálculo. Antes de confirmar o pagamento, a tela mostra os dias de atraso, a multa, o juros e o total calculados.
 - Taxa em aberto não acumula juros no banco: o juros só é calculado e gravado no momento do pagamento.
-- **Aviso de juros diferente do cálculo:** para taxa paga, a API compara o juros gravado com o cálculo atual (`juros_calculado`, `juros_diverge`; diferença de meio centavo ou mais). Isso acontece quando o valor ou a data foram corrigidos, os percentuais ou o vencimento mudaram, ou o admin informou o juros à mão (acordo). Na tabela de taxas aparece a etiqueta "Difere do cálculo".
+- **Aviso de juros diferente do cálculo:** para taxa paga, a API compara o juros gravado com o cálculo atual (`juros_calculado`, `juros_diverge`; diferença de meio centavo ou mais). Isso acontece quando o valor ou a data foram corrigidos, os percentuais ou o vencimento mudaram, ou o admin informou o juros à mão (acordo). Na tabela de taxas (tela Taxas do mês) aparece a etiqueta "Difere do cálculo".
 - **Recalcular juros:** o admin pode regravar o juros de uma taxa **já paga** com o cálculo atual (valor e data de pagamento gravados, percentuais e vencimento de hoje): pela etiqueta "Difere do cálculo" (pede confirmação e grava na hora) ou pelo botão "Recalcular juros" do modal de edição (só preenche o campo; vale ao salvar). Não existe recálculo em massa, e taxa em aberto não tem o que recalcular. Corrigir o valor ou a data **nunca** recalcula o juros sozinho. No seed, só 2 de 15.464 taxas pagas divergem (1 centavo de arredondamento).
 
 ### 4.2 Receitas — Outras Receitas
@@ -111,7 +111,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.5 Consultas / Filtros
 - Financeiro pode ser filtrado por Ano → Mês → Tipo de receita (Taxa de Condomínio / Outras Receitas) → Bloco.
-- A tabela de taxas de Visualizar → Financeiro também pode ser filtrada por **apartamento**, mas só por link (não há campo na tela): os meses em atraso de Dados dos Moradores (seção 4.9) abrem a tela com `ano`, `mes` e `apartamento_id` na URL. Com o filtro ativo, a tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos". O filtro vale só para a tabela de taxas; os resumos do mês não mudam.
+- A tabela de taxas da tela **Taxas do mês** (seção 4.12) também pode ser filtrada por **apartamento**, mas só por link (não há campo na tela): os meses em atraso de Dados dos Moradores (seção 4.9) abrem a tela com `ano`, `mes` e `apartamento_id` na URL. Com o filtro ativo, a tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos". O filtro vale só para a tabela de taxas; o resumo do mês, no topo da tela, continua sendo do mês inteiro.
 - Tela de Evolução (Admin): tendência mensal/anual de receitas, despesas, saldo e inadimplência em vários anos (ano inicial/final), com cartões dos últimos 12 meses.
 - **Evolução para moradores:** em Minha Área → Financeiro, Proprietário e Inquilino veem, no fim da tela, a evolução do condomínio ao longo dos anos (visão mensal ou anual, cartões dos últimos 12 meses, gráfico e resumo anual) com **somente receitas, despesas e saldo**. É a prestação de contas aos condôminos. **Nenhum dado de inadimplência** aparece, nem agregado: sem faturamento, percentual em atraso, unidades em aberto ou "a vencer". Por isso a API pública (`GET /financeiro/resumo/evolucao-publica`, qualquer perfil logado) devolve só `ano`, `mes`, `receitas` (taxas pagas + outras receitas) e `despesas`, e a evolução completa continua restrita ao Admin.
 - Tela de Inadimplência: consolidado anual, com drill-down por mês → bloco → apartamento (lista de proprietário/inquilino e situação).
@@ -126,13 +126,13 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Leitura aberta a qualquer usuário autenticado (a tela de lançamento precisa do valor padrão); **alteração só para Admin**.
 
 ### 4.7 Gerar taxas do mês (lote)
-- Fica na tela **Cadastro → Taxas de condomínio**, acima do lançamento individual de taxa.
+- Fica na tela **Taxas do mês** (seção 4.12), no menu principal, e vale para o mês e o ano escolhidos no topo da tela.
 - O admin informa mês e ano de referência, e o sistema cria a taxa de **todos os apartamentos** com o valor configurado para aquele ano.
 - **O valor do ano é editável na própria tela de geração.** Se o ano não tem valor, o campo vem vazio e o admin informa ali mesmo; se o valor digitado difere do configurado, ele é **salvo como o novo padrão do ano** (Configurações financeiras) antes de gerar. Taxas já lançadas não mudam.
 - Sem valor para o ano, a geração é recusada (400) pela API, e o botão da tela fica desabilitado até haver um valor maior que zero.
 - **Confirmação antes de gerar:** o sistema mostra quantas taxas serão criadas, o valor, o mês e quantas já existem (e serão ignoradas). Se todas já existem, informa que não há nada a gerar e não pede confirmação.
 - **Prévia na API:** `GET /financeiro/taxas/gerar-mes/previa` devolve o total de apartamentos, as taxas já existentes no mês, quantas seriam criadas e o valor padrão do ano (ou `null`). Não grava nada e é restrita ao admin.
-- Depois de gerar, a tela oferece o link **"Ver taxas do mês"**, que abre Visualizar → Financeiro no mês e ano gerados, onde se registram os pagamentos.
+- Depois de gerar, a mesma tela já mostra as taxas criadas, com o resumo do mês atualizado, e é nela que se registram os pagamentos (não é preciso trocar de tela).
 - **Idempotente:** apartamentos que já têm taxa naquele mês/ano são **ignorados** (não são duplicados nem alterados). O resultado informa quantas taxas foram criadas e quantas foram ignoradas.
 - As taxas nascem `Inadimplente`, sem juros, sem data de pagamento e sem comprovante.
 
@@ -154,7 +154,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Em atraso:** aparece o texto "N em atraso" (singular "1 em atraso"). Ao clicar, abre uma lista com o **mês e o ano** de cada mensalidade em atraso, da mais antiga para a mais recente (ex.: "mar/2026").
 - **O que conta como em atraso:** só a taxa com situação `Inadimplente` cujo **vencimento já passou**. O vencimento é o dia configurado (padrão 10) do mês de referência. No próprio dia do vencimento a taxa ainda **não** é atraso, igual à regra de juros (pagar até o dia do vencimento não gera juros). Uma taxa do mês corrente dentro do prazo, ou de um mês futuro, não conta.
 - **Valor devido:** no clique, cada mês mostra o valor da taxa, o **juros calculado até hoje** e o total (ex.: "mar/2026 · R$ 325,00 + R$ 7,58 = R$ 332,58"), e o rodapé traz o **total devido hoje** (soma dos totais). O juros usa a mesma fórmula do pagamento (seção 4.1.1), como se a taxa fosse paga hoje: multa mais juros simples proporcional aos dias de atraso. É uma **estimativa**: o valor final é calculado na data em que o pagamento for registrado, e nada é gravado por essa tela.
-- **Link para a taxa:** cada mês do clique é um link para Visualizar → Financeiro naquele mês e ano, **filtrado só pelo apartamento**. A tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos", que limpa o filtro. Os resumos do mês (receitas, despesas e por bloco) não são filtrados. Dali, o admin usa "Registrar pagamento".
+- **Link para a taxa:** cada mês do clique é um link para a tela **Taxas do mês** (seção 4.12) naquele mês e ano, **filtrada só pelo apartamento**. A tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos", que limpa o filtro. O resumo do mês continua do mês inteiro. Dali, o admin usa "Registrar pagamento".
 - **Alerta de apartamentos sem proprietário:** no topo da tela, quando houver algum, um aviso amarelo informa "N apartamento(s) sem proprietário (X vazio(s), Y só com inquilinos)" e, se algum tiver mensalidades em atraso, quantos são e o total devido hoje. O botão "Mostrar apenas esses" filtra a tabela (e vira "Mostrar todos"). Cada apartamento conta uma vez, mesmo com vários inquilinos.
 - A coluna pode ser ordenada pela quantidade em atraso e filtrada por "Em atraso" e "Em dia".
 - Visível só para o Admin, porque a tela é restrita ao Admin. A API (`GET /dados-moradores`) devolve `sem_proprietario` em todas as linhas e `taxas_em_atraso`: lista para proprietário e para qualquer linha de apartamento sem proprietário (vazia = em dia), e `null` nas linhas de inquilino de apartamento com proprietário. Cada item traz `id`, `mes_referencia`, `ano_referencia`, `valor`, `dias_em_atraso`, `juros` e `total`, e cada linha traz `apartamento_id`.
@@ -180,6 +180,17 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Só o Admin** cancela e restaura (403 para os demais). O cancelamento **não apaga o comprovante** do disco.
 - Não há cancelamento em massa nem cancelamento de moradores, blocos ou apartamentos.
 
+### 4.12 Tela única "Taxas do mês" (Admin)
+- Item **Taxas do mês** no menu principal do Admin (substitui o antigo Cadastro → Taxas de condomínio, cujo endereço antigo redireciona para a tela nova, mantendo os filtros). Reúne **todo o ciclo da taxa de um mês** em uma tela, para o admin não precisar trocar de menu.
+- **Topo:** escolha do **mês e ano**. Tudo o que está na tela passa a ser desse mês.
+- **Resumo do mês:** quantas taxas foram **geradas** e quantas estão **adimplentes, a vencer e em atraso**, com o valor (taxa mais juros) de cada grupo; se houver, mostra também as **canceladas** (que ficam fora de todos os valores). O resumo é sempre do mês inteiro e não muda com o filtro por apartamento.
+- **Gerar taxas:** a geração em lote da seção 4.7, para o mês escolhido no topo, com valor do ano editável, confirmação e resultado na própria tela.
+- **Tabela de taxas do mês:** bloco, apartamento, situação (adimplente, a vencer, em atraso ou cancelada), valor, juros (com a etiqueta "Difere do cálculo" da seção 4.1.1), meses em atraso, data de pagamento, comprovante e as ações **Registrar pagamento / Editar** e **Cancelar / Restaurar** (seção 4.11). Filtros por bloco e por situação, e "Mostrar canceladas".
+- **Lançar taxa individual:** seção recolhida no fim da tela, para uma taxa avulsa (valor diferente, por exemplo), com o valor padrão do ano já preenchido.
+- **O que saiu de Visualizar → Financeiro:** a tabela de taxas. Essa tela continua com o resumo do mês (com o seletor de regime), o resumo por bloco e as listas de despesas e outras receitas, e ganhou um **atalho** que abre Taxas do mês no mesmo mês e ano.
+- Quem chega por um mês em atraso de Dados dos Moradores vê a tela filtrada pelo apartamento (seção 4.5).
+- Não há mudança de regra nem de API: é uma reorganização das telas.
+
 ## 5. Autenticação
 
 - Login por e-mail e senha.
@@ -200,7 +211,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Taxa de condomínio:** o comprovante pode ser anexado ao lançar a taxa, ao registrar o pagamento e ao editar. Enviar um novo arquivo **substitui** o anterior; enviar sem arquivo **mantém** o que já existia.
 - **Edição e remoção:** ao editar um lançamento, o admin pode substituir ou **remover** o comprovante. Em ambos os casos o arquivo antigo é apagado do disco (ver 4.8).
 - **`comprovante_path` no corpo da requisição é ignorado**: o único caminho para anexar um comprovante é o upload.
-- **Visualização:** o link "Ver comprovante" abre o arquivo em uma nova aba. Está na tabela de taxas (Admin) e nas listas de outras receitas e despesas do mês, nas telas de Financeiro dos dois perfis. Lançamento sem comprovante mostra "—".
+- **Visualização:** o link "Ver comprovante" abre o arquivo em uma nova aba. Está na tabela de taxas da tela Taxas do mês (Admin) e nas listas de outras receitas e despesas do mês, nas telas de Financeiro dos dois perfis. Lançamento sem comprovante mostra "—".
 - **Limitações conhecidas:** O protótipo original abria o comprovante em modal; a implementação atual abre em nova aba.
 
 ## 7. Pontos de Ambiguidade a Validar (para futura clarificação)
