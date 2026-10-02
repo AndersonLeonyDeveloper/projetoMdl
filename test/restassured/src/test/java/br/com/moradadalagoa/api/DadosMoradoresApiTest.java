@@ -207,4 +207,115 @@ class DadosMoradoresApiTest extends ApiBase {
             "em atraso (" + somaNaTela + ") não pode passar das inadimplentes (" + abertas + ")");
         como(admin).when().get("/dados-moradores").then().body("size()", org.hamcrest.Matchers.greaterThan(0));
     }
+
+    // ---------- Valor devido, juros até hoje e link para a taxa ----------
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> todosOsItensEmAtraso() {
+        List<Map<String, Object>> itens = new java.util.ArrayList<>();
+        for (Map<String, Object> linha : dados()) {
+            Object atrasos = linha.get("taxas_em_atraso");
+            if (atrasos instanceof List<?> lista) {
+                for (Object item : lista) {
+                    Map<String, Object> copia = new java.util.HashMap<>((Map<String, Object>) item);
+                    copia.put("apartamento_id", linha.get("apartamento_id"));
+                    itens.add(copia);
+                }
+            }
+        }
+        return itens;
+    }
+
+    private static double numero(Map<String, Object> m, String campo) {
+        return ((Number) m.get(campo)).doubleValue();
+    }
+
+    @Test
+    @DisplayName("Cada mês em atraso traz id, valor, dias, juros e total (total = valor + juros) e a linha traz apartamento_id")
+    void camposDoValorDevido() {
+        List<Map<String, Object>> linhas = dados();
+        for (Map<String, Object> linha : linhas) {
+            org.junit.jupiter.api.Assertions.assertTrue(linha.get("apartamento_id") instanceof Number, "apartamento_id");
+        }
+        List<Map<String, Object>> itens = todosOsItensEmAtraso();
+        Assumptions.assumeFalse(itens.isEmpty(), "sem mensalidades em atraso no banco");
+        for (Map<String, Object> item : itens) {
+            for (String campo : List.of("id", "mes_referencia", "ano_referencia", "valor", "dias_em_atraso", "juros", "total")) {
+                org.junit.jupiter.api.Assertions.assertNotNull(item.get(campo), campo);
+            }
+            org.junit.jupiter.api.Assertions.assertTrue(numero(item, "dias_em_atraso") > 0);
+            org.junit.jupiter.api.Assertions.assertEquals(numero(item, "valor") + numero(item, "juros"), numero(item, "total"), 0.006);
+        }
+    }
+
+    @Test
+    @DisplayName("O juros estimado é o mesmo da prévia de pagamento de hoje (mesma fórmula)")
+    void jurosIgualAPreviaDeHoje() {
+        List<Map<String, Object>> itens = todosOsItensEmAtraso();
+        Assumptions.assumeFalse(itens.isEmpty(), "sem mensalidades em atraso no banco");
+        int passo = Math.max(1, itens.size() / 10); // amostra de ~10 itens
+        for (int i = 0; i < itens.size(); i += passo) {
+            Map<String, Object> item = itens.get(i);
+            como(admin).queryParam("data_pagamento", LocalDate.now().toString())
+                .when().get("/financeiro/taxas/" + item.get("id") + "/calculo-juros")
+                .then().statusCode(200)
+                .body("dias_em_atraso", org.hamcrest.Matchers.equalTo(((Number) item.get("dias_em_atraso")).intValue()))
+                .body("juros", org.hamcrest.Matchers.equalTo(((Number) item.get("juros")).floatValue()))
+                .body("total", org.hamcrest.Matchers.equalTo(((Number) item.get("total")).floatValue()));
+        }
+    }
+
+    @Test
+    @DisplayName("Mudar multa e juros muda o estimado; pagar a taxa tira o mês da lista e reduz o total")
+    void configuracaoEPagamentoMudamOValor() {
+        int ano = ThreadLocalRandom.current().nextInt(1900, 1999);
+        Object[] taxa = novaTaxa(ano, 7);
+        int id = (Integer) taxa[0];
+        String bloco = (String) taxa[1];
+        String apto = (String) taxa[2];
+
+        try {
+            salvarConfiguracao(admin, 2, 1, 10);
+            double padrao = jurosDe(bloco, apto, id);
+            salvarConfiguracao(admin, 0, 3, 10);
+            double alterado = jurosDe(bloco, apto, id);
+            org.junit.jupiter.api.Assertions.assertNotEquals(padrao, alterado, "juros estimado deve acompanhar a configuração");
+        } finally {
+            restaurar();
+        }
+
+        double totalAntes = totalDevido(bloco, apto);
+        como(admin).multiPart("data_pagamento", ano + "-07-20")
+            .when().put("/financeiro/taxas/" + id + "/pagamento").then().statusCode(200);
+        org.junit.jupiter.api.Assertions.assertTrue(totalDevido(bloco, apto) < totalAntes, "total deve diminuir ao pagar");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static double jurosDe(String bloco, String apto, int taxaId) {
+        for (Map<String, Object> item : atrasosDoProprietario(bloco, apto)) {
+            if (((Number) item.get("id")).intValue() == taxaId) return numero(item, "juros");
+        }
+        throw new AssertionError("taxa " + taxaId + " não está em atraso");
+    }
+
+    private static double totalDevido(String bloco, String apto) {
+        return atrasosDoProprietario(bloco, apto).stream().mapToDouble(t -> numero(t, "total")).sum();
+    }
+
+    @Test
+    @DisplayName("GET /financeiro/taxas filtrado por apartamento devolve só a taxa dele no mês (base do link da tela)")
+    void filtroPorApartamento() {
+        List<Map<String, Object>> itens = todosOsItensEmAtraso();
+        Assumptions.assumeFalse(itens.isEmpty(), "sem mensalidades em atraso no banco");
+        Map<String, Object> item = itens.get(0);
+        como(admin)
+            .queryParam("ano", item.get("ano_referencia")).queryParam("mes", item.get("mes_referencia"))
+            .queryParam("apartamento_id", item.get("apartamento_id"))
+            .when().get("/financeiro/taxas").then().statusCode(200)
+            .body("size()", org.hamcrest.Matchers.equalTo(1))
+            .body("[0].id", org.hamcrest.Matchers.equalTo(((Number) item.get("id")).intValue()));
+
+        como(admin).queryParam("ano", 2026).queryParam("mes", 3).queryParam("apartamento_id", 99999999)
+            .when().get("/financeiro/taxas").then().statusCode(200).body("size()", org.hamcrest.Matchers.equalTo(0));
+    }
 }

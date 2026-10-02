@@ -70,7 +70,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     passos: [
       { titulo: 'Período', descricao: 'Escolha o ano e o mês que quer consultar.', alvo: 'input-ano' },
       { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido.', alvo: 'resumo-mensal' },
-      { titulo: 'Taxas do mês', descricao: 'Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor.', alvo: 'tabela-taxas' },
+      { titulo: 'Taxas do mês', descricao: 'Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Se você chegou por um mês em atraso de Dados dos Moradores, a lista mostra só aquele apartamento; use "Ver todos os apartamentos" para voltar.', alvo: 'tabela-taxas' },
       { titulo: 'Corrigir uma taxa', descricao: 'Nas taxas já pagas o botão é Editar: corrija o valor, a data ou o comprovante.', alvo: 'botao-editar-taxa' },
       { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento e o link para ver o comprovante.', alvo: 'tabela-despesas' },
     ],
@@ -89,7 +89,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       'Lista os moradores cadastrados, com bloco, apartamento e tipo. Nas linhas de proprietário, a coluna Mensalidades mostra se a taxa está em dia ou quantas estão em atraso.',
     passos: [
       { titulo: 'Lista de moradores', descricao: 'Use os filtros e a paginação da tabela para localizar uma pessoa.', alvo: 'tabela-visualizar-moradores' },
-      { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver o mês e o ano de cada mensalidade vencida. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
+      { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver cada mensalidade vencida com valor, juros até hoje e total, mais o total devido. Clique em um mês para abrir a taxa em Visualizar → Financeiro. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
     ],
   },
   '/admin/visualizar/inadimplencia': {
@@ -187,7 +187,8 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
       titulo: 'Acompanhar inadimplência e evolução',
       descricao: 'Para ver como o condomínio está ao longo do tempo.',
       passos: [
-        { texto: 'Abra Visualizar → Dados dos Moradores e use a coluna Mensalidades (só nas linhas de proprietário) para ver quem está em atraso. Clique em "N em atraso" para ver os meses.', rota: '/admin/visualizar/moradores' },
+        { texto: 'Abra Visualizar → Dados dos Moradores e use a coluna Mensalidades (só nas linhas de proprietário) para ver quem está em atraso. Clique em "N em atraso" para ver os meses, o valor e o juros até hoje.', rota: '/admin/visualizar/moradores' },
+        { texto: 'No popover, clique em um mês para ir até a taxa daquele apartamento e use "Registrar pagamento".' },
         { texto: 'Abra Visualizar → Taxa de Inadimplência para ver um ano mês a mês.', rota: '/admin/visualizar/inadimplencia' },
         { texto: 'Abra Visualizar → Evolução para comparar vários anos, em gráficos e tabela.', rota: '/admin/visualizar/evolucao' },
       ],

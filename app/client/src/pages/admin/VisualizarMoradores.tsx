@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, Popover, Table, Typography, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { api } from '../../api/client';
+import { Link } from 'react-router-dom';
+import { api, formatarMoeda } from '../../api/client';
 
 const { Title } = Typography;
 
@@ -14,10 +15,16 @@ const MESES = [
 ];
 
 interface MesEmAtraso {
+  id: number;
   mes_referencia: number;
   ano_referencia: number;
+  valor: number;
+  dias_em_atraso: number;
+  juros: number; // multa + juros até hoje, como se o pagamento fosse hoje
+  total: number;
 }
 interface DadoMorador {
+  apartamento_id: number;
   bloco: string;
   apartamento: string;
   tipo: 'proprietario' | 'inquilino' | null;
@@ -75,21 +82,37 @@ export function VisualizarMoradores() {
       onFilter: (value, record) =>
         record.taxas_em_atraso !== null &&
         (value === 'atraso' ? record.taxas_em_atraso.length > 0 : record.taxas_em_atraso.length === 0),
-      render: (atrasos: DadoMorador['taxas_em_atraso']) => {
+      render: (atrasos: DadoMorador['taxas_em_atraso'], linha: DadoMorador) => {
         if (atrasos === null) return '—';
         if (atrasos.length === 0) return <Tag color="success" data-testid="tag-em-dia">Em dia</Tag>;
+        const totalDevido = atrasos.reduce((soma, t) => soma + t.total, 0);
         return (
           <Popover
             trigger="click"
             title="Mensalidades em atraso"
             content={
-              <ul style={{ margin: 0, paddingLeft: 18 }} data-testid="lista-meses-em-atraso">
-                {atrasos.map((t) => (
-                  <li key={`${t.ano_referencia}-${t.mes_referencia}`}>
-                    {MESES[t.mes_referencia - 1]}/{t.ano_referencia}
-                  </li>
-                ))}
-              </ul>
+              <div style={{ maxWidth: 360 }}>
+                <ul style={{ margin: 0, paddingLeft: 18 }} data-testid="lista-meses-em-atraso">
+                  {atrasos.map((t) => (
+                    <li key={t.id}>
+                      <Link
+                        to={`/admin/visualizar/financeiro?ano=${t.ano_referencia}&mes=${t.mes_referencia}&apartamento_id=${linha.apartamento_id}`}
+                        data-testid="link-taxa-em-atraso"
+                      >
+                        {MESES[t.mes_referencia - 1]}/{t.ano_referencia}
+                      </Link>{' '}
+                      · {formatarMoeda(t.valor)} + {formatarMoeda(t.juros)} = <strong>{formatarMoeda(t.total)}</strong>
+                    </li>
+                  ))}
+                </ul>
+                <div style={{ marginTop: 8 }} data-testid="total-devido">
+                  Total devido hoje: <strong>{formatarMoeda(totalDevido)}</strong>
+                </div>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Juros calculados até hoje; o valor final é calculado na data do pagamento. Clique em um mês para
+                  abrir a taxa.
+                </Typography.Text>
+              </div>
             }
           >
             <Tag color="error" style={{ cursor: 'pointer' }} data-testid="tag-em-atraso">

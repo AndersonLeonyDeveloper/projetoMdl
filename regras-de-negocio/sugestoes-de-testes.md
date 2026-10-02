@@ -353,7 +353,8 @@
 ### 7.7 Coluna "Mensalidades" em Dados dos Moradores
 
 > Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seção 4.9 (item 1.6 do
-> backlog). Os `API` têm teste em `test/restassured` (`DadosMoradoresApiTest`, compilado e ainda não executado). Os `E2E`
+> backlog). Os `API` têm teste em `test/restassured` (`DadosMoradoresApiTest`, compilado e ainda não executado, e os
+> testes novos de valor devido e filtro dependem de haver mensalidades em atraso no banco). Os `E2E`
 > ainda não têm teste, e a tela ainda não foi aberta em navegador.
 
 - [ ] **RBAC**: `GET /dados-moradores` retorna 200 para admin, 403 para proprietário e inquilino, 401 sem token. `API`
@@ -374,6 +375,23 @@
   ao mais recente) e fecha ao clicar fora; clicar em outra linha mostra a lista dela. `E2E`
 - [ ] **Ordenação e filtro**: ordenar pela coluna agrupa por quantidade (linhas sem coluna ficam por último ou primeiro, de
   forma consistente); o filtro "Em atraso" mostra só proprietários com atraso e "Em dia" só os sem atraso. `E2E`
+- [ ] **Valor devido por mês**: cada item traz `id`, `valor`, `dias_em_atraso`, `juros` e `total`, com `total = valor + juros`
+  e `dias_em_atraso > 0`; o `id` é o da taxa certa; cada linha da resposta traz `apartamento_id`. `API`
+- [ ] **Juros = prévia de hoje**: o juros estimado de cada mês é igual ao de `GET /financeiro/taxas/:id/calculo-juros` com a data
+  de hoje (mesma fórmula da seção 4.1.1); em atraso há 1 dia, multa + 1/30 do juros mensal. `API`
+- [ ] **Configuração e pagamento mudam o valor**: mudar multa ou juros muda o estimado; pagar a taxa tira o mês da lista e reduz o
+  total devido. `API`
+- [ ] **Filtro por apartamento**: `GET /financeiro/taxas?ano&mes&apartamento_id` devolve só a taxa daquele apartamento no mês, e
+  uma lista vazia para um apartamento inexistente. `API`
+- [ ] **Popover com valores**: mostra valor, juros e total por mês e o "Total devido hoje" (soma dos totais), com a nota de
+  que é estimativa. `E2E`
+- [ ] **Link do mês**: clicar em um mês abre Visualizar → Financeiro no mês e ano certos, com o aviso "Mostrando só as taxas do
+  apartamento BB/AAA" e uma única taxa na tabela; os resumos do mês não mudam com o filtro. `E2E`
+- [ ] **Limpar o filtro**: "Ver todos os apartamentos" remove o aviso e volta à lista completa do mês. `E2E`
+- [ ] **Fluxo completo**: do link, "Registrar pagamento" funciona e, ao voltar para Dados dos Moradores, aquele mês saiu da
+  lista e do total. `E2E`
+- [ ] **Link inválido**: `apartamento_id` inexistente ou não numérico na URL mostra a lista vazia (ou a completa, no caso não
+  numérico) sem quebrar a tela. `E2E`
 - [ ] **Volume**: com os 768 moradores e paginação, a tela carrega sem lentidão perceptível e a coluna aparece em todas as
   páginas. `E2E` / performance
 

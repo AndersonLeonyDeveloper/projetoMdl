@@ -19,7 +19,7 @@ Requisitos: Java 17+ e Maven 3.9+.
 | `EdicaoDeLancamentosApiTest` | Editar despesas, outras receitas e taxas: validação, 404, RBAC, resumo refletindo a edição e comprovante mantido, trocado ou removido (seção 7.5) |
 | `ConfiguracoesFinanceirasApiTest` | Multa, juros, vencimento e valor da taxa por ano: leitura, RBAC, validações e valores-limite (seção 7.5) |
 | `GerarTaxasDoMesApiTest` | Geração das taxas do mês em lote: 192 taxas, idempotência, mês parcial, ano sem valor, RBAC e a prévia da geração (seção 7.5) |
-| `DadosMoradoresApiTest` | Coluna Mensalidades de Dados dos Moradores: RBAC, formato por tipo de linha, taxa vencida × futura, ordem, pagar tira da lista e valor-limite do dia de vencimento (seção 7.7) |
+| `DadosMoradoresApiTest` | Coluna Mensalidades de Dados dos Moradores: RBAC, formato por tipo de linha, taxa vencida × futura, ordem, pagar tira da lista, valor-limite do dia de vencimento, valor devido com juros até hoje e filtro por apartamento (seção 7.7) |
 | `JurosNoPagamentoApiTest` | Fórmula de multa e juros, valores-limite do vencimento, arredondamento, ajuste manual e histórico preservado (seção 7.5) |
 
 Os testes **criam lançamentos que a API não permite apagar** (inclusive 192 taxas por mês gerado, em anos futuros) e alteram um lançamento do seed (o teste do comprovante de exemplo compartilhado). Os que mexem na configuração financeira a restauram ao final. Para voltar ao estado inicial da suíte, rode de novo `db:seed` e `db:seed:financeiro`. Para ter os 768 moradores de volta, veja o aviso acima.

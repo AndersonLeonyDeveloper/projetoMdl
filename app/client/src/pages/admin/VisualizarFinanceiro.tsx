@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
+import { Alert, Button, Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -39,8 +39,9 @@ const MESES = [
 ];
 
 export function VisualizarFinanceiro() {
-  // ano e mes podem vir da URL (link "Ver taxas do mês" da tela de geração de taxas).
-  const [params] = useSearchParams();
+  // ano, mes e apartamento_id podem vir da URL (links "Ver taxas do mês" e os meses em atraso de Dados dos Moradores).
+  const [params, setParams] = useSearchParams();
+  const apartamentoId = Number(params.get('apartamento_id')) || null;
   const [ano, setAno] = useState(Number(params.get('ano')) || new Date().getFullYear());
   const [mes, setMes] = useState(Number(params.get('mes')) || new Date().getMonth() + 1);
   const [resumoMensal, setResumoMensal] = useState<ResumoMensal | null>(null);
@@ -56,8 +57,10 @@ export function VisualizarFinanceiro() {
     api.get<ResumoBloco[]>('/financeiro/resumo/blocos', { params: { ano, mes } }).then((res) =>
       setResumoBlocos(res.data)
     );
-    api.get<Taxa[]>('/financeiro/taxas', { params: { ano, mes } }).then((res) => setTaxas(res.data));
-  }, [ano, mes, recarregar]);
+    api
+      .get<Taxa[]>('/financeiro/taxas', { params: { ano, mes, apartamento_id: apartamentoId ?? undefined } })
+      .then((res) => setTaxas(res.data));
+  }, [ano, mes, apartamentoId, recarregar]);
 
   const colunasBlocos: ColumnsType<ResumoBloco> = [
     { title: 'Bloco', dataIndex: 'bloco_numero' },
@@ -167,6 +170,32 @@ export function VisualizarFinanceiro() {
 
       <Card>
         <Title level={4}>Lançamentos de taxa de condomínio</Title>
+        {apartamentoId && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            data-testid="aviso-filtro-apartamento"
+            message={
+              taxas.length > 0
+                ? `Mostrando só as taxas do apartamento ${taxas[0].bloco_numero}/${taxas[0].apartamento_numero}.`
+                : 'Mostrando só as taxas de um apartamento (nenhuma neste mês).'
+            }
+            action={
+              <Button
+                size="small"
+                onClick={() => {
+                  const novos = new URLSearchParams(params);
+                  novos.delete('apartamento_id');
+                  setParams(novos);
+                }}
+                data-testid="botao-limpar-filtro-apartamento"
+              >
+                Ver todos os apartamentos
+              </Button>
+            }
+          />
+        )}
         <Table
           data-testid="tabela-taxas"
           rowKey="id"
