@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Typography, Tag } from 'antd';
+import { Card, Popover, Table, Typography, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../../api/client';
 
@@ -9,6 +9,14 @@ interface Bloco {
   id: number;
   numero: string;
 }
+const MESES = [
+  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez',
+];
+
+interface MesEmAtraso {
+  mes_referencia: number;
+  ano_referencia: number;
+}
 interface DadoMorador {
   bloco: string;
   apartamento: string;
@@ -16,6 +24,8 @@ interface DadoMorador {
   nome: string | null;
   telefone: string | null;
   email: string | null;
+  // Só nas linhas de proprietário: mensalidades vencidas e não pagas (vazia = em dia). null nas demais.
+  taxas_em_atraso: MesEmAtraso[] | null;
 }
 
 export function VisualizarMoradores() {
@@ -54,6 +64,41 @@ export function VisualizarMoradores() {
     { title: 'Nome', dataIndex: 'nome', render: (v) => v ?? '—' },
     { title: 'Telefone', dataIndex: 'telefone', render: (v) => v ?? '—' },
     { title: 'E-mail', dataIndex: 'email', render: (v) => v ?? '—' },
+    {
+      title: 'Mensalidades',
+      dataIndex: 'taxas_em_atraso',
+      sorter: (a, b) => (a.taxas_em_atraso?.length ?? -1) - (b.taxas_em_atraso?.length ?? -1),
+      filters: [
+        { text: 'Em atraso', value: 'atraso' },
+        { text: 'Em dia', value: 'dia' },
+      ],
+      onFilter: (value, record) =>
+        record.taxas_em_atraso !== null &&
+        (value === 'atraso' ? record.taxas_em_atraso.length > 0 : record.taxas_em_atraso.length === 0),
+      render: (atrasos: DadoMorador['taxas_em_atraso']) => {
+        if (atrasos === null) return '—';
+        if (atrasos.length === 0) return <Tag color="success" data-testid="tag-em-dia">Em dia</Tag>;
+        return (
+          <Popover
+            trigger="click"
+            title="Mensalidades em atraso"
+            content={
+              <ul style={{ margin: 0, paddingLeft: 18 }} data-testid="lista-meses-em-atraso">
+                {atrasos.map((t) => (
+                  <li key={`${t.ano_referencia}-${t.mes_referencia}`}>
+                    {MESES[t.mes_referencia - 1]}/{t.ano_referencia}
+                  </li>
+                ))}
+              </ul>
+            }
+          >
+            <Tag color="error" style={{ cursor: 'pointer' }} data-testid="tag-em-atraso">
+              {atrasos.length} em atraso
+            </Tag>
+          </Popover>
+        );
+      },
+    },
   ];
 
   return (

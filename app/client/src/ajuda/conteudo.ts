@@ -85,9 +85,11 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     ],
   },
   '/admin/visualizar/moradores': {
-    resumo: 'Lista os moradores cadastrados, com bloco, apartamento e tipo.',
+    resumo:
+      'Lista os moradores cadastrados, com bloco, apartamento e tipo. Nas linhas de proprietário, a coluna Mensalidades mostra se a taxa está em dia ou quantas estão em atraso.',
     passos: [
       { titulo: 'Lista de moradores', descricao: 'Use os filtros e a paginação da tabela para localizar uma pessoa.', alvo: 'tabela-visualizar-moradores' },
+      { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver o mês e o ano de cada mensalidade vencida. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
     ],
   },
   '/admin/visualizar/inadimplencia': {
@@ -185,6 +187,7 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
       titulo: 'Acompanhar inadimplência e evolução',
       descricao: 'Para ver como o condomínio está ao longo do tempo.',
       passos: [
+        { texto: 'Abra Visualizar → Dados dos Moradores e use a coluna Mensalidades (só nas linhas de proprietário) para ver quem está em atraso. Clique em "N em atraso" para ver os meses.', rota: '/admin/visualizar/moradores' },
         { texto: 'Abra Visualizar → Taxa de Inadimplência para ver um ano mês a mês.', rota: '/admin/visualizar/inadimplencia' },
         { texto: 'Abra Visualizar → Evolução para comparar vários anos, em gráficos e tabela.', rota: '/admin/visualizar/evolucao' },
       ],

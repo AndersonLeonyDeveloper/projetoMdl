@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db, isUniqueConstraintError, withTransaction } from '../db/index.js';
+import { db, isUniqueConstraintError, lerConfiguracao, withTransaction } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import {
   COMPROVANTES_DIR,
@@ -19,7 +19,6 @@ const vazio = (v) => v === undefined || v === null || v === '';
 const ehVerdadeiro = (v) => v === true || v === 'true' || v === '1' || v === 'on';
 const lerInteiro = (v) => (vazio(v) || !Number.isInteger(Number(v)) ? null : Number(v));
 const lerNumeroNaoNegativo = (v) => (vazio(v) || !Number.isFinite(Number(v)) || Number(v) < 0 ? null : Number(v));
-const lerConfiguracao = () => db.prepare('SELECT * FROM configuracao_financeira WHERE id = 1').get();
 
 // Campos de despesa e outra receita: descrição, valor (>= 0) e data válida.
 function lerLancamento(corpo = {}) {

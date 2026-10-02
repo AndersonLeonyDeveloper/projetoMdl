@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db, withTransaction, isUniqueConstraintError } from '../db/index.js';
+import { db, withTransaction, isUniqueConstraintError, lerConfiguracao } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 export const cadastroRouter = Router();
@@ -191,10 +191,13 @@ cadastroRouter.put('/pessoas/me', (req, res) => {
 });
 
 // Admin: visão completa de todos os apartamentos (dados dos moradores).
+// Nas linhas de proprietário, "taxas_em_atraso" lista as mensalidades inadimplentes já vencidas do apartamento
+// (vazia = em dia). Vencida: o dia de vencimento do mês de referência já passou (no próprio dia ainda não é atraso).
+// Linhas de inquilino e apartamentos vazios trazem null.
 cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
   const linhas = db
     .prepare(
-      `SELECT b.numero AS bloco, a.numero AS apartamento, m.tipo, p.nome, p.telefone, p.email
+      `SELECT a.id AS apartamento_id, b.numero AS bloco, a.numero AS apartamento, m.tipo, p.nome, p.telefone, p.email
        FROM apartamentos a
        JOIN blocos b ON b.id = a.bloco_id
        LEFT JOIN moradores m ON m.apartamento_id = a.id AND m.ativo = 1
@@ -202,5 +205,27 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
        ORDER BY b.numero, a.numero, m.tipo`
     )
     .all();
-  res.json(linhas);
+
+  const hoje = new Date().toLocaleDateString('sv-SE'); // AAAA-MM-DD, no fuso do servidor
+  const emAtraso = new Map();
+  const vencidas = db
+    .prepare(
+      `SELECT apartamento_id, mes_referencia, ano_referencia
+       FROM taxas_condominio
+       WHERE situacao = 'inadimplente'
+         AND printf('%04d-%02d-%02d', ano_referencia, mes_referencia, ?) < ?
+       ORDER BY ano_referencia, mes_referencia`
+    )
+    .all(lerConfiguracao().dia_vencimento, hoje);
+  for (const { apartamento_id, mes_referencia, ano_referencia } of vencidas) {
+    if (!emAtraso.has(apartamento_id)) emAtraso.set(apartamento_id, []);
+    emAtraso.get(apartamento_id).push({ mes_referencia, ano_referencia });
+  }
+
+  res.json(
+    linhas.map(({ apartamento_id, ...linha }) => ({
+      ...linha,
+      taxas_em_atraso: linha.tipo === 'proprietario' ? (emAtraso.get(apartamento_id) ?? []) : null,
+    }))
+  );
 });

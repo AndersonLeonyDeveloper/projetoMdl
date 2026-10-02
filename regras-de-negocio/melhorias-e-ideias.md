@@ -33,6 +33,9 @@ As rotas `POST /blocos` e `POST /apartamentos` existem, mas não há tela. Hoje 
 ### [ ] 1.5 Ajuda guiada: manter o conteúdo em dia e melhorar a descoberta — esforço P
 *Identificada em 02/10/2026.* O conteúdo da ajuda (`ajuda/conteudo.ts`) desatualiza quando uma tela muda. Ideias: um teste E2E que percorra todas as telas e confirme que cada alvo de tour existe; guias que, em vez de só listar os cliques, conduzam o usuário entre telas (tour contínuo); botão de "esta ajuda foi útil?" para saber quais guias confundem. Como o tour só abre sob demanda, quem nunca clica no `?` não o vê; se isso virar problema, avaliar um destaque sutil no ícone para quem nunca o usou.
 
+### [x] 1.6 Situação de pagamento em Dados dos Moradores — esforço P
+*Identificada em 02/10/2026.* *Implementada em 02/10/2026:* coluna "Mensalidades" na tela Dados dos Moradores, só nas linhas de proprietário: "Em dia" ou "N em atraso", e o clique mostra o mês e o ano de cada mensalidade vencida (`GET /dados-moradores`, campo `taxas_em_atraso`). Conta só taxas inadimplentes já vencidas, para não marcar quem ainda está no prazo. Regras na seção 4.9 de `regras-de-negocio.md`. Ideias derivadas: mostrar também o valor devido (com juros até hoje), levar do popover para a taxa em Visualizar → Financeiro, exportar a lista de devedores e usar o mesmo conceito de "vencida" no item 2.5 (status "a vencer").
+
 ## 2. Modelo de dados e regras
 
 ### [ ] 2.1 Fundo de reserva como entidade — esforço G

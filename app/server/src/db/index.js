@@ -56,3 +56,6 @@ export function withTransaction(fn) {
 export function isUniqueConstraintError(err) {
   return err.code === 'ERR_SQLITE_ERROR' && /UNIQUE constraint failed/.test(err.message);
 }
+
+// Parâmetros financeiros (multa, juros e dia de vencimento): uma única linha, id = 1.
+export const lerConfiguracao = () => db.prepare('SELECT * FROM configuracao_financeira WHERE id = 1').get();

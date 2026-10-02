@@ -350,6 +350,33 @@
   uma tela mudar). `E2E` / revisão manual
 - [ ] **Morador não vê conteúdo de admin**: a ajuda de um morador não traz guias nem links de rotas de admin. `E2E`
 
+### 7.7 Coluna "Mensalidades" em Dados dos Moradores
+
+> Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seção 4.9 (item 1.6 do
+> backlog). Os `API` têm teste em `test/restassured` (`DadosMoradoresApiTest`, compilado e ainda não executado). Os `E2E`
+> ainda não têm teste, e a tela ainda não foi aberta em navegador.
+
+- [ ] **RBAC**: `GET /dados-moradores` retorna 200 para admin, 403 para proprietário e inquilino, 401 sem token. `API`
+- [ ] **Formato por tipo**: linha de proprietário traz `taxas_em_atraso` como lista (vazia = em dia); inquilino e apartamento
+  vazio trazem `null`. Em um apartamento com proprietário e inquilinos, só a linha do proprietário tem a lista. `API`
+- [ ] **Taxa antiga em aberto conta**; **taxa futura não conta**; a lista vem do mês mais antigo ao mais recente. `API`
+- [ ] **Pagar tira da lista**: depois de registrar o pagamento, o mês some; taxa paga com atraso (adimplente) não conta. `API`
+- [ ] **Valor-limite do vencimento**: com o dia de vencimento igual a hoje, a taxa do mês corrente ainda não é atraso; com o
+  dia anterior, é. (O teste só roda entre os dias 2 e 28 do mês.) `API`
+- [ ] **Configuração muda o resultado**: alterar o dia de vencimento altera quais meses contam como vencidos. `API`
+- [ ] **Taxas geradas e no prazo não contam**: depois de "Gerar taxas do mês" para o mês corrente, nenhum proprietário
+  passa a aparecer em atraso por causa delas. `API` / `E2E`
+- [ ] **Consistência**: a soma de mensalidades em atraso nunca passa do total de taxas inadimplentes, e bate com a
+  consulta direta às taxas vencidas no mesmo critério. `API` / `DB/Integridade`
+- [ ] **Exibição**: "Em dia" em verde, "N em atraso" em vermelho (singular "1 em atraso"), "—" nas linhas de inquilino e de
+  apartamento vazio. `E2E`
+- [ ] **Detalhe ao clicar**: o clique em "N em atraso" abre a lista com "mês/ano" de cada mensalidade (ordem do mais antigo
+  ao mais recente) e fecha ao clicar fora; clicar em outra linha mostra a lista dela. `E2E`
+- [ ] **Ordenação e filtro**: ordenar pela coluna agrupa por quantidade (linhas sem coluna ficam por último ou primeiro, de
+  forma consistente); o filtro "Em atraso" mostra só proprietários com atraso e "Em dia" só os sem atraso. `E2E`
+- [ ] **Volume**: com os 768 moradores e paginação, a tela carrega sem lentidão perceptível e a coluna aparece em todas as
+  páginas. `E2E` / performance
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

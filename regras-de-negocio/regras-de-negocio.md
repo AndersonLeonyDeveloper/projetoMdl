@@ -125,6 +125,15 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Os resumos (mensal, por bloco, inadimplência e evolução) refletem o valor editado imediatamente, pois são calculados na consulta.
 - **Fora do escopo desta versão:** excluir lançamentos e histórico/auditoria de quem alterou o quê (ver `melhorias-e-ideias.md`, itens 2.12 e 2.13). Hoje a edição **sobrescreve** o valor anterior sem deixar rastro.
 
+### 4.9 Situação de pagamento na tela Dados dos Moradores (Admin)
+- Em Visualizar → Dados dos Moradores, a coluna **Mensalidades** mostra a situação de pagamento **somente nas linhas de proprietário**. A taxa pertence ao apartamento, e o proprietário é o responsável por ela. Linhas de inquilino e apartamentos sem morador mostram "—".
+- **Em dia:** o proprietário não tem nenhuma mensalidade vencida e não paga.
+- **Em atraso:** aparece o texto "N em atraso" (singular "1 em atraso"). Ao clicar, abre uma lista com o **mês e o ano** de cada mensalidade em atraso, da mais antiga para a mais recente (ex.: "mar/2026").
+- **O que conta como em atraso:** só a taxa com situação `Inadimplente` cujo **vencimento já passou**. O vencimento é o dia configurado (padrão 10) do mês de referência. No próprio dia do vencimento a taxa ainda **não** é atraso, igual à regra de juros (pagar até o dia do vencimento não gera juros). Uma taxa do mês corrente dentro do prazo, ou de um mês futuro, não conta.
+- A coluna pode ser ordenada pela quantidade em atraso e filtrada por "Em atraso" e "Em dia".
+- Visível só para o Admin, porque a tela é restrita ao Admin. A API (`GET /dados-moradores`) devolve o campo `taxas_em_atraso`: lista para proprietário (vazia = em dia) e `null` para as demais linhas.
+- Muda quando: uma taxa é paga (sai da lista), o dia de vencimento é alterado em Configurações financeiras (altera quais meses já venceram) ou passa o dia de vencimento de uma taxa em aberto.
+
 ## 5. Autenticação
 
 - Login por e-mail e senha.
