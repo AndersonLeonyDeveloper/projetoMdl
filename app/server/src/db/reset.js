@@ -9,6 +9,7 @@ if (garantirAdmin()) console.log('Administrador padrão criado (senha padrão: "
 
 withTransaction(() => {
   db.exec('DELETE FROM password_reset_tokens');
+  db.exec('DELETE FROM auditoria');
   db.exec('DELETE FROM taxas_condominio');
   db.exec('DELETE FROM moradores');
   db.exec('DELETE FROM outras_receitas');
@@ -22,7 +23,7 @@ withTransaction(() => {
 
   db.exec(`
     DELETE FROM sqlite_sequence
-    WHERE name IN ('moradores','password_reset_tokens','taxas_condominio','outras_receitas','despesas')
+    WHERE name IN ('moradores','password_reset_tokens','taxas_condominio','outras_receitas','despesas','auditoria')
   `);
 });
 

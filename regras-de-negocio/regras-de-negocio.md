@@ -13,7 +13,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 | Perfil | Pode fazer |
 |---|---|
-| **Admin** (síndico) | Cadastrar/editar moradores; lançar e **editar** receitas, despesas e taxas; registrar pagamentos; configurar valor da taxa, multa e juros; gerar as taxas do mês; visualizar financeiro consolidado de todos os blocos; visualizar inadimplência geral; gerenciar usuários |
+| **Admin** (síndico) | Cadastrar/editar moradores; lançar e **editar** receitas, despesas e taxas; registrar pagamentos; configurar valor da taxa, multa e juros; gerar as taxas do mês; visualizar financeiro consolidado de todos os blocos; visualizar inadimplência geral; consultar o histórico de alterações financeiras; gerenciar usuários |
 | **Proprietário** | Visualizar/editar seus próprios dados e do inquilino vinculado ao seu apartamento; visualizar o financeiro do condomínio (leitura, inclusive a evolução de receitas e despesas, sem inadimplência); visualizar sua própria situação de adimplência |
 | **Inquilino** | Visualizar seus próprios dados; visualizar o financeiro do condomínio (leitura) |
 
@@ -151,6 +151,14 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - A coluna pode ser ordenada pela quantidade em atraso e filtrada por "Em atraso" e "Em dia".
 - Visível só para o Admin, porque a tela é restrita ao Admin. A API (`GET /dados-moradores`) devolve `sem_proprietario` em todas as linhas e `taxas_em_atraso`: lista para proprietário e para qualquer linha de apartamento sem proprietário (vazia = em dia), e `null` nas linhas de inquilino de apartamento com proprietário. Cada item traz `id`, `mes_referencia`, `ano_referencia`, `valor`, `dias_em_atraso`, `juros` e `total`, e cada linha traz `apartamento_id`.
 - Muda quando: uma taxa é paga (sai da lista), o dia de vencimento é alterado em Configurações financeiras (altera quais meses já venceram) ou passa o dia de vencimento de uma taxa em aberto.
+
+### 4.10 Histórico de alterações (Admin)
+- Toda alteração de dado financeiro feita pelo sistema é registrada: **criar, editar, pagar, recalcular juros e gerar taxas do mês** (taxas), **criar e editar** (despesas e outras receitas) e **alterar configurações financeiras**. (Cancelar e restaurar entram nesse registro quando existirem; seção 4.11.)
+- Cada registro guarda: **quem** (usuário e e-mail), **quando** (data e hora), **o quê** (tipo e id do lançamento), a **ação**, os **valores de antes e de depois** (só os campos relevantes, como valor, juros, data de pagamento, situação, descrição, data e nome do comprovante) e um **resumo** legível (ex.: "Bl.08/Ap.203 · 03/2026" ou a descrição da despesa).
+- **Só se grava quando algo mudou:** salvar uma edição idêntica ao que já existia, ou gerar um mês em que nenhuma taxa foi criada, não gera registro. A geração do mês é **uma linha só**, com a quantidade de taxas criadas e ignoradas (não uma por apartamento).
+- **O histórico não pode ser editado nem apagado** pela aplicação: não há rota para isso. Só o `db:reset` e o `db:seed:financeiro` o limpam, porque recriam os dados aos quais ele se refere.
+- **Consulta:** Visualizar → Histórico de alterações (só Admin; Proprietário e Inquilino recebem 403). Lista da alteração mais recente para a mais antiga, 20 por página (a API aceita até 200), com filtros por tipo, ação, período (data) e usuário (parte do e-mail). Ao expandir uma linha aparece o que mudou, campo a campo (antes → depois); criações mostram os valores iniciais. O horário aparece no fuso do navegador.
+- **Limitações:** o registro é gravado logo depois da alteração, na mesma requisição, mas **não** na mesma transação do banco (uma falha entre as duas gravações deixaria a alteração sem registro). Alterações feitas direto no banco, fora da aplicação, não são registradas.
 
 ## 5. Autenticação
 

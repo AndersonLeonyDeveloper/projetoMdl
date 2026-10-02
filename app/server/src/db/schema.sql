@@ -106,6 +106,22 @@ CREATE TABLE IF NOT EXISTS taxa_padrao (
   valor REAL NOT NULL CHECK (valor >= 0)
 );
 
+-- Histórico de alterações financeiras: só se grava, nunca se edita nem se apaga pela aplicação.
+CREATE TABLE IF NOT EXISTS auditoria (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entidade TEXT NOT NULL CHECK (entidade IN ('taxa', 'despesa', 'outra_receita', 'configuracao')),
+  entidade_id INTEGER,
+  acao TEXT NOT NULL,
+  usuario_id INTEGER,
+  usuario_email TEXT,
+  antes TEXT,
+  depois TEXT,
+  detalhe TEXT,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_auditoria_entidade ON auditoria(entidade, entidade_id);
+CREATE INDEX IF NOT EXISTS idx_auditoria_criado_em ON auditoria(criado_em);
+
 CREATE INDEX IF NOT EXISTS idx_apartamentos_bloco ON apartamentos(bloco_id);
 CREATE INDEX IF NOT EXISTS idx_moradores_pessoa ON moradores(pessoa_id);
 CREATE INDEX IF NOT EXISTS idx_moradores_apartamento ON moradores(apartamento_id);

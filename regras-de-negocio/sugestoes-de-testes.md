@@ -524,6 +524,32 @@
 - [ ] **Admin inalterado**: a tela Visualizar → Evolução continua com todos os cartões, os dois gráficos e todas as colunas. `E2E`
 - [ ] **Carregamento sob demanda**: a biblioteca de gráficos só é baixada ao abrir Financeiro (morador) ou Evolução (admin). `E2E` / performance
 
+### 7.14 Histórico de alterações (auditoria)
+
+> Cenários levantados em 02/10/2026 (item 2.13 do backlog). Regras na seção 4.10 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`AuditoriaApiTest`, compilado e ainda não executado).
+
+- [ ] **Criar e editar**: criar e editar uma despesa gera duas linhas (mais recente primeiro) com ação, usuário, valores de antes
+  (nulo na criação) e de depois. `API`
+- [ ] **Sem mudança, sem registro**: editar uma despesa, uma taxa ou a configuração com os mesmos valores não grava linha. `API`
+- [ ] **Ciclo da taxa**: criar, pagar, editar e recalcular juros geram uma linha cada, na ordem, e o resumo tem o formato
+  "Bl.XX/Ap.YYY · MM/AAAA". `API`
+- [ ] **Gerar o mês**: gera uma linha com as contagens (criadas e ignoradas); gerar de novo, com 0 criadas, não grava. `API`
+- [ ] **Configuração**: alterar multa, juros, vencimento ou o valor de um ano grava, e o antes/depois traz o valor da taxa por ano. `API`
+- [ ] **Todas as rotas gravam**: cada rota que altera taxa, despesa, outra receita ou configuração deixa registro (conferir uma
+  a uma, inclusive receitas). `API`
+- [ ] **Filtros**: por tipo, ação, id da entidade, usuário (parte do e-mail) e período; um período sem alterações volta vazio;
+  data inválida retorna 400. `API`
+- [ ] **Paginação**: ordem decrescente, páginas sem repetir linhas, total estável, limite máximo de 200. `API`
+- [ ] **Imutável e restrito**: morador 403, sem token 401; não existe rota para editar ou apagar um registro (404). `API`
+- [ ] **Reset**: `db:reset` e `db:seed:financeiro` limpam o histórico. `DB/Integridade`
+- [ ] **Quem fez**: a alteração feita por outro admin aparece com o e-mail dele. `API`
+- [ ] **Tela**: a lista mostra data e hora no fuso local, quem, o quê, a ação (etiqueta colorida) e o resumo; a seta expande e
+  mostra "campo: antes → depois"; criações mostram só os valores iniciais. `E2E`
+- [ ] **Filtros da tela**: tipo, ação, período e usuário reduzem a lista, voltam à primeira página e podem ser limpos; sem resultado,
+  aparece "Nenhuma alteração registrada para esse filtro". `E2E`
+- [ ] **Visualizar → Histórico** só existe no menu do admin, e `/admin/visualizar/historico` redireciona o morador. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

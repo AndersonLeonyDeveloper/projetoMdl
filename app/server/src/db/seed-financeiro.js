@@ -307,6 +307,7 @@ const comprovanteDe = (tipo, indice, percentual) =>
     : null;
 
 withTransaction(() => {
+  db.exec('DELETE FROM auditoria'); // o histórico se refere às taxas e lançamentos que este seed recria
   db.exec('DELETE FROM taxa_padrao');
   // Valor da taxa por ano (Configurações financeiras). Multa 2%, juros 1% a.m. e vencimento dia 10 são o padrão da tabela.
   for (const [ano, valor] of Object.entries(TAXA_POR_ANO)) {
@@ -316,7 +317,7 @@ withTransaction(() => {
   db.exec('DELETE FROM taxas_condominio');
   db.exec('DELETE FROM outras_receitas');
   db.exec('DELETE FROM despesas');
-  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('taxas_condominio','outras_receitas','despesas')");
+  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('taxas_condominio','outras_receitas','despesas','auditoria')");
   linhasTaxas.forEach((l, i) =>
     insertTaxa.run({ ...l, comprovante_path: l.situacao === 'adimplente' ? comprovanteDe('taxa', i, 60) : null })
   );

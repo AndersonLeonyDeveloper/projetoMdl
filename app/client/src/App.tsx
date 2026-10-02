@@ -10,6 +10,7 @@ import {
   WarningOutlined,
   LineChartOutlined,
   TeamOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import './App.css';
 import { AjudaProvider } from './ajuda/AjudaContext';
@@ -22,6 +23,7 @@ import { Home } from './pages/Home';
 // Telas carregadas sob demanda: cada uma vira um arquivo separado (a biblioteca de gráficos só baixa na Evolução).
 const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
 const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
+const HistoricoAlteracoes = lazy(() => import('./pages/admin/HistoricoAlteracoes').then((m) => ({ default: m.HistoricoAlteracoes })));
 const CadastroTaxas = lazy(() => import('./pages/admin/CadastroTaxas').then((m) => ({ default: m.CadastroTaxas })));
 const ConfiguracoesFinanceiras = lazy(() => import('./pages/admin/ConfiguracoesFinanceiras').then((m) => ({ default: m.ConfiguracoesFinanceiras })));
 const VisualizarFinanceiro = lazy(() => import('./pages/admin/VisualizarFinanceiro').then((m) => ({ default: m.VisualizarFinanceiro })));
@@ -53,6 +55,7 @@ const ADMIN_MENU: MenuProps['items'] = [
       { key: '/admin/visualizar/evolucao', label: 'Evolução', icon: <LineChartOutlined /> },
       { key: '/admin/visualizar/moradores', label: 'Dados dos Moradores', icon: <TeamOutlined /> },
       { key: '/admin/visualizar/inadimplencia', label: 'Taxa de Inadimplência', icon: <WarningOutlined /> },
+      { key: '/admin/visualizar/historico', label: 'Histórico de alterações', icon: <HistoryOutlined /> },
     ],
   },
 ];
@@ -88,6 +91,7 @@ function App() {
         <Route path="visualizar/evolucao" element={<VisualizarEvolucao />} />
         <Route path="visualizar/moradores" element={<VisualizarMoradores />} />
         <Route path="visualizar/inadimplencia" element={<VisualizarInadimplencia />} />
+        <Route path="visualizar/historico" element={<HistoricoAlteracoes />} />
       </Route>
 
       <Route

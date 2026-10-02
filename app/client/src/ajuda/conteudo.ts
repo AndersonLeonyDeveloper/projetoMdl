@@ -101,6 +101,15 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     ],
   },
 
+  '/admin/visualizar/historico': {
+    resumo:
+      'Mostra quem alterou o quê nos dados financeiros (taxas, despesas, outras receitas e configurações), com o valor de antes e de depois. O registro não pode ser editado nem apagado.',
+    passos: [
+      { titulo: 'Filtros', descricao: 'Filtre por tipo (taxa, despesa, outra receita, configuração), ação, período e usuário.', alvo: 'filtro-entidade' },
+      { titulo: 'Lista de alterações', descricao: 'Cada linha é uma alteração, da mais recente para a mais antiga. Clique na seta para ver o que mudou, campo a campo (antes → depois).', alvo: 'tabela-historico' },
+    ],
+  },
+
   // ---------- Moradores ----------
   '/minha-area/apartamentos': {
     resumo: 'Mostra os apartamentos ligados à sua conta.',
@@ -192,6 +201,7 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
         { texto: 'Abra Visualizar → Dados dos Moradores e use a coluna Mensalidades (só nas linhas de proprietário) para ver quem está em atraso. Clique em "N em atraso" para ver os meses, o valor e o juros até hoje.', rota: '/admin/visualizar/moradores' },
         { texto: 'No popover, clique em um mês para ir até a taxa daquele apartamento e use "Registrar pagamento".' },
         { texto: 'Abra Visualizar → Taxa de Inadimplência para ver um ano mês a mês.', rota: '/admin/visualizar/inadimplencia' },
+        { texto: 'Para saber quem mudou um valor, abra Visualizar → Histórico de alterações e filtre pelo tipo, pela ação ou pelo período.', rota: '/admin/visualizar/historico' },
         { texto: 'Abra Visualizar → Evolução para comparar vários anos, em gráficos e tabela.', rota: '/admin/visualizar/evolucao' },
       ],
     },

@@ -9,6 +9,18 @@ import {
   uploadComprovante,
 } from '../utils/comprovantes.js';
 import { calcularJuros, ehDataValida, hojeISO, sqlVencida, statusDaTaxa } from '../utils/juros.js';
+import {
+  CAMPOS_CONFIGURACAO,
+  CAMPOS_LANCAMENTO,
+  CAMPOS_TAXA,
+  consultarAuditoria,
+  instantaneo,
+  mudou,
+  registrarAuditoria,
+  rotuloDaTaxa,
+} from '../utils/auditoria.js';
+
+const taxaPorId = (id) => db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(id);
 
 export const financeiroRouter = Router();
 financeiroRouter.use(requireAuth);
@@ -104,6 +116,11 @@ financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, r
          VALUES (?, ?, ?, ?, ?, 'inadimplente', 0, ?)`
       )
       .run(apartamento_id, mes_referencia, ano_referencia, valor, juros, comprovante.nome);
+    const criada = taxaPorId(info.lastInsertRowid);
+    registrarAuditoria(req, {
+      entidade: 'taxa', entidadeId: criada.id, acao: 'criar',
+      depois: instantaneo(criada, CAMPOS_TAXA), detalhe: rotuloDaTaxa(criada),
+    });
     res.status(201).json({ id: info.lastInsertRowid });
   } catch (err) {
     apagarComprovante(comprovante.nome);
@@ -157,6 +174,13 @@ financeiroRouter.post('/taxas/gerar-mes', requireRole('admin'), (req, res) => {
   );
   const totalApartamentos = db.prepare('SELECT COUNT(*) AS total FROM apartamentos').get().total;
   const criadas = Number(withTransaction(() => insert.run(mes, ano, padrao.valor)).changes);
+  if (criadas > 0) {
+    registrarAuditoria(req, {
+      entidade: 'taxa', acao: 'gerar_mes',
+      depois: { mes_referencia: mes, ano_referencia: ano, valor: padrao.valor, criadas, ignoradas: totalApartamentos - criadas },
+      detalhe: `${criadas} taxa(s) geradas para ${String(mes).padStart(2, '0')}/${ano}`,
+    });
+  }
   res.status(201).json({ criadas, ignoradas: totalApartamentos - criadas, valor: padrao.valor });
 });
 
@@ -203,6 +227,10 @@ financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprov
      WHERE id = ?`
   ).run(data_pagamento, juros, comprovante.nome, req.params.id);
   if (comprovante.nome) apagarComprovante(taxa.comprovante_path);
+  registrarAuditoria(req, {
+    entidade: 'taxa', entidadeId: taxa.id, acao: 'pagar',
+    antes: instantaneo(taxa, CAMPOS_TAXA), depois: instantaneo(taxaPorId(taxa.id), CAMPOS_TAXA), detalhe: rotuloDaTaxa(taxa),
+  });
   res.json({ message: 'Pagamento registrado.', juros });
 });
 
@@ -215,6 +243,10 @@ financeiroRouter.post('/taxas/:id/recalcular-juros', requireRole('admin'), (req,
   }
   const { juros, total } = calcularJuros(taxa, lerConfiguracao());
   db.prepare('UPDATE taxas_condominio SET juros = ? WHERE id = ?').run(juros, taxa.id);
+  registrarAuditoria(req, {
+    entidade: 'taxa', entidadeId: taxa.id, acao: 'recalcular_juros',
+    antes: instantaneo(taxa, CAMPOS_TAXA), depois: instantaneo(taxaPorId(taxa.id), CAMPOS_TAXA), detalhe: rotuloDaTaxa(taxa),
+  });
   res.json({ message: 'Juros recalculado.', juros_anterior: taxa.juros, juros, total });
 });
 
@@ -270,6 +302,13 @@ financeiroRouter.put('/taxas/:id', requireRole('admin'), uploadComprovante, (req
     taxa.id
   );
   if (novoComprovante !== taxa.comprovante_path) apagarComprovante(taxa.comprovante_path);
+  const antesDaTaxa = instantaneo(taxa, CAMPOS_TAXA);
+  const depoisDaTaxa = instantaneo(taxaPorId(taxa.id), CAMPOS_TAXA);
+  if (mudou(antesDaTaxa, depoisDaTaxa)) {
+    registrarAuditoria(req, {
+      entidade: 'taxa', entidadeId: taxa.id, acao: 'editar', antes: antesDaTaxa, depois: depoisDaTaxa, detalhe: rotuloDaTaxa(taxa),
+    });
+  }
   res.json({ message: 'Taxa atualizada.', juros, situacao: dataPagamento ? 'adimplente' : 'inadimplente' });
 });
 
@@ -297,6 +336,11 @@ function lancamentosRouter(tabela, rotulo) {
     const info = db
       .prepare(`INSERT INTO ${tabela.nome} (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)`)
       .run(campos.descricao, campos.valor, campos.data, comprovante.nome);
+    registrarAuditoria(req, {
+      entidade: tabela.entidade, entidadeId: Number(info.lastInsertRowid), acao: 'criar',
+      depois: instantaneo(db.prepare(`SELECT * FROM ${tabela.nome} WHERE id = ?`).get(info.lastInsertRowid), CAMPOS_LANCAMENTO),
+      detalhe: campos.descricao,
+    });
     res.status(201).json({ id: info.lastInsertRowid });
   });
 
@@ -314,12 +358,17 @@ function lancamentosRouter(tabela, rotulo) {
     db.prepare(`UPDATE ${tabela.nome} SET descricao = ?, valor = ?, data = ?, comprovante_path = ? WHERE id = ?`)
       .run(campos.descricao, campos.valor, campos.data, novoComprovante, atual.id);
     if (novoComprovante !== atual.comprovante_path) apagarComprovante(atual.comprovante_path);
+    const antes = instantaneo(atual, CAMPOS_LANCAMENTO);
+    const depois = instantaneo(db.prepare(`SELECT * FROM ${tabela.nome} WHERE id = ?`).get(atual.id), CAMPOS_LANCAMENTO);
+    if (mudou(antes, depois)) {
+      registrarAuditoria(req, { entidade: tabela.entidade, entidadeId: atual.id, acao: 'editar', antes, depois, detalhe: campos.descricao });
+    }
     res.json({ message: `${rotulo} atualizada.` });
   });
 }
 
-lancamentosRouter({ rota: 'outras-receitas', nome: 'outras_receitas' }, 'Receita');
-lancamentosRouter({ rota: 'despesas', nome: 'despesas' }, 'Despesa');
+lancamentosRouter({ rota: 'outras-receitas', nome: 'outras_receitas', entidade: 'outra_receita' }, 'Receita');
+lancamentosRouter({ rota: 'despesas', nome: 'despesas', entidade: 'despesa' }, 'Despesa');
 
 // ---------- Configurações financeiras ----------
 
@@ -363,6 +412,10 @@ financeiroRouter.put('/configuracoes', requireRole('admin'), (req, res) => {
     }
   }
 
+  const antesDaConfiguracao = {
+    ...instantaneo(atual, CAMPOS_CONFIGURACAO),
+    taxas_padrao: Object.fromEntries(db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all().map((t) => [t.ano, t.valor])),
+  };
   withTransaction(() => {
     db.prepare(
       'UPDATE configuracao_financeira SET multa_percentual = ?, juros_mensal_percentual = ?, dia_vencimento = ? WHERE id = 1'
@@ -372,10 +425,30 @@ financeiroRouter.put('/configuracoes', requireRole('admin'), (req, res) => {
     );
     for (const { ano, valor } of taxasPadrao) upsert.run(ano, valor);
   });
+  const depoisDaConfiguracao = {
+    ...instantaneo(lerConfiguracao(), CAMPOS_CONFIGURACAO),
+    taxas_padrao: Object.fromEntries(db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all().map((t) => [t.ano, t.valor])),
+  };
+  if (mudou(antesDaConfiguracao, depoisDaConfiguracao)) {
+    registrarAuditoria(req, {
+      entidade: 'configuracao', acao: 'editar', antes: antesDaConfiguracao, depois: depoisDaConfiguracao,
+      detalhe: 'Configurações financeiras',
+    });
+  }
   res.json({
     ...lerConfiguracao(),
     taxas_padrao: db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all(),
   });
+});
+
+// ---------- Histórico de alterações (auditoria) ----------
+
+financeiroRouter.get('/auditoria', requireRole('admin'), (req, res) => {
+  const { de, ate } = req.query;
+  if ((de && !ehDataValida(de)) || (ate && !ehDataValida(ate))) {
+    return res.status(400).json({ error: 'de e ate devem ser datas válidas (AAAA-MM-DD).' });
+  }
+  res.json(consultarAuditoria(req.query));
 });
 
 // ---------- Resumos ----------

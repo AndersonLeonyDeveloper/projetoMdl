@@ -74,8 +74,8 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 ### [ ] 2.12 Excluir lançamentos — esforço M
 *Identificada em 02/10/2026, deixada de fora do item 2.8 de propósito.* Excluir altera saldos e histórico. Precisa de decisão sobre confirmação, exclusão lógica (marcar como cancelado) ou física, e o que fazer com o comprovante.
 
-### [ ] 2.13 Histórico de alterações (auditoria) — esforço G
-*Identificada em 02/10/2026.* A edição do item 2.8 sobrescreve o valor anterior sem rastro. Para dado financeiro, convém registrar quem alterou, quando, e o valor antes e depois, com uma tela de consulta.
+### [x] 2.13 Histórico de alterações (auditoria) — esforço G
+*Identificada em 02/10/2026.* A edição do item 2.8 sobrescreve o valor anterior sem rastro. Para dado financeiro, convém registrar quem alterou, quando, e o valor antes e depois, com uma tela de consulta. *Implementado em 02/10/2026:* tabela `auditoria` gravada pelas rotas que alteram taxas, despesas, outras receitas e configurações (criar, editar, pagar, recalcular juros, gerar mês), com o antes e o depois, `GET /financeiro/auditoria` (filtros e paginação) e a tela Visualizar → Histórico de alterações. Regras na seção 4.10. Fica de fora a gravação na mesma transação da alteração e o registro de alterações de moradores e de usuários.
 
 ### [x] 2.14 Recalcular juros de taxa já paga — esforço P
 *Identificada em 02/10/2026.* Corrigir o valor ou a data de pagamento de uma taxa não recalcula o juros já gravado (a tela só mostra o novo cálculo). Avaliar um botão "Recalcular juros" e um aviso quando o juros gravado diverge do calculado. *Implementado em 02/10/2026:* `GET /financeiro/taxas` devolve `juros_calculado` e `juros_diverge`; a tabela de taxas mostra a etiqueta "Difere do cálculo" (com confirmação para regravar) e o modal de edição tem o botão "Recalcular juros"; `POST /financeiro/taxas/:id/recalcular-juros` regrava o juros de uma taxa paga. Regras na seção 4.1.1. Fica de fora um recálculo em massa.
