@@ -318,27 +318,22 @@
 
 > Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seção 8 (item 1.4 do
 > backlog). Só há interface, então todos os cenários são `E2E`. Ainda sem teste automatizado, e as telas ainda não foram
-> abertas em navegador. **Para os testes dos outros cenários, desligue a ajuda antes**, porque o tour abre sozinho na
-> primeira visita a cada tela.
+> abertas em navegador. O tour **nunca abre sozinho**, então não interfere nos outros testes E2E.
 
-**Switch**
-- [ ] **Padrão ligado**: em um navegador limpo, o switch "Ajuda" vem ligado e o ícone `?` aparece. `E2E`
-- [ ] **Desligar**: ao desligar, o ícone `?` some, o painel (se aberto) fecha e nenhum tour abre. `E2E`
-- [ ] **Persistência**: a escolha sobrevive a recarregar a página e a sair e entrar de novo com o mesmo usuário. `E2E`
-- [ ] **Isolamento por usuário**: desligar a ajuda com o admin não desliga para um morador que entra no mesmo navegador. `E2E`
-- [ ] **Religar**: ao religar, o ícone volta; telas já vistas não abrem o tour sozinhas de novo. `E2E`
+**Ícone**
+- [ ] **Sempre visível**: o ícone `?` aparece no cabeçalho de todas as telas logadas, para admin e para morador, e não há
+  switch para desligá-lo. `E2E`
+- [ ] **Nada abre sozinho**: ao entrar em uma tela (inclusive pela primeira vez), nem o painel nem o tour abrem sem um clique. `E2E`
 
 **Tour**
-- [ ] **Primeira visita**: com a ajuda ligada, a primeira visita a cada tela abre o tour sozinho; a segunda visita (mesmo
-  recarregando) não abre. `E2E`
+- [ ] **Início**: pelo painel, "Iniciar tour da tela" fecha o painel e inicia o tour da tela atual, também em visitas repetidas. `E2E`
 - [ ] **Navegação do tour**: "Próximo" e "Anterior" andam pelos passos, o indicador mostra "N de M", o último passo traz
-  "Concluir", e fechar (X) encerra e marca a tela como vista. `E2E`
+  "Concluir", e fechar (X) encerra o tour. `E2E`
 - [ ] **Destaque**: cada passo com alvo destaca o elemento certo (ex.: em Taxas de condomínio, o bloco "Gerar taxas do mês"
   e o botão "Gerar taxas"). `E2E`
 - [ ] **Alvo ausente**: com a tabela ainda carregando (ou sem linhas, como o botão "Editar" de uma lista vazia), o passo
   aparece centralizado e o tour não quebra. `E2E`
-- [ ] **Início manual**: pelo painel, "Iniciar tour da tela" fecha o painel e inicia o tour mesmo em tela já vista. `E2E`
-- [ ] **Telas sem conteúdo**: uma rota sem tour mostra "Esta tela ainda não tem tour" no painel e não abre tour sozinho. `E2E`
+- [ ] **Telas sem conteúdo**: uma rota sem tour mostra "Esta tela ainda não tem tour" no painel e não inicia tour. `E2E`
 - [ ] **Todos os alvos existem**: percorrer o tour de todas as telas de cada perfil confirma que cada passo com alvo encontra o
   elemento na tela (protege contra renomear `data-testid`). `E2E`
 - [ ] **Não bloqueia o uso**: com o tour fechado, formulários e botões funcionam normalmente; com o tour aberto, ele cobre a

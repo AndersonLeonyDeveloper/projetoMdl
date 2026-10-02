@@ -4,14 +4,13 @@ import { useLocation } from 'react-router-dom';
 import { AJUDA_POR_ROTA } from './conteudo';
 import { useAjuda } from './AjudaContext';
 
-// Tour da tela atual. Abre pelo botão "Iniciar tour" ou sozinho na primeira visita (só com a ajuda ligada).
+// Tour da tela atual. Só abre pelo botão "Iniciar tour da tela" do painel de ajuda.
 export function TourDaTela() {
   const { pathname } = useLocation();
-  const { ativa, tourManual, jaViu, fecharTour } = useAjuda();
+  const { tourAberto, fecharTour } = useAjuda();
   const ajuda = AJUDA_POR_ROTA[pathname];
-  if (!ativa || !ajuda) return null;
+  if (!ajuda) return null;
 
-  const aberto = tourManual || !jaViu(pathname);
   const ultimo = ajuda.passos.length - 1;
   const steps: TourProps['steps'] = ajuda.passos.map((passo, i) => ({
     title: passo.titulo,
@@ -26,10 +25,10 @@ export function TourDaTela() {
   return (
     <Tour
       key={pathname}
-      open={aberto}
+      open={tourAberto}
       steps={steps}
-      onClose={() => fecharTour(pathname)}
-      onFinish={() => fecharTour(pathname)}
+      onClose={fecharTour}
+      onFinish={fecharTour}
       indicatorsRender={(atual, total) => (
         <span data-testid="tour-indicador">
           {atual + 1} de {total}

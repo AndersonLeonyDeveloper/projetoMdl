@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layout, Menu, Button, Typography, Space, Avatar, Switch, Tooltip } from 'antd';
+import { Layout, Menu, Button, Typography, Space, Avatar, Tooltip } from 'antd';
 import { LogoutOutlined, QuestionCircleOutlined, UserOutlined } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
@@ -20,7 +20,7 @@ export function AppLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const { usuario, logout } = useAuth();
-  const { ativa, alternarAtiva, abrirPainel } = useAjuda();
+  const { abrirPainel } = useAjuda();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -70,26 +70,15 @@ export function AppLayout({
             {title}
           </Text>
           <Space>
-            <Tooltip title="Liga ou desliga a ajuda guiada (ícone de ajuda e tours)">
-              <Switch
-                checked={ativa}
-                onChange={alternarAtiva}
-                checkedChildren="Ajuda"
-                unCheckedChildren="Ajuda"
-                data-testid="switch-ajuda"
+            <Tooltip title="Como usar esta tela">
+              <Button
+                shape="circle"
+                icon={<QuestionCircleOutlined />}
+                onClick={abrirPainel}
+                aria-label="Abrir ajuda"
+                data-testid="botao-ajuda"
               />
             </Tooltip>
-            {ativa && (
-              <Tooltip title="Como usar esta tela">
-                <Button
-                  shape="circle"
-                  icon={<QuestionCircleOutlined />}
-                  onClick={abrirPainel}
-                  aria-label="Abrir ajuda"
-                  data-testid="botao-ajuda"
-                />
-              </Tooltip>
-            )}
             <Avatar icon={<UserOutlined />} size="small" />
             <Text data-testid="usuario-logado">{usuario?.email}</Text>
             <Button icon={<LogoutOutlined />} onClick={logout} data-testid="botao-logout">

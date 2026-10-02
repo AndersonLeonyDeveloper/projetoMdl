@@ -28,10 +28,10 @@ Uma versão da tela de evolução, sem dados de inadimplência por apartamento, 
 As rotas `POST /blocos` e `POST /apartamentos` existem, mas não há tela. Hoje a estrutura é criada automaticamente (12 blocos × 16 apartamentos). Uma tela seria útil se o condomínio mudar de estrutura.
 
 ### [x] 1.4 Ajuda guiada (ícone de ajuda com tour e guias por tarefa) — esforço M
-*Identificada em 02/10/2026, depois que o admin teve dificuldade para seguir o ciclo da taxa entre telas.* *Implementada em 02/10/2026* em `app/client/src/ajuda/`: switch "Ajuda" e ícone `?` no cabeçalho, painel com "Nesta tela" (tour que destaca os elementos) e "Como fazer…" (guias por tarefa com "Ir para a tela"), tour automático na primeira visita e conteúdo separado para admin e moradores. Regras na seção 8 de `regras-de-negocio.md`.
+*Identificada em 02/10/2026, depois que o admin teve dificuldade para seguir o ciclo da taxa entre telas.* *Implementada em 02/10/2026* em `app/client/src/ajuda/`: ícone `?` sempre visível no cabeçalho, painel com "Nesta tela" (botão "Iniciar tour da tela", que destaca os elementos) e "Como fazer…" (guias por tarefa com "Ir para a tela"), com conteúdo separado para admin e moradores. A primeira versão tinha um switch para desligar a ajuda e um tour que abria sozinho na primeira visita; ambos foram removidos no mesmo dia, por não serem necessários. Regras na seção 8 de `regras-de-negocio.md`.
 
-### [ ] 1.5 Ajuda guiada: manter o conteúdo em dia — esforço P
-*Identificada em 02/10/2026.* O conteúdo da ajuda (`ajuda/conteudo.ts`) desatualiza quando uma tela muda. Ideias: um teste E2E que percorra todas as telas e confirme que cada alvo de tour existe; guias que, em vez de só listar os cliques, conduzam o usuário entre telas (tour contínuo); botão de "esta ajuda foi útil?" para saber quais guias confundem.
+### [ ] 1.5 Ajuda guiada: manter o conteúdo em dia e melhorar a descoberta — esforço P
+*Identificada em 02/10/2026.* O conteúdo da ajuda (`ajuda/conteudo.ts`) desatualiza quando uma tela muda. Ideias: um teste E2E que percorra todas as telas e confirme que cada alvo de tour existe; guias que, em vez de só listar os cliques, conduzam o usuário entre telas (tour contínuo); botão de "esta ajuda foi útil?" para saber quais guias confundem. Como o tour só abre sob demanda, quem nunca clica no `?` não o vê; se isso virar problema, avaliar um destaque sutil no ícone para quem nunca o usou.
 
 ## 2. Modelo de dados e regras
 

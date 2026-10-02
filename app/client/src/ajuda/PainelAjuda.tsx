@@ -9,13 +9,11 @@ const { Paragraph, Text } = Typography;
 // Painel lateral aberto pelo ícone "?": explica a tela atual e lista os guias por tarefa do perfil.
 export function PainelAjuda() {
   const { usuario } = useAuth();
-  const { ativa, painelAberto, fecharPainel, iniciarTour } = useAjuda();
+  const { painelAberto, fecharPainel, iniciarTour } = useAjuda();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const ajuda = AJUDA_POR_ROTA[pathname];
   const guias = GUIAS[usuario?.role === 'admin' ? 'admin' : 'morador'];
-
-  if (!ativa) return null;
 
   return (
     <Drawer title="Ajuda" open={painelAberto} onClose={fecharPainel} size="default" data-testid="painel-ajuda">
