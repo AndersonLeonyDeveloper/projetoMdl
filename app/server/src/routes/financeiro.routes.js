@@ -9,6 +9,7 @@ import {
   uploadComprovante,
 } from '../utils/comprovantes.js';
 import { calcularJuros, ehDataValida, hojeISO, sqlVencida, statusDaTaxa } from '../utils/juros.js';
+import { calcularFundo } from '../utils/fundo.js';
 import {
   CAMPOS_CONFIGURACAO,
   CAMPOS_LANCAMENTO,
@@ -390,6 +391,15 @@ function lerBlocoDaDespesa(corpo, atual) {
   return { valor: id };
 }
 
+// "Paga pelo fundo de reserva" (despesas): 1 ou 0. Na edição, a ausência do campo mantém o valor atual.
+function lerFundoDaDespesa(corpo, atual) {
+  if (!corpo || !('fundo_reserva' in corpo)) return { valor: atual ? atual.fundo_reserva : 0 };
+  const v = corpo.fundo_reserva;
+  if (vazio(v) || v === false || v === 'false' || v === '0' || v === 0 || v === 'off') return { valor: 0 };
+  if (ehVerdadeiro(v) || v === 1) return { valor: 1 };
+  return { erro: 'fundo_reserva deve ser verdadeiro ou falso.' };
+}
+
 // `tabela.extras`: colunas além de descrição, valor, data e comprovante (só despesas têm).
 function lancamentosRouter(tabela, rotulo) {
   const extras = tabela.extras ?? [];
@@ -473,17 +483,23 @@ function lancamentosRouter(tabela, rotulo) {
 
 lancamentosRouter({ rota: 'outras-receitas', nome: 'outras_receitas', entidade: 'outra_receita' }, 'Receita');
 lancamentosRouter(
-  { rota: 'despesas', nome: 'despesas', entidade: 'despesa', comBloco: true, extras: [{ coluna: 'bloco_id', ler: lerBlocoDaDespesa }] },
+  { rota: 'despesas', nome: 'despesas', entidade: 'despesa', comBloco: true, extras: [{ coluna: 'bloco_id', ler: lerBlocoDaDespesa }, { coluna: 'fundo_reserva', ler: lerFundoDaDespesa }] },
   'Despesa'
 );
 
 // ---------- Configurações financeiras ----------
 
+const lerTaxasPadrao = () => db.prepare('SELECT ano, valor, fundo_percentual FROM taxa_padrao ORDER BY ano').all();
+
+// Foto da configuração para o histórico: parâmetros, valor-base por ano e % do fundo por ano.
+const fotoDaConfiguracao = () => ({
+  ...instantaneo(lerConfiguracao(), CAMPOS_CONFIGURACAO),
+  taxas_padrao: Object.fromEntries(lerTaxasPadrao().map((t) => [t.ano, t.valor])),
+  fundo_percentuais: Object.fromEntries(lerTaxasPadrao().map((t) => [t.ano, t.fundo_percentual])),
+});
+
 financeiroRouter.get('/configuracoes', (_req, res) => {
-  res.json({
-    ...lerConfiguracao(),
-    taxas_padrao: db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all(),
-  });
+  res.json({ ...lerConfiguracao(), taxas_padrao: lerTaxasPadrao() });
 });
 
 // Altera multa, juros, vencimento e/ou o valor da taxa de um ou mais anos. Não mexe em lançamentos existentes.
@@ -496,6 +512,7 @@ financeiroRouter.put('/configuracoes', requireRole('admin'), (req, res) => {
     ['multa_percentual', 'multa_percentual deve estar entre 0 e 2.', (v) => v >= 0 && v <= 2],
     ['juros_mensal_percentual', 'juros_mensal_percentual deve ser maior ou igual a zero.', (v) => v >= 0],
     ['dia_vencimento', 'dia_vencimento deve ser um inteiro entre 1 e 28.', (v) => Number.isInteger(v) && v >= 1 && v <= 28],
+    ['fundo_saldo_inicial', 'fundo_saldo_inicial deve ser maior ou igual a zero.', (v) => v >= 0],
   ];
   for (const [campo, mensagem, valido] of parametros) {
     if (vazio(corpo[campo])) continue;
@@ -515,38 +532,43 @@ financeiroRouter.put('/configuracoes', requireRole('admin'), (req, res) => {
       if (!ano || ano < 1900 || ano > 2999 || valor === null) {
         return res.status(400).json({ error: 'Cada item de taxas_padrao precisa de ano válido e valor maior ou igual a zero.' });
       }
-      taxasPadrao.push({ ano, valor });
+      let fundoPercentual = null;
+      if (!vazio(item?.fundo_percentual)) {
+        fundoPercentual = Number(item.fundo_percentual);
+        if (!Number.isFinite(fundoPercentual) || fundoPercentual < 0 || fundoPercentual > 100) {
+          return res.status(400).json({ error: 'fundo_percentual deve estar entre 0 e 100.' });
+        }
+      }
+      taxasPadrao.push({ ano, valor, fundoPercentual });
     }
   }
 
-  const antesDaConfiguracao = {
-    ...instantaneo(atual, CAMPOS_CONFIGURACAO),
-    taxas_padrao: Object.fromEntries(db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all().map((t) => [t.ano, t.valor])),
-  };
+  const antesDaConfiguracao = fotoDaConfiguracao();
   withTransaction(() => {
     db.prepare(
-      'UPDATE configuracao_financeira SET multa_percentual = ?, juros_mensal_percentual = ?, dia_vencimento = ? WHERE id = 1'
-    ).run(novo.multa_percentual, novo.juros_mensal_percentual, novo.dia_vencimento);
+      `UPDATE configuracao_financeira
+       SET multa_percentual = ?, juros_mensal_percentual = ?, dia_vencimento = ?, fundo_saldo_inicial = ? WHERE id = 1`
+    ).run(novo.multa_percentual, novo.juros_mensal_percentual, novo.dia_vencimento, novo.fundo_saldo_inicial);
+    // Ano novo sem percentual informado fica com 10%; ano existente sem percentual mantém o que tem.
     const upsert = db.prepare(
-      'INSERT INTO taxa_padrao (ano, valor) VALUES (?, ?) ON CONFLICT(ano) DO UPDATE SET valor = excluded.valor'
+      `INSERT INTO taxa_padrao (ano, valor, fundo_percentual) VALUES (?, ?, COALESCE(?, 10))
+       ON CONFLICT(ano) DO UPDATE SET valor = excluded.valor, fundo_percentual = COALESCE(?, fundo_percentual)`
     );
-    for (const { ano, valor } of taxasPadrao) upsert.run(ano, valor);
+    for (const { ano, valor, fundoPercentual } of taxasPadrao) upsert.run(ano, valor, fundoPercentual, fundoPercentual);
   });
-  const depoisDaConfiguracao = {
-    ...instantaneo(lerConfiguracao(), CAMPOS_CONFIGURACAO),
-    taxas_padrao: Object.fromEntries(db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all().map((t) => [t.ano, t.valor])),
-  };
+  const depoisDaConfiguracao = fotoDaConfiguracao();
   if (mudou(antesDaConfiguracao, depoisDaConfiguracao)) {
     registrarAuditoria(req, {
       entidade: 'configuracao', acao: 'editar', antes: antesDaConfiguracao, depois: depoisDaConfiguracao,
       detalhe: 'Configurações financeiras',
     });
   }
-  res.json({
-    ...lerConfiguracao(),
-    taxas_padrao: db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all(),
-  });
+  res.json({ ...lerConfiguracao(), taxas_padrao: lerTaxasPadrao() });
 });
+
+// ---------- Fundo de reserva ----------
+// Qualquer perfil logado consulta (prestação de contas): saldo, aportes, retiradas e as obras pagas pelo fundo.
+financeiroRouter.get('/fundo-reserva', (_req, res) => res.json(calcularFundo()));
 
 // ---------- Histórico de alterações (auditoria) ----------
 

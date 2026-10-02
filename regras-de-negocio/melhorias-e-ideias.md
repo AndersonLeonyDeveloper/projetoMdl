@@ -38,8 +38,8 @@ Uma versão da tela de evolução, sem dados de inadimplência por apartamento, 
 
 ## 2. Modelo de dados e regras
 
-### [ ] 2.1 Fundo de reserva como entidade — esforço G
-Hoje ele está embutido na taxa e só aparece no saldo anual. Modelá-lo (percentual da taxa, saldo acumulado, retiradas para obras) permitiria mostrar "a obra de 2023 foi paga pelo fundo de reserva" com números.
+### [x] 2.1 Fundo de reserva — esforço G
+Hoje ele está embutido na taxa e só aparece no saldo anual. Modelá-lo (percentual da taxa, saldo acumulado, retiradas para obras) permitiria mostrar "a obra de 2023 foi paga pelo fundo de reserva" com números. *Implementado em 02/10/2026, sem uma tabela própria de movimentos:* um percentual da taxa paga (por ano, padrão 10%, sobre o valor sem juros, no mês do pagamento) vira aporte, e as despesas marcadas como pagas pelo fundo viram retiradas; saldo = saldo inicial + aportes − retiradas. Há configuração do percentual por ano e do saldo inicial, a marca "Paga pelo fundo de reserva" nas despesas, `GET /financeiro/fundo-reserva` e a tela Fundo de reserva (admin e morador). O seed marca as obras (CFTV, pintura, bombas, impermeabilização e quadra) e define saldo inicial de R$ 50.000. Regras na seção 4.13. Ficam de fora aportes e retiradas avulsos, alerta de saldo baixo e o aporte pelo percentual do ano de pagamento.
 
 ### [x] 2.2 Saldo por regime de caixa — esforço M
 `/financeiro/resumo/mensal` soma as taxas pelo **mês de referência**, e não pela data do pagamento. Um atraso pago depois conta como receita do mês original. Uma visão por data de pagamento (regime de caixa) daria outra leitura e poderia ser oferecida ao lado. *Implementado em 02/10/2026:* `GET /financeiro/resumo/mensal?regime=caixa` (por data de pagamento) ao lado da competência (padrão) e o seletor "Competência | Caixa" no resumo do mês de Visualizar → Financeiro e de Minha Área → Financeiro. Regras na seção 4.4. Ficam de fora o regime de caixa na Evolução e no resumo por bloco.

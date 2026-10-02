@@ -98,6 +98,8 @@ CREATE TABLE IF NOT EXISTS despesas (
   comprovante_path TEXT,
   -- Vazio = despesa geral (rateada igualmente entre os blocos). Preenchido = despesa só desse bloco.
   bloco_id INTEGER REFERENCES blocos(id),
+  -- 1 = paga com o fundo de reserva (sai do saldo do fundo).
+  fundo_reserva INTEGER NOT NULL DEFAULT 0,
   cancelado_em TEXT,
   cancelado_por INTEGER,
   motivo_cancelamento TEXT,
@@ -109,14 +111,18 @@ CREATE TABLE IF NOT EXISTS configuracao_financeira (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   multa_percentual REAL NOT NULL DEFAULT 2 CHECK (multa_percentual >= 0 AND multa_percentual <= 2),
   juros_mensal_percentual REAL NOT NULL DEFAULT 1 CHECK (juros_mensal_percentual >= 0),
-  dia_vencimento INTEGER NOT NULL DEFAULT 10 CHECK (dia_vencimento BETWEEN 1 AND 28)
+  dia_vencimento INTEGER NOT NULL DEFAULT 10 CHECK (dia_vencimento BETWEEN 1 AND 28),
+  -- Saldo do fundo de reserva antes do primeiro lançamento do sistema.
+  fundo_saldo_inicial REAL NOT NULL DEFAULT 0 CHECK (fundo_saldo_inicial >= 0)
 );
 INSERT OR IGNORE INTO configuracao_financeira (id) VALUES (1);
 
 -- Valor da taxa de condomínio por ano (pré-preenche o lançamento e alimenta a geração em lote).
 CREATE TABLE IF NOT EXISTS taxa_padrao (
   ano INTEGER PRIMARY KEY,
-  valor REAL NOT NULL CHECK (valor >= 0)
+  valor REAL NOT NULL CHECK (valor >= 0),
+  -- Parte do valor da taxa paga (sem juros) que vai para o fundo de reserva.
+  fundo_percentual REAL NOT NULL DEFAULT 10 CHECK (fundo_percentual >= 0 AND fundo_percentual <= 100)
 );
 
 -- Histórico de alterações financeiras: só se grava, nunca se edita nem se apaga pela aplicação.

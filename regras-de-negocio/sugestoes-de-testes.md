@@ -674,6 +674,37 @@
 - [ ] **Lista de despesas**: a coluna "Bloco" mostra "Geral" ou "Bloco NN". `E2E`
 - [ ] **Resumo por bloco**: a tabela (admin e morador) mostra a coluna "Despesas (rateio)" e o saldo novo, com a explicação acima da tabela. `E2E`
 
+### 7.20 Fundo de reserva
+
+> Cenários levantados em 02/10/2026 (item 2.1 do backlog). Regras na seção 4.13 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`FundoDeReservaApiTest`, compilado e ainda não executado, e que restaura o saldo inicial).
+
+- [ ] **Consistência**: saldo atual = saldo inicial + aportes − retiradas, e cada movimento encadeia o saldo acumulado do anterior; o
+  último saldo acumulado é o saldo atual. `API` / `DB/Integridade`
+- [ ] **Seed**: saldo inicial R$ 50.000, 10% de 2020 a 2026, 11 obras pagas pelo fundo e saldo nunca negativo. `API`
+- [ ] **Aporte por pagamento**: uma taxa de R$ 1.000 de um ano com 20% paga em 03/2024 com R$ 50 de juros aporta R$ 200 (não R$ 210),
+  e o aporte cai no mês do pagamento (mar/2024), não no de referência. `API`
+- [ ] **Ano sem configuração** não gera aporte. `API`
+- [ ] **Conferência no banco**: os aportes batem com a soma de valor × percentual do ano das taxas pagas até o mês corrente
+  (consulta direta), e as retiradas com a soma das despesas marcadas. `DB/Integridade`
+- [ ] **Percentual**: 0 e 100 aceitos; negativo, acima de 100 e texto retornam 400; ano novo sem percentual fica com 10%; ano existente sem
+  percentual no corpo mantém o que tinha; percentual 0 zera o aporte do ano. `API`
+- [ ] **Saldo inicial**: negativo ou texto retornam 400; aumentar R$ 10.000 aumenta o saldo atual em R$ 10.000. `API`
+- [ ] **Despesa marcada**: vira retirada e aparece em "obras pagas com o fundo"; a não marcada não mexe no fundo. `API`
+- [ ] **Edição da marca**: sem o campo mantém; `false` tira do fundo; valor que não seja verdadeiro/falso retorna 400; multipart com
+  "on" ou "true" marca. `API`
+- [ ] **Cancelamento**: despesa cancelada sai do fundo e volta ao restaurar. `API`
+- [ ] **Data futura**: despesa marcada com data futura não entra (só até o mês corrente). `API`
+- [ ] **Totais do condomínio**: marcar ou desmarcar a despesa como do fundo não muda o saldo mensal do condomínio. `API`
+- [ ] **Acesso**: qualquer perfil logado consulta o fundo; sem token, 401. `API`
+- [ ] **Histórico**: a marca do fundo, o percentual por ano e o saldo inicial ficam na auditoria, com antes e depois. `API`
+- [ ] **Tela do fundo (admin e morador)**: mostra saldo atual, saldo inicial, aportes e retiradas, o percentual de cada ano, a lista de
+  obras (mais recente primeiro) e as tabelas por ano e por mês; o morador acessa pelo menu e o admin por Visualizar. `E2E`
+- [ ] **Formulários**: a opção "Paga pelo fundo de reserva" existe no cadastro e na edição de despesas (e não em outras receitas) e a lista
+  mostra a etiqueta "Fundo". `E2E`
+- [ ] **Configurações**: a tabela de valor por ano tem a coluna "Fundo de reserva (%)", o saldo inicial fica no formulário de parâmetros e
+  salvar uma linha só habilita quando valor ou percentual mudam. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

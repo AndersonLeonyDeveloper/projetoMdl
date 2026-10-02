@@ -23,7 +23,10 @@ const colunas: ColumnsType<Lancamento> = [
           </span>
         </Tooltip>
       ) : (
-        v
+        <span>
+          {linha.fundo_reserva === 1 && <Tag color="gold" data-testid="tag-fundo">Fundo</Tag>}
+          {v}
+        </span>
       ),
   },
   { title: 'Valor', dataIndex: 'valor', render: (v: number) => `R$ ${v.toFixed(2)}` },

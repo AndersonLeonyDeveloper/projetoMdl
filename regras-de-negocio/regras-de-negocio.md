@@ -13,8 +13,8 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 | Perfil | Pode fazer |
 |---|---|
-| **Admin** (síndico) | Cadastrar/editar moradores; lançar e **editar** receitas, despesas e taxas; registrar pagamentos; configurar valor da taxa, multa e juros; gerar as taxas do mês; visualizar financeiro consolidado de todos os blocos; visualizar inadimplência geral; consultar o histórico de alterações financeiras; gerenciar usuários |
-| **Proprietário** | Visualizar/editar seus próprios dados e do inquilino vinculado ao seu apartamento; visualizar o financeiro do condomínio (leitura, inclusive a evolução de receitas e despesas, sem inadimplência); visualizar sua própria situação de adimplência |
+| **Admin** (síndico) | Cadastrar/editar moradores; lançar e **editar** receitas, despesas e taxas; registrar pagamentos; configurar valor da taxa, multa e juros; gerar as taxas do mês; visualizar financeiro consolidado de todos os blocos e o fundo de reserva; visualizar inadimplência geral; consultar o histórico de alterações financeiras; gerenciar usuários |
+| **Proprietário** | Visualizar/editar seus próprios dados e do inquilino vinculado ao seu apartamento; visualizar o financeiro do condomínio (leitura, inclusive a evolução de receitas e despesas, sem inadimplência) e o fundo de reserva; visualizar sua própria situação de adimplência |
 | **Inquilino** | Visualizar seus próprios dados; visualizar o financeiro do condomínio (leitura) |
 
 **Regras de acesso:**
@@ -92,8 +92,9 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.3 Despesas
 - Nível condomínio (não vinculadas a apartamento).
-- Campos: tipo/descrição, data, valor, **bloco (opcional)** e comprovante opcional (ver seção 6).
+- Campos: tipo/descrição, data, valor, **bloco (opcional)**, **"paga pelo fundo de reserva" (opcional)** e comprovante opcional (ver seção 6).
 - **Bloco da despesa:** sem bloco, a despesa é **geral** e se divide por igual entre os blocos; com bloco, é **só daquele bloco** (ex.: reparo da cobertura do bloco 07). O bloco precisa existir (400 se não). Na edição, não enviar o campo mantém o bloco atual, e enviá-lo vazio volta a despesa para geral. Só despesas têm bloco; outras receitas são sempre do condomínio todo.
+- **Paga pelo fundo de reserva:** marca de uma despesa (normalmente uma obra) cujo valor sai do saldo do fundo (seção 4.13). Não muda o saldo do condomínio nem os totais do mês: a despesa continua sendo despesa. Na edição, não enviar o campo mantém a marca atual, e `false` a retira. Valor que não seja verdadeiro ou falso retorna 400.
 - Exemplos observados no protótipo: produtos de limpeza, manutenção (cerca, muro, quadra, pintura de blocos).
 
 ### 4.4 Cálculos
@@ -128,6 +129,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Percentual de juros ao mês** (padrão 1%).
 - **Dia de vencimento** (padrão 10, de 1 a 28).
 - Validações: valores não negativos; multa entre 0 e 2; dia de vencimento entre 1 e 28.
+- **Fundo de reserva:** cada ano tem um **percentual do fundo** (padrão 10%, de 0 a 100) e as configurações têm o **saldo inicial do fundo** (padrão 0). Detalhes na seção 4.13. Ano novo sem percentual informado fica com 10%; ano existente sem percentual no corpo mantém o que tinha.
 - **Fator da taxa por apartamento:** cada apartamento tem um **fator** (padrão 1,00) que multiplica o valor-base do ano. Serve para taxas que variam com a metragem ou a fração ideal (ex.: 1,20 para uma cobertura). O valor do ano passa a ser entendido como o **valor-base** (o do apartamento com fator 1,00).
   - **Faixa:** de 0,1 a 5, com até 4 casas decimais (arredondado). Fora disso, 400.
   - **Onde vale:** na **geração em lote** (seção 4.7), a taxa de cada apartamento é `valor-base × fator`, arredondada a 2 casas. No lançamento individual o valor sugerido também é `valor-base × fator`, e continua editável.
@@ -203,6 +205,17 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **O que saiu de Visualizar → Financeiro:** a tabela de taxas. Essa tela continua com o resumo do mês (com o seletor de regime), o resumo por bloco e as listas de despesas e outras receitas, e ganhou um **atalho** que abre Taxas do mês no mesmo mês e ano.
 - Quem chega por um mês em atraso de Dados dos Moradores vê a tela filtrada pelo apartamento (seção 4.5).
 - Não há mudança de regra nem de API: é uma reorganização das telas.
+
+### 4.13 Fundo de reserva
+- O fundo de reserva é uma **parte do dinheiro do condomínio** separada para obras e imprevistos, e não um valor a mais. Hoje ele está embutido na taxa; o sistema passa a mostrar quanto dela foi reservada e em que o fundo foi usado. **Nada novo é gravado:** o fundo é calculado das taxas e despesas existentes.
+- **Aportes:** a cada taxa **paga**, o fundo recebe o **percentual do ano de referência da taxa** (padrão 10%) aplicado ao **valor da taxa, sem o juros**, e o aporte conta no **mês do pagamento** (caixa), não no mês de referência. Taxas em aberto não aportam. Taxas de um ano sem valor configurado não geram aporte. Cancelados ficam de fora (seção 4.11).
+- **Percentual por ano:** fica junto do valor da taxa de cada ano, em Configurações financeiras. Mudá-lo vale para os pagamentos de **todas** as taxas daquele ano, inclusive as já pagas, porque o fundo é recalculado na consulta. O percentual por ano permite reajustar sem reescrever os outros anos.
+- **Retiradas:** despesas marcadas como **pagas pelo fundo de reserva**, no mês da despesa. Despesa cancelada sai do fundo e volta ao restaurar. Só entram movimentos até o **mês corrente**.
+- **Saldo** = saldo inicial + aportes − retiradas. O **saldo inicial** (configurável, padrão 0) é o que o fundo já tinha antes do primeiro lançamento do sistema. No seed é R$ 50.000, para o fundo não ficar negativo na pintura de 2023.
+- **Não muda os totais do condomínio:** marcar ou desmarcar uma despesa como do fundo não altera as receitas, as despesas nem o saldo do mês. O fundo é uma visão de quanto do dinheiro está reservado.
+- **Tela:** Visualizar → Fundo de reserva (Admin) e Fundo de reserva no menu do morador (Proprietário e Inquilino): saldo atual, saldo inicial, aportes e retiradas totais, o percentual de cada ano, as obras pagas com o fundo (da mais recente para a mais antiga), o resumo por ano e o movimento mês a mês com o saldo acumulado.
+- **API:** `GET /financeiro/fundo-reserva` (qualquer perfil logado). Configuração: `fundo_saldo_inicial` e `taxas_padrao[].fundo_percentual` em `PUT /financeiro/configuracoes`; despesa: `fundo_reserva`. As mudanças entram no histórico de alterações (seção 4.10).
+- **Limitações:** o aporte usa o percentual do ano **de referência** da taxa, mesmo que ela seja paga em outro ano; não há retirada que não seja uma despesa, nem aporte avulso; não há alerta de saldo baixo ou negativo (o saldo pode ficar negativo se as retiradas passarem do que entrou).
 
 ## 5. Autenticação
 

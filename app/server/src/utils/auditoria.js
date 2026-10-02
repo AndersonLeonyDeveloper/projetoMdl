@@ -7,8 +7,8 @@ export const CAMPOS_TAXA = [
   'apartamento_id', 'mes_referencia', 'ano_referencia', 'valor', 'juros', 'data_pagamento', 'situacao',
   'comprovante_path', 'cancelado_em', 'motivo_cancelamento',
 ];
-export const CAMPOS_LANCAMENTO = ['descricao', 'valor', 'data', 'comprovante_path', 'bloco_id', 'cancelado_em', 'motivo_cancelamento'];
-export const CAMPOS_CONFIGURACAO = ['multa_percentual', 'juros_mensal_percentual', 'dia_vencimento'];
+export const CAMPOS_LANCAMENTO = ['descricao', 'valor', 'data', 'comprovante_path', 'bloco_id', 'fundo_reserva', 'cancelado_em', 'motivo_cancelamento'];
+export const CAMPOS_CONFIGURACAO = ['multa_percentual', 'juros_mensal_percentual', 'dia_vencimento', 'fundo_saldo_inicial'];
 
 // Foto dos campos relevantes de uma linha (campos ausentes, como as colunas de cancelamento antes da migração, ficam de fora).
 export const instantaneo = (linha, campos) =>

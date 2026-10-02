@@ -8,11 +8,13 @@ const { Title, Paragraph } = Typography;
 interface TaxaPadrao {
   ano: number;
   valor: number;
+  fundo_percentual?: number; // % do valor da taxa paga que vai para o fundo de reserva
 }
 interface Configuracao {
   multa_percentual: number;
   juros_mensal_percentual: number;
   dia_vencimento: number;
+  fundo_saldo_inicial: number;
   taxas_padrao: TaxaPadrao[];
 }
 type Mensagem = { tipo: 'success' | 'error'; texto: string } | null;
@@ -147,6 +149,7 @@ export function ConfiguracoesFinanceiras() {
   const [novaTaxa] = Form.useForm<TaxaPadrao>();
   const [taxasPadrao, setTaxasPadrao] = useState<TaxaPadrao[]>([]);
   const [valores, setValores] = useState<Record<number, number>>({});
+  const [percentuais, setPercentuais] = useState<Record<number, number>>({});
   const [msgParametros, setMsgParametros] = useState<Mensagem>(null);
   const [msgTaxas, setMsgTaxas] = useState<Mensagem>(null);
   const [salvando, setSalvando] = useState(false);
@@ -156,6 +159,7 @@ export function ConfiguracoesFinanceiras() {
       parametros.setFieldsValue(config);
       setTaxasPadrao(config.taxas_padrao);
       setValores(Object.fromEntries(config.taxas_padrao.map((t) => [t.ano, t.valor])));
+      setPercentuais(Object.fromEntries(config.taxas_padrao.map((t) => [t.ano, t.fundo_percentual ?? 10])));
     },
     [parametros]
   );
@@ -185,7 +189,7 @@ export function ConfiguracoesFinanceiras() {
       aplicar(data);
       setMsgTaxas({
         tipo: 'success',
-        texto: `Taxa de ${item.ano} salva (${formatarMoeda(item.valor)}). Taxas já lançadas não foram alteradas.`,
+        texto: `Taxa de ${item.ano} salva (${formatarMoeda(item.valor)}${item.fundo_percentual !== undefined ? `, fundo de reserva ${item.fundo_percentual}%` : ''}). Taxas já lançadas não foram alteradas.`,
       });
       return true;
     } catch (err) {
@@ -211,14 +215,31 @@ export function ConfiguracoesFinanceiras() {
       ),
     },
     {
+      title: 'Fundo de reserva (%)',
+      dataIndex: 'fundo_percentual',
+      render: (_: number | undefined, linha) => (
+        <InputNumber
+          value={percentuais[linha.ano]}
+          min={0}
+          max={100}
+          step={1}
+          onChange={(v) => setPercentuais((atual) => ({ ...atual, [linha.ano]: Number(v) }))}
+          data-testid={`input-fundo-ano-${linha.ano}`}
+        />
+      ),
+    },
+    {
       title: 'Ações',
       key: 'acoes',
       render: (_: unknown, linha) => (
         <Button
           type="link"
           size="small"
-          disabled={valores[linha.ano] === undefined || valores[linha.ano] === linha.valor}
-          onClick={() => salvarTaxa({ ano: linha.ano, valor: valores[linha.ano] })}
+          disabled={
+            (valores[linha.ano] === undefined || valores[linha.ano] === linha.valor) &&
+            (percentuais[linha.ano] === undefined || percentuais[linha.ano] === (linha.fundo_percentual ?? 10))
+          }
+          onClick={() => salvarTaxa({ ano: linha.ano, valor: valores[linha.ano], fundo_percentual: percentuais[linha.ano] })}
           data-testid={`botao-salvar-taxa-ano-${linha.ano}`}
         >
           Salvar
@@ -251,6 +272,14 @@ export function ConfiguracoesFinanceiras() {
             <Form.Item label="Dia de vencimento" name="dia_vencimento" extra="De 1 a 28." rules={[{ required: true }]}>
               <InputNumber min={1} max={28} precision={0} style={{ width: 160 }} data-testid="input-dia-vencimento" />
             </Form.Item>
+            <Form.Item
+              label="Saldo inicial do fundo de reserva"
+              name="fundo_saldo_inicial"
+              extra="O que o fundo já tinha antes do primeiro lançamento."
+              rules={[{ required: true }]}
+            >
+              <InputNumber min={0} step={100} prefix="R$" style={{ width: 200 }} data-testid="input-fundo-saldo-inicial" />
+            </Form.Item>
           </Space>
           {msgParametros && (
             <Alert type={msgParametros.tipo} message={msgParametros.texto} showIcon style={{ marginBottom: 16 }} data-testid="mensagem-parametros" />
@@ -264,8 +293,9 @@ export function ConfiguracoesFinanceiras() {
       <Card>
         <Title level={4}>Valor da taxa de condomínio por ano</Title>
         <Paragraph type="secondary">
-          O valor do ano já vem preenchido ao lançar uma taxa e é usado em "Gerar taxas do mês". Alterar um valor não
-          muda taxas já lançadas.
+          O valor do ano já vem preenchido ao lançar uma taxa e é usado em "Gerar taxas do mês" (o valor-base, antes do fator
+          de cada apartamento). O percentual do fundo de reserva é a parte do valor da taxa paga (sem juros) que vai para o
+          fundo. Alterar um valor ou um percentual não muda taxas já lançadas.
         </Paragraph>
         <Table
           data-testid="tabela-taxas-padrao"
@@ -289,6 +319,9 @@ export function ConfiguracoesFinanceiras() {
           </Form.Item>
           <Form.Item name="valor" rules={[{ required: true, message: 'Informe o valor' }]}>
             <InputNumber placeholder="Valor" min={0} step={0.01} prefix="R$" data-testid="input-novo-valor" />
+          </Form.Item>
+          <Form.Item name="fundo_percentual" initialValue={10}>
+            <InputNumber placeholder="Fundo %" min={0} max={100} step={1} data-testid="input-novo-fundo" />
           </Form.Item>
           <Button htmlType="submit" data-testid="botao-adicionar-ano">
             Adicionar / atualizar ano

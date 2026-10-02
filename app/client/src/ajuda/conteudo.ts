@@ -54,6 +54,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     passos: [
       { titulo: 'Escolha o tipo', descricao: 'Use as abas para lançar uma outra receita ou uma despesa. As taxas de condomínio ficam em Taxas do mês.', alvo: 'tabs-cadastro-financeiro' },
       { titulo: 'Descrição, valor e data', descricao: 'Preencha o que foi, quanto e quando. O valor não pode ser negativo.' },
+      { titulo: 'Paga pelo fundo de reserva', descricao: 'Em Despesas, marque "Paga pelo fundo de reserva" para uma obra paga com o fundo: ela é descontada do saldo do fundo (Visualizar → Fundo de reserva).', alvo: 'tabs-cadastro-financeiro' },
       { titulo: 'Bloco da despesa', descricao: 'Em Despesas, o campo Bloco é opcional: sem bloco, a despesa é geral e se divide por igual entre os blocos; com bloco, vale só para ele (ex.: reparo da cobertura do bloco 07).', alvo: 'tabs-cadastro-financeiro' },
       { titulo: 'Comprovante (opcional)', descricao: 'Anexe um PDF, JPEG ou PNG de até 5 MB. Depois de salvar, ele pode ser aberto pelo link "Ver comprovante".' },
     ],
@@ -106,6 +107,16 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     ],
   },
 
+  '/admin/visualizar/fundo': {
+    resumo:
+      'Mostra o saldo do fundo de reserva: o que entrou (uma parte de cada taxa paga) e o que saiu (obras e despesas marcadas como pagas pelo fundo).',
+    passos: [
+      { titulo: 'Saldo e totais', descricao: 'Saldo atual, saldo inicial, total de aportes e total de retiradas do fundo.', alvo: 'cartoes-fundo' },
+      { titulo: 'Percentual por ano', descricao: 'O percentual da taxa que vira aporte é definido por ano em Cadastro → Configurações financeiras.', alvo: 'percentuais-fundo' },
+      { titulo: 'Obras pagas com o fundo', descricao: 'As despesas marcadas como "Paga pelo fundo de reserva" no cadastro de despesas aparecem aqui e saem do saldo.', alvo: 'tabela-obras-fundo' },
+      { titulo: 'Por ano e por mês', descricao: 'O resumo por ano e o movimento mês a mês mostram aportes, retiradas e o saldo acumulado.', alvo: 'tabela-fundo-ano' },
+    ],
+  },
   '/admin/visualizar/historico': {
     resumo:
       'Mostra quem alterou o quê nos dados financeiros (taxas, despesas, outras receitas e configurações), com o valor de antes e de depois. O registro não pode ser editado nem apagado.',
@@ -116,6 +127,14 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
   },
 
   // ---------- Moradores ----------
+  '/minha-area/fundo-reserva': {
+    resumo: 'Mostra o saldo do fundo de reserva do condomínio e as obras pagas com ele.',
+    passos: [
+      { titulo: 'Saldo do fundo', descricao: 'Quanto o fundo tem hoje, quanto já entrou e quanto já saiu.', alvo: 'cartoes-fundo' },
+      { titulo: 'Obras pagas com o fundo', descricao: 'As obras e despesas que foram pagas com o fundo de reserva.', alvo: 'tabela-obras-fundo' },
+      { titulo: 'Por ano e por mês', descricao: 'A evolução do fundo ao longo do tempo.', alvo: 'tabela-fundo-ano' },
+    ],
+  },
   '/minha-area/apartamentos': {
     resumo: 'Mostra os apartamentos ligados à sua conta.',
     passos: [
@@ -201,6 +220,16 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
       ],
     },
     {
+      id: 'fundo-reserva',
+      titulo: 'Configurar e acompanhar o fundo de reserva',
+      descricao: 'Para definir quanto de cada taxa vai para o fundo e ver o saldo.',
+      passos: [
+        { texto: 'Em Cadastro → Configurações financeiras, defina o saldo inicial do fundo e o percentual de cada ano (padrão 10%).', rota: '/admin/cadastro/configuracoes' },
+        { texto: 'Ao lançar uma obra paga com o fundo, marque "Paga pelo fundo de reserva" em Cadastro → Receitas / Despesas (aba Despesas).', rota: '/admin/cadastro/financeiro' },
+        { texto: 'Em Visualizar → Fundo de reserva veja o saldo, as obras pagas e o movimento por ano e por mês.', rota: '/admin/visualizar/fundo' },
+      ],
+    },
+    {
       id: 'inadimplencia-evolucao',
       titulo: 'Acompanhar inadimplência e evolução',
       descricao: 'Para ver como o condomínio está ao longo do tempo.',
@@ -237,6 +266,15 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
         { texto: 'Abra Financeiro no menu.', rota: '/minha-area/financeiro' },
         { texto: 'Escolha o ano e o mês. Os cartões mostram receitas, despesas e saldo.' },
         { texto: 'Nas listas de outras receitas e despesas, clique em "Ver comprovante" para abrir o arquivo em uma nova aba.' },
+      ],
+    },
+    {
+      id: 'consultar-fundo',
+      titulo: 'Consultar o fundo de reserva',
+      descricao: 'Para saber quanto o fundo tem e em que foi usado.',
+      passos: [
+        { texto: 'Abra Fundo de reserva no menu.', rota: '/minha-area/fundo-reserva' },
+        { texto: 'Veja o saldo atual, as obras pagas com o fundo e o movimento por ano.' },
       ],
     },
   ],

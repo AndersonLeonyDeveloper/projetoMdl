@@ -12,6 +12,7 @@ import {
   TeamOutlined,
   HistoryOutlined,
   CalendarOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import './App.css';
 import { AjudaProvider } from './ajuda/AjudaContext';
@@ -25,6 +26,7 @@ import { Home } from './pages/Home';
 const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
 const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
 const HistoricoAlteracoes = lazy(() => import('./pages/admin/HistoricoAlteracoes').then((m) => ({ default: m.HistoricoAlteracoes })));
+const FundoDeReserva = lazy(() => import('./pages/FundoDeReserva').then((m) => ({ default: m.FundoDeReserva })));
 const TaxasDoMes = lazy(() => import('./pages/admin/TaxasDoMes').then((m) => ({ default: m.TaxasDoMes })));
 const ConfiguracoesFinanceiras = lazy(() => import('./pages/admin/ConfiguracoesFinanceiras').then((m) => ({ default: m.ConfiguracoesFinanceiras })));
 const VisualizarFinanceiro = lazy(() => import('./pages/admin/VisualizarFinanceiro').then((m) => ({ default: m.VisualizarFinanceiro })));
@@ -56,6 +58,7 @@ const ADMIN_MENU: MenuProps['items'] = [
       { key: '/admin/visualizar/evolucao', label: 'Evolução', icon: <LineChartOutlined /> },
       { key: '/admin/visualizar/moradores', label: 'Dados dos Moradores', icon: <TeamOutlined /> },
       { key: '/admin/visualizar/inadimplencia', label: 'Taxa de Inadimplência', icon: <WarningOutlined /> },
+      { key: '/admin/visualizar/fundo', label: 'Fundo de reserva', icon: <BankOutlined /> },
       { key: '/admin/visualizar/historico', label: 'Histórico de alterações', icon: <HistoryOutlined /> },
     ],
   },
@@ -65,6 +68,7 @@ const MORADOR_MENU: MenuProps['items'] = [
   { key: '/minha-area/apartamentos', label: 'Meus Apartamentos', icon: <HomeOutlined /> },
   { key: '/minha-area/dados', label: 'Meus Dados', icon: <IdcardOutlined /> },
   { key: '/minha-area/financeiro', label: 'Financeiro', icon: <DollarCircleOutlined /> },
+  { key: '/minha-area/fundo-reserva', label: 'Fundo de reserva', icon: <BankOutlined /> },
 ];
 
 // O endereço antigo da tela de taxas continua funcionando e leva para a tela única, mantendo os filtros da URL.
@@ -99,6 +103,7 @@ function App() {
         <Route path="visualizar/evolucao" element={<VisualizarEvolucao />} />
         <Route path="visualizar/moradores" element={<VisualizarMoradores />} />
         <Route path="visualizar/inadimplencia" element={<VisualizarInadimplencia />} />
+        <Route path="visualizar/fundo" element={<FundoDeReserva />} />
         <Route path="visualizar/historico" element={<HistoricoAlteracoes />} />
       </Route>
 
@@ -114,6 +119,7 @@ function App() {
         <Route path="apartamentos" element={<MeusApartamentos />} />
         <Route path="dados" element={<MeusDados />} />
         <Route path="financeiro" element={<FinanceiroCondominio />} />
+        <Route path="fundo-reserva" element={<FundoDeReserva />} />
       </Route>
     </Routes>
     </AjudaProvider>

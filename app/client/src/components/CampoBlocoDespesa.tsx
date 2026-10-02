@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Form, Select } from 'antd';
+import { Checkbox, Form, Select } from 'antd';
 import { api } from '../api/client';
 
 interface Bloco {
@@ -26,6 +26,15 @@ export function CampoBlocoDespesa({ testId }: { testId: string }) {
         options={blocos.map((b) => ({ value: b.id, label: `Bloco ${b.numero}` }))}
         data-testid={testId}
       />
+    </Form.Item>
+  );
+}
+
+// Marca a despesa como paga com o fundo de reserva (uma obra, por exemplo): ela sai do saldo do fundo.
+export function CampoFundoReserva({ testId }: { testId: string }) {
+  return (
+    <Form.Item name="fundo_reserva" valuePropName="checked" extra="Marque para uma obra paga com o fundo: ela é descontada do saldo do fundo.">
+      <Checkbox data-testid={testId}>Paga pelo fundo de reserva</Checkbox>
     </Form.Item>
   );
 }

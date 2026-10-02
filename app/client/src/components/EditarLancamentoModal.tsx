@@ -3,7 +3,7 @@ import { Alert, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Space } f
 import type { UploadFile } from 'antd';
 import dayjs from 'dayjs';
 import { api, mensagemDeErro } from '../api/client';
-import { CampoBlocoDespesa } from './CampoBlocoDespesa';
+import { CampoBlocoDespesa, CampoFundoReserva } from './CampoBlocoDespesa';
 import { CampoComprovante } from './CampoComprovante';
 import { montarFormData, validarComprovante } from '../utils/comprovante';
 import { ComprovanteLink } from './ComprovanteLink';
@@ -18,6 +18,7 @@ export interface Lancamento {
   motivo_cancelamento?: string | null;
   bloco_id?: number | null; // só despesas
   bloco_numero?: string | null;
+  fundo_reserva?: number; // só despesas: 1 = paga pelo fundo de reserva
 }
 
 interface Valores {
@@ -25,6 +26,7 @@ interface Valores {
   valor: number;
   data: dayjs.Dayjs;
   bloco_id?: number;
+  fundo_reserva?: boolean;
   remover_comprovante?: boolean;
   comprovante?: UploadFile[];
 }
@@ -55,7 +57,10 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
         valor: values.valor,
         data: values.data.format('YYYY-MM-DD'),
       };
-      if (comBloco) campos.bloco_id = values.bloco_id ?? '';
+      if (comBloco) {
+        campos.bloco_id = values.bloco_id ?? '';
+        campos.fundo_reserva = values.fundo_reserva ? 'true' : 'false';
+      }
       if (values.remover_comprovante) campos.remover_comprovante = 'true';
       await api.put(`/financeiro/${rota}/${lancamento.id}`, montarFormData(campos, values.comprovante));
       onSalvo();
@@ -94,6 +99,7 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
             valor: lancamento.valor,
             data: dayjs(lancamento.data),
             bloco_id: lancamento.bloco_id ?? undefined,
+            fundo_reserva: lancamento.fundo_reserva === 1,
             remover_comprovante: false,
             comprovante: [],
           } : undefined
@@ -112,6 +118,7 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
           </Form.Item>
         </Space>
         {comBloco && <CampoBlocoDespesa testId="select-editar-bloco" />}
+        {comBloco && <CampoFundoReserva testId="checkbox-editar-fundo" />}
         {lancamento?.comprovante_path && (
           <Form.Item label="Comprovante atual">
             <Space>

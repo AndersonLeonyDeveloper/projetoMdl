@@ -9,7 +9,7 @@ const { RangePicker } = DatePicker;
 
 interface Registro {
   id: number;
-  entidade: 'taxa' | 'despesa' | 'outra_receita' | 'configuracao';
+  entidade: 'taxa' | 'despesa' | 'outra_receita' | 'configuracao' | 'apartamento' | 'acordo';
   entidade_id: number | null;
   acao: string;
   usuario_email: string | null;
@@ -28,10 +28,13 @@ const ENTIDADES: Record<Registro['entidade'], string> = {
   despesa: 'Despesa',
   outra_receita: 'Outra receita',
   configuracao: 'Configuração',
+  apartamento: 'Apartamento',
+  acordo: 'Acordo',
 };
 const ACOES: Record<string, { texto: string; cor: string }> = {
   criar: { texto: 'Criado', cor: 'green' },
   editar: { texto: 'Editado', cor: 'blue' },
+  editar_bloco: { texto: 'Editado (bloco)', cor: 'blue' },
   pagar: { texto: 'Pagamento registrado', cor: 'cyan' },
   gerar_mes: { texto: 'Taxas geradas', cor: 'geekblue' },
   recalcular_juros: { texto: 'Juros recalculado', cor: 'purple' },
@@ -54,6 +57,13 @@ const CAMPOS: Record<string, string> = {
   multa_percentual: 'Multa (%)',
   juros_mensal_percentual: 'Juros ao mês (%)',
   dia_vencimento: 'Dia de vencimento',
+  fundo_saldo_inicial: 'Saldo inicial do fundo de reserva',
+  fundo_reserva: 'Paga pelo fundo de reserva (1 = sim)',
+  bloco_id: 'Bloco (id)',
+  fator_taxa: 'Fator da taxa',
+  bloco: 'Bloco',
+  apartamentos_alterados: 'Apartamentos alterados',
+  apartamentos_com_fator_diferente: 'Apartamentos com fator diferente de 1',
   criadas: 'Taxas criadas',
   ignoradas: 'Ignoradas (já existiam)',
 };
@@ -69,7 +79,11 @@ function achatar(objeto: Record<string, unknown> | null, prefixo = ''): Record<s
   return saida;
 }
 const rotuloDoCampo = (campo: string) =>
-  campo.startsWith('taxas_padrao.') ? `Taxa de ${campo.split('.')[1]}` : (CAMPOS[campo] ?? campo);
+  campo.startsWith('taxas_padrao.')
+    ? `Taxa de ${campo.split('.')[1]}`
+    : campo.startsWith('fundo_percentuais.')
+      ? `Fundo de reserva (%) de ${campo.split('.')[1]}`
+      : (CAMPOS[campo] ?? campo);
 const mostrar = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
 const emHorarioLocal = (utc: string) => new Date(`${utc.replace(' ', 'T')}Z`).toLocaleString('pt-BR');
 
