@@ -49,6 +49,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Exclusão/desativação de vínculo é uma ação restrita ao Admin; o histórico de vínculos desativados é preservado (não é hard delete).
 - Um apartamento tem no máximo 1 proprietário ativo, mas pode ter vários inquilinos ativos ao mesmo tempo.
 - Trocar um inquilino de um apartamento desativa o vínculo dele e cria um novo — não sobrescreve o registro existente.
+- Na tela Dados dos Moradores (Admin), a linha do proprietário também mostra a situação das mensalidades do apartamento (seção 4.9). Inquilinos não têm essa informação.
 
 ## 4. Módulo Financeiro
 
@@ -90,6 +91,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.5 Consultas / Filtros
 - Financeiro pode ser filtrado por Ano → Mês → Tipo de receita (Taxa de Condomínio / Outras Receitas) → Bloco.
+- A tabela de taxas de Visualizar → Financeiro também pode ser filtrada por **apartamento**, mas só por link (não há campo na tela): os meses em atraso de Dados dos Moradores (seção 4.9) abrem a tela com `ano`, `mes` e `apartamento_id` na URL. Com o filtro ativo, a tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos". O filtro vale só para a tabela de taxas; os resumos do mês não mudam.
 - Tela de Evolução (Admin): tendência mensal/anual de receitas, despesas, saldo e inadimplência em vários anos (ano inicial/final), com cartões dos últimos 12 meses.
 - Tela de Inadimplência: consolidado anual, com drill-down por mês → bloco → apartamento (lista de proprietário/inquilino e situação).
 
@@ -165,6 +167,8 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - ~~Regra exata de cálculo de juros por atraso~~ — definida em 4.1.1: multa única de 2% mais juros simples de 1% ao mês, proporcional aos dias. Segue em aberto se a convenção de cada condomínio pode prever outra regra (juros compostos, multa por mês) e como tratar acordos parcelados (item 2.7 do backlog).
 - ~~Se um apartamento pode ter mais de um inquilino~~ — definido: sim, vários inquilinos ativos. Segue em aberto se pode haver mais de um proprietário (hoje: no máximo 1 ativo).
 - Regra de expiração/validade da "nova senha" enviada por e-mail.
+- **Dívida de quem sai do apartamento:** a coluna Mensalidades (seção 4.9) mostra, para o proprietário atual, **todas** as mensalidades em atraso do apartamento, inclusive as de antes de ele assumir. Hoje a taxa pertence ao apartamento, e não à pessoa. Falta definir se a dívida acompanha o apartamento (comum em condomínios) ou o proprietário da época.
+- **Apartamento sem proprietário e com atraso:** a situação de pagamento só aparece na linha do proprietário. Um apartamento só com inquilinos e com mensalidades vencidas não mostra o atraso em Dados dos Moradores (continua visível em Visualizar → Financeiro e na Inadimplência). Falta definir se a tela deve avisar.
 - Contagem de `meses_atraso` ao remover um pagamento ou ao pagar uma taxa antiga com outras em aberto: hoje o registro de pagamento zera o contador da própria taxa, e a remoção do pagamento mantém o valor anterior.
 
 ## 8. Ajuda guiada (Admin e moradores)
