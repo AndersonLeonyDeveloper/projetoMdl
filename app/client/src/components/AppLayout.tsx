@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Layout, Menu, Button, Typography, Space, Avatar, Tooltip } from 'antd';
+import { Suspense, useState } from 'react';
+import { Layout, Menu, Button, Typography, Space, Avatar, Spin, Tooltip } from 'antd';
 import { LogoutOutlined, QuestionCircleOutlined, UserOutlined } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
@@ -87,7 +87,9 @@ export function AppLayout({
           </Space>
         </Header>
         <Content style={{ margin: 24 }}>
-          <Outlet />
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '80px auto' }} data-testid="carregando-tela" />}>
+            <Outlet />
+          </Suspense>
         </Content>
         <PainelAjuda />
         <TourDaTela />

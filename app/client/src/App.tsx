@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import {
@@ -17,17 +18,19 @@ import { AppLayout } from './components/AppLayout';
 import { Login } from './pages/Login';
 import { EsqueciSenha } from './pages/EsqueciSenha';
 import { Home } from './pages/Home';
-import { CadastroMoradores } from './pages/admin/CadastroMoradores';
-import { CadastroFinanceiro } from './pages/admin/CadastroFinanceiro';
-import { CadastroTaxas } from './pages/admin/CadastroTaxas';
-import { ConfiguracoesFinanceiras } from './pages/admin/ConfiguracoesFinanceiras';
-import { VisualizarFinanceiro } from './pages/admin/VisualizarFinanceiro';
-import { VisualizarMoradores } from './pages/admin/VisualizarMoradores';
-import { VisualizarInadimplencia } from './pages/admin/VisualizarInadimplencia';
-import { VisualizarEvolucao } from './pages/admin/VisualizarEvolucao';
-import { MeusApartamentos } from './pages/morador/MeusApartamentos';
-import { MeusDados } from './pages/morador/MeusDados';
-import { FinanceiroCondominio } from './pages/morador/FinanceiroCondominio';
+
+// Telas carregadas sob demanda: cada uma vira um arquivo separado (a biblioteca de gráficos só baixa na Evolução).
+const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
+const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
+const CadastroTaxas = lazy(() => import('./pages/admin/CadastroTaxas').then((m) => ({ default: m.CadastroTaxas })));
+const ConfiguracoesFinanceiras = lazy(() => import('./pages/admin/ConfiguracoesFinanceiras').then((m) => ({ default: m.ConfiguracoesFinanceiras })));
+const VisualizarFinanceiro = lazy(() => import('./pages/admin/VisualizarFinanceiro').then((m) => ({ default: m.VisualizarFinanceiro })));
+const VisualizarMoradores = lazy(() => import('./pages/admin/VisualizarMoradores').then((m) => ({ default: m.VisualizarMoradores })));
+const VisualizarInadimplencia = lazy(() => import('./pages/admin/VisualizarInadimplencia').then((m) => ({ default: m.VisualizarInadimplencia })));
+const VisualizarEvolucao = lazy(() => import('./pages/admin/VisualizarEvolucao').then((m) => ({ default: m.VisualizarEvolucao })));
+const MeusApartamentos = lazy(() => import('./pages/morador/MeusApartamentos').then((m) => ({ default: m.MeusApartamentos })));
+const MeusDados = lazy(() => import('./pages/morador/MeusDados').then((m) => ({ default: m.MeusDados })));
+const FinanceiroCondominio = lazy(() => import('./pages/morador/FinanceiroCondominio').then((m) => ({ default: m.FinanceiroCondominio })));
 
 const ADMIN_MENU: MenuProps['items'] = [
   {

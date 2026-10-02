@@ -413,6 +413,19 @@
   aparece em Dados dos Moradores. `API` / `E2E`
 - [ ] **Sem pessoas órfãs**: depois da carga, nenhuma pessoa fica sem vínculo e sem login. `DB/Integridade`
 
+### 7.9 Carregamento sob demanda das telas
+
+> Cenários levantados em 02/10/2026 (item 3.5 do backlog). Só interface.
+
+- [ ] **Cada tela abre**: percorrer todas as telas dos dois perfis pelo menu mostra o conteúdo certo, depois de um indicador de
+  carregamento curto, sem tela em branco nem erro no console. `E2E`
+- [ ] **Navegação direta por URL** (colar `/admin/visualizar/evolucao`, recarregar a página) abre a tela certa. `E2E`
+- [ ] **Evolução separada**: ao abrir só o login e a primeira tela, o arquivo da biblioteca de gráficos não é baixado; ele só
+  é pedido ao entrar em Evolução. `E2E` / performance
+- [ ] **Falha de rede ao carregar uma tela**: com o arquivo da tela indisponível, a aplicação não fica travada (comportamento
+  definido: mensagem ou nova tentativa). `E2E`
+- [ ] **Tamanho**: o pacote de entrada do build fica abaixo de 300 kB. `E2E` / performance
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

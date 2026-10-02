@@ -97,8 +97,8 @@ Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra per
 ### [x] 3.4 Comprovantes de exemplo — esforço M
 *Implementado em 02/10/2026.* O script `db:comprovantes` gera 12 arquivos fictícios (PDF e JPEG, 2 modelos por tipo) em `app/server/data/comprovantes/`, e o `db:seed:financeiro` já o chama. Parte dos lançamentos aponta para eles (60% das taxas pagas, 80% das receitas, 90% das despesas). Os três formulários de cadastro têm o campo opcional "Comprovante" (PDF, JPEG ou PNG, até 5 MB), e os dois perfis veem o arquivo pelo link "Ver comprovante" (taxas na tela do admin, receitas e despesas nas telas de Financeiro dos dois perfis).
 
-### [ ] 3.5 Carregamento sob demanda das telas — esforço P
-*Identificada em 01/10/2026, após adicionar o `recharts`.* O build do cliente avisa que o pacote passou de 500 kB. Carregar as telas por rota (`React.lazy`) evitaria baixar a biblioteca de gráficos fora da tela de Evolução.
+### [x] 3.5 Carregamento sob demanda das telas — esforço P
+*Identificada em 01/10/2026, após adicionar o `recharts`.* O build do cliente avisa que o pacote passou de 500 kB. Carregar as telas por rota (`React.lazy`) evitaria baixar a biblioteca de gráficos fora da tela de Evolução. *Implementado em 02/10/2026:* as telas de admin e de morador carregam com `React.lazy` (`App.tsx`), com um indicador de carregamento no layout. O pacote de entrada caiu de 1.776 kB para 257 kB e a Evolução, com o `recharts`, virou um arquivo próprio de 380 kB. **O aviso de 500 kB do build continua**, por causa de um arquivo compartilhado do antd (cerca de 580 kB) que as telas dividem; reduzi-lo exigiria separar o antd por componente ou aumentar o limite do aviso.
 
 ### [ ] 3.6 Agente escriba de casos de teste (skill ou subagente) — esforço M
 *Identificada em 01/10/2026.* Um agente que, dada uma funcionalidade nova ou alterada, adiciona cenários em `sugestoes-de-testes.md` no formato já usado. É o primeiro passo sugerido em `ia-generativa-em-testes.md`, que também lista os agentes seguintes (critérios de aceite, TCs combinatórios, testes automatizados, massa de dados, seleção de regressão).
