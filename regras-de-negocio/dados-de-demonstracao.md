@@ -71,7 +71,7 @@ O objetivo é que o histórico seja **crível para quem conhece condomínio**. P
 
 O script também **regrava o valor da taxa por ano** (tabela `taxa_padrao`, de 2020 a 2026), que aparece em Cadastro → Configurações financeiras e pré-preenche o lançamento de taxa. Multa (2%), juros (1% ao mês) e vencimento (dia 10) ficam no padrão da tabela `configuracao_financeira`, que o seed não altera.
 
-O script apaga as taxas, receitas e despesas existentes e gera **81 meses (jan/2020 a set/2026)** para as 192 unidades: cerca de **15,5 mil taxas**, **650 receitas** e **785 despesas**.
+O script apaga as taxas, receitas e despesas existentes e gera **81 meses (jan/2020 a set/2026)** para as 192 unidades: cerca de **15,5 mil taxas**, **650 receitas** e **786 despesas**.
 
 ### 4.1 Taxa de condomínio
 
@@ -131,10 +131,12 @@ Eventos de obra e emergência, que criam as variações mais visíveis:
 | mar–jul/2020 | Álcool em gel, EPIs e sanitização (pandemia) | R$ 1,8 mil/mês |
 | mar–mai/2022 | Instalação de CFTV, em 3 parcelas | R$ 38 mil |
 | fev–mai/2023 | Pintura dos 12 blocos, em 4 parcelas | R$ 140 mil |
-| jun/2024 | Troca de bombas e reforma do reservatório | R$ 18 mil |
-| mar/2025 | Impermeabilização do telhado dos blocos 03 e 07 | R$ 22 mil |
+| jun/2024 | Troca de bombas e reforma do reservatório (despesa só do bloco 05) | R$ 18 mil |
+| mar/2025 | Impermeabilização do telhado dos blocos 03 e 07 (uma despesa para cada bloco, somando R$ 22 mil corrigidos) | R$ 22 mil |
 | out/2025 | Reforma da quadra | R$ 24 mil |
 | abr/2026 | Renovação do AVCB e recarga de extintores | R$ 6 mil |
+
+Todas as despesas do seed são **gerais** (divididas por igual entre os blocos), exceto estas três, que são de um bloco só: as bombas do bloco 05 e a impermeabilização dos blocos 03 e 07 (uma despesa para cada). Assim a demonstração do rateio por bloco tem o que mostrar sem mudar os totais do condomínio.
 
 ### 4.4 Outras receitas
 

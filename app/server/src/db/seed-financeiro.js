@@ -54,8 +54,9 @@ const DESPESAS_PONTUAIS = [
   ...[3, 4, 5, 6, 7].map((mes) => [m(2020, mes), 'Álcool em gel, EPIs e sanitização das áreas comuns', 1800, 14]),
   ...[3, 4, 5].map((mes, i) => [m(2022, mes), `Instalação de CFTV — parcela ${i + 1}/3`, 38000 / 3, 16]),
   ...[2, 3, 4, 5].map((mes, i) => [m(2023, mes), `Pintura dos 12 blocos — parcela ${i + 1}/4`, 140000 / 4, 14]),
-  [m(2024, 6), 'Troca de bombas d’água e reforma do reservatório', 18000, 11],
-  [m(2025, 3), 'Impermeabilização do telhado dos blocos 03 e 07', 22000, 13],
+  // O 5º item, quando existe, atribui a despesa a um bloco (texto) ou divide o valor entre vários ({bloco} na descrição).
+  [m(2024, 6), 'Troca de bombas d’água e reforma do reservatório — bloco 05', 18000, 11, '05'],
+  [m(2025, 3), 'Impermeabilização do telhado do bloco {bloco}', 22000, 13, ['03', '07']],
   [m(2025, 10), 'Reforma da quadra poliesportiva', 24000, 17],
   [m(2026, 4), 'Renovação do AVCB e recarga de extintores', 6000, 8],
 ];
@@ -258,8 +259,21 @@ for (let i = 0; i <= ULTIMO_MES; i++) {
   if (mes === 3) {
     despesas.push(['Seguro predial anual', arred(faturamento * SEGURO_PESO_ANUAL * (0.95 + rand() * 0.1)), dataDoMes(i, 20)]);
   }
-  for (const [idx, descricao, valor, dia] of DESPESAS_PONTUAIS) {
-    if (idx === i) despesas.push([descricao, arred(valor * inflacao(ano)), dataDoMes(i, dia)]);
+  for (const [idx, descricao, valor, dia, blocos] of DESPESAS_PONTUAIS) {
+    if (idx !== i) continue;
+    const total = arred(valor * inflacao(ano));
+    const data = dataDoMes(i, dia);
+    if (Array.isArray(blocos)) {
+      // Divide o total entre os blocos sem perder centavos: o último fica com o resto.
+      let restante = total;
+      blocos.forEach((bloco, k) => {
+        const parte = k === blocos.length - 1 ? restante : arred(total / blocos.length);
+        restante = arred(restante - parte);
+        despesas.push([descricao.replace('{bloco}', bloco), parte, data, bloco]);
+      });
+    } else {
+      despesas.push([descricao, total, data, blocos ?? null]);
+    }
   }
 
   // Receitas
@@ -296,7 +310,8 @@ const insertTaxa = db.prepare(`
   VALUES (@apartamento_id, @mes_referencia, @ano_referencia, @valor, @juros, @data_pagamento, @situacao, @meses_atraso, @comprovante_path)
 `);
 const insertReceita = db.prepare('INSERT INTO outras_receitas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)');
-const insertDespesa = db.prepare('INSERT INTO despesas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)');
+const insertDespesa = db.prepare('INSERT INTO despesas (descricao, valor, data, comprovante_path, bloco_id) VALUES (?, ?, ?, ?, ?)');
+const idDoBloco = new Map(db.prepare('SELECT numero, id FROM blocos').all().map((b) => [b.numero, b.id]));
 
 // Comprovantes de exemplo: parte dos lançamentos aponta para um dos modelos gerados (PDF ou JPEG).
 // Escolha por posição (não usa o gerador aleatório), então não altera os valores já sorteados.
@@ -322,7 +337,9 @@ withTransaction(() => {
     insertTaxa.run({ ...l, comprovante_path: l.situacao === 'adimplente' ? comprovanteDe('taxa', i, 60) : null })
   );
   receitas.forEach((r, i) => insertReceita.run(...r, comprovanteDe('receita', i, 80)));
-  despesas.forEach((d, i) => insertDespesa.run(...d, comprovanteDe('despesa', i, 90)));
+  despesas.forEach(([descricao, valor, data, bloco = null], i) =>
+    insertDespesa.run(descricao, valor, data, comprovanteDe('despesa', i, 90), bloco ? idDoBloco.get(bloco) : null)
+  );
 });
 
 // ---------- Resumo ----------

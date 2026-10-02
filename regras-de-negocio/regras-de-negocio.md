@@ -92,12 +92,18 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.3 Despesas
 - Nível condomínio (não vinculadas a apartamento).
-- Campos: tipo/descrição, data, valor, comprovante opcional (ver seção 6).
+- Campos: tipo/descrição, data, valor, **bloco (opcional)** e comprovante opcional (ver seção 6).
+- **Bloco da despesa:** sem bloco, a despesa é **geral** e se divide por igual entre os blocos; com bloco, é **só daquele bloco** (ex.: reparo da cobertura do bloco 07). O bloco precisa existir (400 se não). Na edição, não enviar o campo mantém o bloco atual, e enviá-lo vazio volta a despesa para geral. Só despesas têm bloco; outras receitas são sempre do condomínio todo.
 - Exemplos observados no protótipo: produtos de limpeza, manutenção (cerca, muro, quadra, pintura de blocos).
 
 ### 4.4 Cálculos
-- **Saldo mensal (por bloco)** = soma(receitas do bloco no mês) − soma(despesas do bloco no mês).
-  - Despesas de nível condomínio são rateadas/atribuídas conforme regra a definir (ex.: rateio igualitário entre blocos, ou lançamento manual por bloco).
+- **Saldo mensal (por bloco)** = receitas do bloco no mês − despesas do bloco no mês, pelo mês de referência.
+  - **Receitas do bloco** = taxas pagas dos apartamentos do bloco (valor mais juros) + a **parte do bloco nas outras receitas**, que são do condomínio todo e se dividem por igual entre os blocos.
+  - **Despesas do bloco** = despesas lançadas só para o bloco + a **parte do bloco nas despesas gerais** (sem bloco), divididas por igual entre os blocos.
+  - **Rateio igualitário:** a divisão é igual entre os blocos (hoje 12), em centavos e sem perda: o que sobra da divisão exata vai de 1 centavo em 1 centavo para os primeiros blocos, então a soma das partes é exatamente o total e as partes diferem no máximo 1 centavo. Não há rateio proporcional às unidades (com 12 blocos de 16 apartamentos daria o mesmo resultado).
+  - **Conferência:** a soma dos saldos de todos os blocos é igual ao saldo mensal do condomínio (competência).
+  - Taxas em aberto (inadimplentes e a vencer) **não** entram no saldo do bloco; aparecem à parte, nas colunas "Inadimplente" e "A vencer". Cancelados ficam de fora (seção 4.11).
+  - Isso **substitui** a conta antiga do saldo do bloco (adimplente − inadimplente). A API devolve, por bloco, `adimplente`, `inadimplente`, `a_vencer`, `outras_receitas_rateadas`, `despesas_especificas`, `despesas_rateadas`, `receitas`, `despesas` e `saldo`.
 - **Total adimplente (mês/bloco)** = soma dos valores de taxa de condomínio pagos no prazo.
 - **Total inadimplente (mês/bloco)** = soma dos valores de taxa de condomínio **em atraso** (em aberto e já vencidas). Taxas em aberto ainda no prazo aparecem à parte, como **A vencer**, e não entram no inadimplente nem no saldo por bloco. O mesmo vale para a Inadimplência anual e para a Evolução ("em aberto" e "atrasadas"), que usam o dia de vencimento configurado. Para o histórico, nada muda, porque tudo já venceu; só o mês corrente é afetado. Alterar o dia de vencimento em Configurações financeiras reclassifica retroativamente quais taxas contam como atrasadas nesses resumos.
 - Indicadores visuais: saldo positivo (verde/seta para cima) e saldo negativo (vermelho/seta para baixo).
@@ -145,7 +151,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.8 Edição de Lançamentos (Admin)
 - O admin pode editar **despesas**, **outras receitas** e **taxas de condomínio** já cadastradas, para corrigir erros de digitação.
-- **Despesas e outras receitas:** descrição, valor e data. As mesmas validações valem no cadastro e na edição: descrição não vazia, valor numérico **maior ou igual a zero** e data válida (AAAA-MM-DD); caso contrário, 400 e nada é alterado.
+- **Despesas e outras receitas:** descrição, valor e data (despesas também o bloco). As mesmas validações valem no cadastro e na edição: descrição não vazia, valor numérico **maior ou igual a zero** e data válida (AAAA-MM-DD); caso contrário, 400 e nada é alterado.
 - **Taxas:** valor, juros, data de pagamento e comprovante. **Apartamento e mês/ano de referência não podem ser alterados** (identificam a taxa; para corrigir, é preciso outro lançamento).
   - Informar a data de pagamento torna a taxa `Adimplente` (e zera os meses em atraso). Remover a data a torna `Inadimplente` de novo, **zera o juros** (taxa em aberto não tem juros) e mantém os meses em atraso como estavam (regra de contagem ainda em aberto, seção 7).
   - **Juros ao editar:** o valor informado prevalece. Se não for informado e a data de pagamento estiver sendo definida ou alterada, o sistema calcula (4.1.1). Se a data não mudou, mantém o juros já gravado. A tela preenche o campo com o valor calculado ao escolher uma nova data, e o admin pode ajustá-lo.
@@ -223,7 +229,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ## 7. Pontos de Ambiguidade a Validar (para futura clarificação)
 
-- Regra de rateio de despesas condominiais entre os blocos.
+- ~~Regra de rateio de despesas condominiais entre os blocos~~ — definida na seção 4.4: geral dividida por igual entre os blocos, mais despesa de um bloco específico. Segue em aberto o rateio proporcional às unidades, caso a estrutura deixe de ser de 12 blocos iguais.
 - ~~Regra exata de cálculo de juros por atraso~~ — definida em 4.1.1: multa única de 2% mais juros simples de 1% ao mês, proporcional aos dias. Segue em aberto se a convenção de cada condomínio pode prever outra regra (juros compostos, multa por mês) e como tratar acordos parcelados (item 2.7 do backlog).
 - ~~Se um apartamento pode ter mais de um inquilino~~ — definido: sim, vários inquilinos ativos. Segue em aberto se pode haver mais de um proprietário (hoje: no máximo 1 ativo).
 - Regra de expiração/validade da "nova senha" enviada por e-mail.

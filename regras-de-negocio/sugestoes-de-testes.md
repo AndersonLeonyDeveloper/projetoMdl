@@ -648,6 +648,32 @@
 - [ ] **Tela de fatores**: em Configurações financeiras, escolher um bloco lista os apartamentos com o fator; "Salvar" só habilita
   quando o valor muda; "Aplicar a todo o bloco" atualiza a tabela e o resumo ("N apartamento(s) com fator diferente de 1,00"). `E2E`
 
+### 7.19 Rateio de despesas por bloco
+
+> Cenários levantados em 02/10/2026 (item 2.3 do backlog). Regras nas seções 4.3 e 4.4 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`RateioPorBlocoApiTest`, compilado e ainda não executado).
+
+- [ ] **Mês vazio**: sem lançamentos, todos os blocos têm despesas, receitas e saldo zero. `API`
+- [ ] **Despesa geral**: R$ 1.200 sem bloco vira R$ 100 em cada um dos 12 blocos (`despesas_rateadas`), e o saldo de cada bloco é −100. `API`
+- [ ] **Despesa de um bloco**: R$ 600 no bloco 07 aparece só nele (`despesas_especificas`), somada à parte das gerais; os outros blocos não mudam. `API`
+- [ ] **Resto de centavos**: R$ 1.000 / 12 não divide exato; a soma das partes é exatamente 1.000,00 e os blocos diferem no máximo 1 centavo. `API`
+- [ ] **Outras receitas**: R$ 600 de outra receita viram R$ 50 de receita rateada em cada bloco. `API`
+- [ ] **Conferência**: a soma dos saldos dos blocos é igual ao saldo mensal (competência), em vários meses, inclusive com despesas
+  específicas e com cancelamentos. `API` / `DB/Integridade`
+- [ ] **Saldo = receitas − despesas** por bloco, com receitas = adimplente + outras rateadas e despesas = específicas + rateadas. `API`
+- [ ] **Taxas em aberto fora do saldo**: inadimplente e a vencer aparecem nas colunas próprias e não mexem no saldo. `API`
+- [ ] **Validação do bloco**: bloco inexistente ou texto retorna 400; vazio vira despesa geral. `API`
+- [ ] **Edição**: sem `bloco_id` mantém o bloco; com outro bloco troca; vazio volta a geral; bloco inexistente retorna 400; a troca fica no
+  histórico (antes e depois). `API`
+- [ ] **Listagem**: `GET /financeiro/despesas` traz `bloco_id` e `bloco_numero` (nulos nas gerais); outras receitas não têm bloco. `API`
+- [ ] **Cancelamento**: despesa cancelada sai da parte do bloco e do rateio, e volta ao restaurar. `API`
+- [ ] **Seed**: em 03/2025 só os blocos 03 e 07 têm despesa específica (impermeabilização), e os totais anuais do seed não mudaram
+  (ex.: saldo de 2023 em −R$ 91.569). `API` / `DB/Integridade`
+- [ ] **Campo na tela**: nos formulários de despesa (cadastro e edição) o campo "Bloco (opcional)" vem vazio ("Geral (todos os blocos)") e
+  permite limpar; as outras receitas não têm o campo. `E2E`
+- [ ] **Lista de despesas**: a coluna "Bloco" mostra "Geral" ou "Bloco NN". `E2E`
+- [ ] **Resumo por bloco**: a tabela (admin e morador) mostra a coluna "Despesas (rateio)" e o saldo novo, com a explicação acima da tabela. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

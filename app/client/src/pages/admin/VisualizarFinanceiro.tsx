@@ -13,6 +13,7 @@ interface ResumoBloco {
   adimplente: number;
   inadimplente: number; // em atraso (vencidas)
   a_vencer: number; // em aberto, ainda no prazo
+  despesas: number; // específicas do bloco + parte das gerais
   saldo: number;
 }
 interface ResumoMensal {
@@ -46,6 +47,7 @@ export function VisualizarFinanceiro() {
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Inadimplente', dataIndex: 'inadimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'A vencer', dataIndex: 'a_vencer', render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { title: 'Despesas (rateio)', dataIndex: 'despesas', render: (v: number) => `R$ ${v.toFixed(2)}` },
     {
       title: 'Saldo',
       dataIndex: 'saldo',
@@ -100,6 +102,10 @@ export function VisualizarFinanceiro() {
 
       <Card>
         <Title level={4}>Resumo por bloco</Title>
+        <Paragraph type="secondary">
+          Saldo do bloco = receitas do bloco (taxas pagas + parte das outras receitas) menos as despesas dele (as do próprio
+          bloco + a parte das despesas gerais, divididas por igual entre os blocos).
+        </Paragraph>
         <Table
           data-testid="tabela-resumo-blocos"
           rowKey="bloco_numero"

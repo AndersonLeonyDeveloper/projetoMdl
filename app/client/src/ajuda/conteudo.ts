@@ -54,6 +54,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     passos: [
       { titulo: 'Escolha o tipo', descricao: 'Use as abas para lançar uma outra receita ou uma despesa. As taxas de condomínio ficam em Taxas do mês.', alvo: 'tabs-cadastro-financeiro' },
       { titulo: 'Descrição, valor e data', descricao: 'Preencha o que foi, quanto e quando. O valor não pode ser negativo.' },
+      { titulo: 'Bloco da despesa', descricao: 'Em Despesas, o campo Bloco é opcional: sem bloco, a despesa é geral e se divide por igual entre os blocos; com bloco, vale só para ele (ex.: reparo da cobertura do bloco 07).', alvo: 'tabs-cadastro-financeiro' },
       { titulo: 'Comprovante (opcional)', descricao: 'Anexe um PDF, JPEG ou PNG de até 5 MB. Depois de salvar, ele pode ser aberto pelo link "Ver comprovante".' },
     ],
   },
@@ -74,6 +75,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Período', descricao: 'Escolha o ano e o mês que quer consultar.', alvo: 'input-ano' },
       { titulo: 'Regime: competência ou caixa', descricao: 'Competência conta a taxa no mês a que ela se refere; Caixa conta no mês em que foi paga. Isso muda as receitas e o saldo do mês (despesas e outras receitas não mudam).', alvo: 'segmented-regime' },
       { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido, no regime selecionado.', alvo: 'resumo-mensal' },
+      { titulo: 'Resumo por bloco', descricao: 'Saldo de cada bloco = receitas do bloco menos as despesas dele (as do próprio bloco e a parte das despesas gerais, divididas por igual). As taxas em aberto aparecem nas colunas Inadimplente e A vencer, fora do saldo.', alvo: 'tabela-resumo-blocos' },
       { titulo: 'Taxas do mês', descricao: 'Este atalho abre a tela Taxas do mês já no mês e ano escolhidos, onde ficam a geração, o registro de pagamentos, a edição e o cancelamento das taxas.', alvo: 'atalho-taxas-do-mes' },
       { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento, o Cancelar (com motivo; some dos totais e pode ser restaurado com "Mostrar cancelados") e o link para ver o comprovante.', alvo: 'tabela-despesas' },
     ],

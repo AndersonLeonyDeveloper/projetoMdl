@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS despesas (
   valor REAL NOT NULL,
   data TEXT NOT NULL,
   comprovante_path TEXT,
+  -- Vazio = despesa geral (rateada igualmente entre os blocos). Preenchido = despesa só desse bloco.
+  bloco_id INTEGER REFERENCES blocos(id),
   cancelado_em TEXT,
   cancelado_por INTEGER,
   motivo_cancelamento TEXT,

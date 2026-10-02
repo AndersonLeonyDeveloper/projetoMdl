@@ -37,6 +37,19 @@ const colunas: ColumnsType<Lancamento> = [
 function TabelaLancamentos({ titulo, rotulo, rota, ano, mes, testId }: {
   titulo: string; rotulo: string; rota: string; ano: number; mes: number; testId: string;
 }) {
+  // Só despesas têm bloco: "Geral" (dividida entre os blocos) ou o bloco da despesa.
+  const colunasBase: ColumnsType<Lancamento> =
+    rota === 'despesas'
+      ? [
+          ...colunas.slice(0, 2),
+          {
+            title: 'Bloco',
+            dataIndex: 'bloco_numero',
+            render: (v: string | null | undefined) => (v ? `Bloco ${v}` : 'Geral'),
+          },
+          ...colunas.slice(2),
+        ]
+      : colunas;
   const { usuario } = useAuth();
   const [linhas, setLinhas] = useState<Lancamento[]>([]);
   const [editando, setEditando] = useState<Lancamento | null>(null);
@@ -53,7 +66,7 @@ function TabelaLancamentos({ titulo, rotulo, rota, ano, mes, testId }: {
   const colunasVisiveis: ColumnsType<Lancamento> =
     ehAdmin
       ? [
-          ...colunas,
+          ...colunasBase,
           {
             title: 'Ações',
             key: 'acoes',
@@ -73,7 +86,7 @@ function TabelaLancamentos({ titulo, rotulo, rota, ano, mes, testId }: {
             ),
           },
         ]
-      : colunas;
+      : colunasBase;
 
   return (
     <Card>

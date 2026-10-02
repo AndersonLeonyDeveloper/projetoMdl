@@ -3,6 +3,7 @@ import { Alert, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Space } f
 import type { UploadFile } from 'antd';
 import dayjs from 'dayjs';
 import { api, mensagemDeErro } from '../api/client';
+import { CampoBlocoDespesa } from './CampoBlocoDespesa';
 import { CampoComprovante } from './CampoComprovante';
 import { montarFormData, validarComprovante } from '../utils/comprovante';
 import { ComprovanteLink } from './ComprovanteLink';
@@ -15,12 +16,15 @@ export interface Lancamento {
   comprovante_path: string | null;
   cancelado_em?: string | null;
   motivo_cancelamento?: string | null;
+  bloco_id?: number | null; // só despesas
+  bloco_numero?: string | null;
 }
 
 interface Valores {
   descricao: string;
   valor: number;
   data: dayjs.Dayjs;
+  bloco_id?: number;
   remover_comprovante?: boolean;
   comprovante?: UploadFile[];
 }
@@ -37,6 +41,7 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const novoArquivo = Form.useWatch('comprovante', form);
+  const comBloco = rota === 'despesas'; // só despesas têm bloco
 
   async function salvar(values: Valores) {
     if (!lancamento) return;
@@ -50,6 +55,7 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
         valor: values.valor,
         data: values.data.format('YYYY-MM-DD'),
       };
+      if (comBloco) campos.bloco_id = values.bloco_id ?? '';
       if (values.remover_comprovante) campos.remover_comprovante = 'true';
       await api.put(`/financeiro/${rota}/${lancamento.id}`, montarFormData(campos, values.comprovante));
       onSalvo();
@@ -87,6 +93,7 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
             descricao: lancamento.descricao,
             valor: lancamento.valor,
             data: dayjs(lancamento.data),
+            bloco_id: lancamento.bloco_id ?? undefined,
             remover_comprovante: false,
             comprovante: [],
           } : undefined
@@ -104,6 +111,7 @@ export function EditarLancamentoModal({ rota, rotulo, lancamento, onFechar, onSa
             <DatePicker style={{ width: 160 }} format="DD/MM/YYYY" data-testid="input-editar-data" />
           </Form.Item>
         </Space>
+        {comBloco && <CampoBlocoDespesa testId="select-editar-bloco" />}
         {lancamento?.comprovante_path && (
           <Form.Item label="Comprovante atual">
             <Space>

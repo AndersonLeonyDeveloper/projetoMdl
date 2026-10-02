@@ -3,6 +3,7 @@ import type { UploadFile } from 'antd';
 import { Card, Form, Input, InputNumber, DatePicker, Button, Alert, Tabs, Space } from 'antd';
 import dayjs from 'dayjs';
 import { api } from '../../api/client';
+import { CampoBlocoDespesa } from '../../components/CampoBlocoDespesa';
 import { CampoComprovante } from '../../components/CampoComprovante';
 import { montarFormData, validarComprovante } from '../../utils/comprovante';
 
@@ -75,6 +76,7 @@ function LancarDespesa() {
     descricao: string;
     valor: number;
     data: dayjs.Dayjs;
+    bloco_id?: number;
     comprovante?: UploadFile[];
   }) {
     setMensagem(null);
@@ -85,7 +87,7 @@ function LancarDespesa() {
       await api.post(
         '/financeiro/despesas',
         montarFormData(
-          { descricao: values.descricao, valor: values.valor, data: values.data.format('YYYY-MM-DD') },
+          { descricao: values.descricao, valor: values.valor, data: values.data.format('YYYY-MM-DD'), bloco_id: values.bloco_id ?? '' },
           values.comprovante
         )
       );
@@ -110,6 +112,7 @@ function LancarDespesa() {
         <Form.Item label="Data" name="data" rules={[{ required: true }]}>
           <DatePicker style={{ width: 160 }} format="DD/MM/YYYY" data-testid="input-data-despesa" />
         </Form.Item>
+        <CampoBlocoDespesa testId="select-bloco-despesa" />
         <CampoComprovante testId="upload-comprovante-despesa" />
       </Space>
       {mensagem && (

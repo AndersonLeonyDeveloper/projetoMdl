@@ -378,28 +378,58 @@ financeiroRouter.put('/taxas/:id', requireRole('admin'), uploadComprovante, (req
 
 // ---------- Outras Receitas e Despesas (mesmos campos e regras) ----------
 
+// Bloco da despesa (opcional): vazio = despesa geral, rateada igualmente entre os blocos; preenchido = só desse bloco.
+// Na edição, a ausência do campo mantém o bloco atual.
+function lerBlocoDaDespesa(corpo, atual) {
+  if (!corpo || !('bloco_id' in corpo)) return { valor: atual ? atual.bloco_id : null };
+  if (vazio(corpo.bloco_id)) return { valor: null };
+  const id = lerInteiro(corpo.bloco_id);
+  if (!id || !db.prepare('SELECT 1 FROM blocos WHERE id = ?').get(id)) {
+    return { erro: 'bloco_id deve ser o de um bloco existente.' };
+  }
+  return { valor: id };
+}
+
+// `tabela.extras`: colunas além de descrição, valor, data e comprovante (só despesas têm).
 function lancamentosRouter(tabela, rotulo) {
-  const lerPeriodo = (query, incluirCancelados) => {
-    const condicoes = incluirCancelados ? [] : ['cancelado_em IS NULL'];
+  const extras = tabela.extras ?? [];
+  const lerExtras = (corpo, atual) => {
+    const valores = {};
+    for (const { coluna, ler } of extras) {
+      const lido = ler(corpo, atual);
+      if (lido.erro) return { erro: lido.erro };
+      valores[coluna] = lido.valor;
+    }
+    return { valores };
+  };
+  const lerPeriodo = (query, incluirCancelados, p = '') => {
+    const condicoes = incluirCancelados ? [] : [`${p}cancelado_em IS NULL`];
     const params = {};
-    if (query.ano) { condicoes.push("strftime('%Y', data) = @ano"); params.ano = String(query.ano); }
-    if (query.mes) { condicoes.push("strftime('%m', data) = @mes"); params.mes = String(query.mes).padStart(2, '0'); }
+    if (query.ano) { condicoes.push(`strftime('%Y', ${p}data) = @ano`); params.ano = String(query.ano); }
+    if (query.mes) { condicoes.push(`strftime('%m', ${p}data) = @mes`); params.mes = String(query.mes).padStart(2, '0'); }
     return { where: condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '', params };
   };
 
   financeiroRouter.get(`/${tabela.rota}`, (req, res) => {
-    const { where, params } = lerPeriodo(req.query, querCancelados(req));
-    res.json(db.prepare(`SELECT * FROM ${tabela.nome} ${where} ORDER BY data DESC`).all(params));
+    const prefixo = tabela.comBloco ? 't.' : '';
+    const { where, params } = lerPeriodo(req.query, querCancelados(req), prefixo);
+    const consulta = tabela.comBloco
+      ? `SELECT t.*, b.numero AS bloco_numero FROM ${tabela.nome} t LEFT JOIN blocos b ON b.id = t.bloco_id ${where} ORDER BY t.data DESC`
+      : `SELECT * FROM ${tabela.nome} ${where} ORDER BY data DESC`;
+    res.json(db.prepare(consulta).all(params));
   });
 
   financeiroRouter.post(`/${tabela.rota}`, requireRole('admin'), uploadComprovante, (req, res) => {
     const campos = lerLancamento(req.body);
     if (campos.erro) return res.status(400).json({ error: campos.erro });
+    const lidos = lerExtras(req.body, null);
+    if (lidos.erro) return res.status(400).json({ error: lidos.erro });
     const comprovante = salvarComprovante(req.file);
     if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
+    const colunas = ['descricao', 'valor', 'data', 'comprovante_path', ...Object.keys(lidos.valores)];
     const info = db
-      .prepare(`INSERT INTO ${tabela.nome} (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)`)
-      .run(campos.descricao, campos.valor, campos.data, comprovante.nome);
+      .prepare(`INSERT INTO ${tabela.nome} (${colunas.join(', ')}) VALUES (${colunas.map(() => '?').join(', ')})`)
+      .run(campos.descricao, campos.valor, campos.data, comprovante.nome, ...Object.values(lidos.valores));
     registrarAuditoria(req, {
       entidade: tabela.entidade, entidadeId: Number(info.lastInsertRowid), acao: 'criar',
       depois: instantaneo(db.prepare(`SELECT * FROM ${tabela.nome} WHERE id = ?`).get(info.lastInsertRowid), CAMPOS_LANCAMENTO),
@@ -415,13 +445,16 @@ function lancamentosRouter(tabela, rotulo) {
     if (atual.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO(rotulo) });
     const campos = lerLancamento(req.body);
     if (campos.erro) return res.status(400).json({ error: campos.erro });
+    const lidos = lerExtras(req.body, atual);
+    if (lidos.erro) return res.status(400).json({ error: lidos.erro });
     const comprovante = salvarComprovante(req.file);
     if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
 
     const remover = !comprovante.nome && ehVerdadeiro(req.body?.remover_comprovante);
     const novoComprovante = comprovante.nome ?? (remover ? null : atual.comprovante_path);
-    db.prepare(`UPDATE ${tabela.nome} SET descricao = ?, valor = ?, data = ?, comprovante_path = ? WHERE id = ?`)
-      .run(campos.descricao, campos.valor, campos.data, novoComprovante, atual.id);
+    const atribuicoes = ['descricao = ?', 'valor = ?', 'data = ?', 'comprovante_path = ?', ...Object.keys(lidos.valores).map((c) => `${c} = ?`)];
+    db.prepare(`UPDATE ${tabela.nome} SET ${atribuicoes.join(', ')} WHERE id = ?`)
+      .run(campos.descricao, campos.valor, campos.data, novoComprovante, ...Object.values(lidos.valores), atual.id);
     if (novoComprovante !== atual.comprovante_path) apagarComprovante(atual.comprovante_path);
     const antes = instantaneo(atual, CAMPOS_LANCAMENTO);
     const depois = instantaneo(db.prepare(`SELECT * FROM ${tabela.nome} WHERE id = ?`).get(atual.id), CAMPOS_LANCAMENTO);
@@ -439,7 +472,10 @@ function lancamentosRouter(tabela, rotulo) {
 }
 
 lancamentosRouter({ rota: 'outras-receitas', nome: 'outras_receitas', entidade: 'outra_receita' }, 'Receita');
-lancamentosRouter({ rota: 'despesas', nome: 'despesas', entidade: 'despesa' }, 'Despesa');
+lancamentosRouter(
+  { rota: 'despesas', nome: 'despesas', entidade: 'despesa', comBloco: true, extras: [{ coluna: 'bloco_id', ler: lerBlocoDaDespesa }] },
+  'Despesa'
+);
 
 // ---------- Configurações financeiras ----------
 
@@ -569,10 +605,19 @@ financeiroRouter.get('/resumo/mensal', (req, res) => {
   res.json({ regime, receitas, despesas, saldo: receitas - despesas });
 });
 
-// Visão por bloco (equivalente aos cards "Bloco 1..6" do protótipo).
-// Nota: o protótipo original calcula "Saldo" do card de bloco como Adimplente - Inadimplente
-// (não como receita - despesa). Mantido assim de propósito para refletir a regra observada —
-// ver regras-de-negocio.md, seção 7 (ambiguidades a validar).
+// Divide um valor em n partes iguais em centavos, sem perder nem criar centavos: os primeiros blocos recebem o resto.
+function ratear(total, n) {
+  const centavos = Math.round(total * 100);
+  const base = Math.floor(centavos / n);
+  const resto = centavos - base * n;
+  return Array.from({ length: n }, (_, i) => (base + (i < resto ? 1 : 0)) / 100);
+}
+
+// Visão por bloco (equivalente aos cards "Bloco 1..N" do protótipo).
+// Saldo do bloco = receitas do bloco − despesas do bloco (regras-de-negocio.md, seção 4.4):
+//  - receitas = taxas pagas do bloco (mês de referência) + parte das outras receitas, que são do condomínio todo;
+//  - despesas = despesas só desse bloco + parte das despesas gerais (sem bloco), que se dividem por igual entre os blocos.
+// Taxas em aberto não entram no saldo; aparecem em "inadimplente" (vencidas) e "a_vencer".
 financeiroRouter.get('/resumo/blocos', (req, res) => {
   const { ano, mes } = req.query;
   if (!ano || !mes) return res.status(400).json({ error: 'ano e mes são obrigatórios.' });
@@ -580,6 +625,7 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
   const linhas = db
     .prepare(
       `SELECT
+         b.id AS bloco_id,
          b.numero AS bloco_numero,
          COALESCE(SUM(CASE WHEN t.situacao = 'adimplente' THEN t.valor + t.juros ELSE 0 END), 0) AS adimplente,
          COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND ${sqlVencida('t.')} THEN t.valor + t.juros ELSE 0 END), 0) AS inadimplente,
@@ -593,11 +639,44 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
     )
     .all({ ano, mes, dia: lerConfiguracao().dia_vencimento, hoje: hojeISO() });
 
+  const periodo = { ano: String(ano), mes: String(mes).padStart(2, '0') };
+  const total = (consulta) => db.prepare(consulta).get(periodo).total;
+  const despesasGerais = total(
+    `SELECT COALESCE(SUM(valor), 0) AS total FROM despesas
+     WHERE bloco_id IS NULL AND cancelado_em IS NULL AND strftime('%Y', data) = @ano AND strftime('%m', data) = @mes`
+  );
+  const outrasReceitas = total(
+    `SELECT COALESCE(SUM(valor), 0) AS total FROM outras_receitas
+     WHERE cancelado_em IS NULL AND strftime('%Y', data) = @ano AND strftime('%m', data) = @mes`
+  );
+  const especificas = new Map(
+    db
+      .prepare(
+        `SELECT bloco_id, SUM(valor) AS total FROM despesas
+         WHERE bloco_id IS NOT NULL AND cancelado_em IS NULL AND strftime('%Y', data) = @ano AND strftime('%m', data) = @mes
+         GROUP BY bloco_id`
+      )
+      .all(periodo)
+      .map((l) => [l.bloco_id, l.total])
+  );
+  const partesDasDespesas = ratear(despesasGerais, linhas.length);
+  const partesDasReceitas = ratear(outrasReceitas, linhas.length);
+
   res.json(
-    linhas.map((linha) => ({
-      ...linha,
-      saldo: linha.adimplente - linha.inadimplente,
-    }))
+    linhas.map(({ bloco_id, ...linha }, i) => {
+      const despesasEspecificas = especificas.get(bloco_id) ?? 0;
+      const receitas = linha.adimplente + partesDasReceitas[i];
+      const despesas = despesasEspecificas + partesDasDespesas[i];
+      return {
+        ...linha,
+        outras_receitas_rateadas: partesDasReceitas[i],
+        despesas_especificas: despesasEspecificas,
+        despesas_rateadas: partesDasDespesas[i],
+        receitas,
+        despesas,
+        saldo: Math.round((receitas - despesas) * 100) / 100,
+      };
+    })
   );
 });
 

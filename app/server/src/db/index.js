@@ -36,6 +36,7 @@ const COLUNAS_ADICIONAIS = [
   ['despesas', 'cancelado_por', 'INTEGER'],
   ['despesas', 'motivo_cancelamento', 'TEXT'],
   ['apartamentos', 'fator_taxa', 'REAL NOT NULL DEFAULT 1'],
+  ['despesas', 'bloco_id', 'INTEGER REFERENCES blocos(id)'],
 ];
 
 function garantirColunas() {
