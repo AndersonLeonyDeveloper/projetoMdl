@@ -57,6 +57,35 @@ Acesse `http://localhost:5173`.
 | proprietario.bloco01@example.com … bloco03 | proprietario | apartamento 01 de cada bloco 01–03 |
 | inquilino.bloco01@example.com … bloco03 | inquilino | apartamento 01 de cada bloco 01–03 |
 
+## Telas do sistema
+
+Detalhes das regras em [`regras-de-negocio/regras-de-negocio.md`](regras-de-negocio/regras-de-negocio.md). O ícone `?` no cabeçalho de todas as telas abre a ajuda guiada (tour da tela e guias por tarefa).
+
+**Administrador**
+
+| Menu | O que faz |
+|---|---|
+| Taxas do mês | O ciclo da taxa de um mês em uma tela: resumo, gerar as taxas, registrar pagamento, editar, cancelar e lançar uma taxa avulsa |
+| Acordos | Renegocia taxas em atraso de um apartamento em parcelas (simulação, parcelas, quitação e cancelamento) |
+| Cadastro → Moradores | Cadastra proprietários e inquilinos |
+| Cadastro → Receitas / Despesas | Lança outras receitas e despesas, com comprovante, bloco (rateio) e "paga pelo fundo de reserva" |
+| Cadastro → Configurações financeiras | Valor da taxa por ano, percentual do fundo, multa, juros, vencimento, saldo inicial do fundo e fator da taxa por apartamento |
+| Visualizar → Financeiro | Resumo do mês (competência ou caixa), resumo por bloco, despesas e outras receitas |
+| Visualizar → Evolução | Receitas, despesas e inadimplência ao longo dos anos |
+| Visualizar → Dados dos Moradores | Contatos e situação das mensalidades de cada proprietário, e aviso de apartamentos sem proprietário |
+| Visualizar → Taxa de Inadimplência | Consolidado de um ano, mês a mês |
+| Visualizar → Fundo de reserva | Saldo, aportes, retiradas e obras pagas com o fundo |
+| Visualizar → Histórico de alterações | Quem alterou o quê nos dados financeiros, com antes e depois |
+
+**Proprietário e inquilino**
+
+| Menu | O que faz |
+|---|---|
+| Meus Apartamentos | Apartamentos ligados à conta |
+| Meus Dados | Atualização de nome, telefone e e-mail |
+| Financeiro | Resumo do mês, resumo por bloco, despesas, outras receitas, comprovantes e a evolução do condomínio (sem inadimplência) |
+| Fundo de reserva | Saldo do fundo e obras pagas com ele |
+
 ## Scripts úteis (rodar dentro de `app/`)
 
 - `npm run dev` — sobe server + client em paralelo

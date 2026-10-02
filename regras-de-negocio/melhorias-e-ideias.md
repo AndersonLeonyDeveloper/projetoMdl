@@ -36,6 +36,9 @@ Uma versão da tela de evolução, sem dados de inadimplência por apartamento, 
 ### [ ] 1.7 Ajuda guiada: tour contínuo e descoberta — esforço M
 *Identificada em 02/10/2026.* Guias que, em vez de só listar os cliques, conduzam o usuário entre telas (tour contínuo); botão "esta ajuda foi útil?" para saber quais guias confundem; destaque sutil no ícone `?` para quem nunca o usou, se a descoberta virar problema (hoje o tour só abre quando o usuário clica em "Iniciar tour da tela"). Rodar `verificar:ajuda` também no pipeline de CI quando ele existir (item 3.7).
 
+### [ ] 1.8 Exportar a lista de devedores (CSV) — esforço P
+*Identificada em 02/10/2026 (ideia derivada do item 1.6).* Em Dados dos Moradores, um botão para baixar em CSV os proprietários com mensalidades em atraso: apartamento, contatos, meses em atraso, valor devido hoje (com juros) e taxas em acordo. Serve à cobrança fora do sistema.
+
 ## 2. Modelo de dados e regras
 
 ### [x] 2.1 Fundo de reserva — esforço G
@@ -83,6 +86,24 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 ### [x] 2.15 Tela única "Taxas do mês" — esforço M
 *Identificada em 02/10/2026, ao revisar a usabilidade do ciclo da taxa.* Hoje o ciclo passa por três telas: gerar (Cadastro → Taxas de condomínio), registrar pagamento (Visualizar → Financeiro) e configurar valor, multa e juros (Cadastro → Configurações financeiras). O link "Ver taxas do mês" e o valor editável na geração reduziram o problema. Uma tela única reuniria, para o mês escolhido, o resumo (geradas, pagas, em aberto), o botão gerar e a tabela com "Registrar pagamento", movendo a tabela de taxas de Visualizar → Financeiro. *Implementado em 02/10/2026:* item **Taxas do mês** no menu principal, com resumo (geradas, adimplentes, a vencer, em atraso e canceladas), geração em lote, tabela com Registrar pagamento, Editar, Cancelar/Restaurar e o filtro por apartamento, e o lançamento individual recolhido no fim. A tabela de taxas saiu de Visualizar → Financeiro (que ganhou um atalho) e o endereço antigo da tela de taxas redireciona. Regras na seção 4.12.
 
+### [ ] 2.16 Acordos: abater o que já foi pago quando o acordo é descumprido ou cancelado — esforço M
+*Identificada em 02/10/2026, ao implementar o item 2.7.* Hoje as parcelas pagas continuam como receita, mas **não abatem** as taxas, que voltam ao atraso pelo valor cheio (ponto em aberto na seção 7 de `regras-de-negocio.md`). Decidir a regra (abater nas taxas mais antigas primeiro, proporcional, ou manual) e aplicar, inclusive no juros.
+
+### [ ] 2.17 Acordos: corrigir e ajustar um acordo existente — esforço M
+*Identificada em 02/10/2026, ao implementar o item 2.7.* Hoje um acordo não pode ser alterado depois de criado (só cancelado e refeito) e o pagamento de uma parcela não pode ser removido. Itens: remover o pagamento de uma parcela lançada por engano, reparcelar o saldo, tornar a carência de 5 dias configurável e cobrar multa ou juros sobre parcela atrasada.
+
+### [ ] 2.18 Fundo de reserva: aportes e retiradas avulsos e alertas — esforço M
+*Identificada em 02/10/2026, ao implementar o item 2.1.* O fundo só tem aportes (percentual da taxa paga) e retiradas (despesas marcadas). Faltam lançamentos avulsos (uma doação, um rendimento, uma retirada que não é despesa), um alerta quando o saldo ficar baixo ou negativo, o aporte pelo percentual do ano do pagamento (hoje é o da referência da taxa) e aportes das parcelas de acordos.
+
+### [ ] 2.19 Rateio de despesas proporcional às unidades — esforço P
+*Identificada em 02/10/2026, ao implementar o item 2.3.* O rateio é por igual entre os blocos. Com os 12 blocos de 16 apartamentos o resultado seria o mesmo, mas se a estrutura mudar (bloco com mais ou menos apartamentos) será preciso ratear proporcionalmente ao número de unidades.
+
+### [ ] 2.20 Reaplicar o fator da taxa a um mês já gerado — esforço P
+*Identificada em 02/10/2026, ao implementar o item 2.4.* Mudar o fator de um apartamento só vale para as próximas taxas geradas; as já geradas e ainda em aberto ficam com o valor antigo. Avaliar um botão "Reaplicar fator" para as taxas em aberto de um mês, com confirmação e registro no histórico.
+
+### [ ] 2.21 Regime de caixa em mais telas — esforço M
+*Identificada em 02/10/2026, ao implementar o item 2.2.* O seletor "Competência | Caixa" vale só para o resumo do mês. Falta oferecê-lo no resumo por bloco, na Evolução (mensal e anual) e na inadimplência.
+
 ## 3. Dados de demonstração e ferramentas
 
 ### [x] 3.1 Comando único `db:populate` — esforço P
@@ -117,3 +138,7 @@ Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra per
 
 ### [ ] 3.11 Esteira de testes com Jira (repositório `qa-orchestrator`) — esforço G
 *Identificada em 01/10/2026.* Agentes que leem as regras no Jira e geram ACs, TCs, testes automatizados e bugs rastreáveis, com um teste de regressão por bug. Mora no repositório vizinho `qa-orchestrator` (desenho em `docs/desenho-da-esteira.md`), e este projeto é o primeiro projeto-alvo. Fases: [ ] 0 regras em arquivo, [ ] 1 Jira somente leitura, [ ] 2 escrita controlada, [ ] 3 bugs com rastreabilidade completa.
+
+### [ ] 3.12 Executar a suíte de API e criar a de interface (Playwright) — esforço G
+*Identificada em 02/10/2026, ao fechar as ondas de melhorias.* As 17 classes de teste de API estão escritas e **compilam, mas nunca foram executadas** (o ambiente de desenvolvimento não tinha Maven nem permitia abrir a porta da API). A suíte de interface (Playwright) não existe, e todos os cenários `E2E` de `sugestoes-de-testes.md` estão sem automação e sem terem sido vistos em navegador. Passos: instalar Maven, rodar `mvn test` com `db:populate` e corrigir o que falhar; criar o projeto Playwright e automatizar os cenários `E2E`; ligar as duas suítes ao pipeline de CI (item 3.7) junto com `npm run verificar:ajuda`.
+
