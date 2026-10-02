@@ -12,9 +12,23 @@ cadastroRouter.get('/blocos', (_req, res) => {
   res.json(db.prepare('SELECT * FROM blocos ORDER BY numero').all());
 });
 
+// Número de bloco ou de apartamento: 1 a 5 letras ou dígitos, sem espaços. Bloco só com um dígito ("5") vira "05",
+// como os blocos existentes (01 a 12), para "5" e "05" não serem dois blocos.
+const NUMERO_VALIDO = /^[A-Za-z0-9]{1,5}$/;
+function lerNumero(valor, { bloco = false } = {}) {
+  const numero = String(valor ?? '').trim();
+  if (!NUMERO_VALIDO.test(numero)) return null;
+  return bloco && /^\d$/.test(numero) ? `0${numero}` : numero.toUpperCase();
+}
+
 cadastroRouter.post('/blocos', requireRole('admin'), (req, res) => {
-  const { numero } = req.body ?? {};
-  if (!numero) return res.status(400).json({ error: 'Número do bloco é obrigatório.' });
+  if (req.body?.numero === undefined || String(req.body.numero).trim() === '') {
+    return res.status(400).json({ error: 'Número do bloco é obrigatório.' });
+  }
+  const numero = lerNumero(req.body.numero, { bloco: true });
+  if (!numero) {
+    return res.status(400).json({ error: 'O número do bloco deve ter de 1 a 5 letras ou números, sem espaços.' });
+  }
   try {
     const info = db.prepare('INSERT INTO blocos (numero) VALUES (?)').run(numero);
     res.status(201).json({ id: info.lastInsertRowid, numero });
@@ -39,9 +53,16 @@ cadastroRouter.get('/apartamentos', (req, res) => {
 });
 
 cadastroRouter.post('/apartamentos', requireRole('admin'), (req, res) => {
-  const { bloco_id, numero } = req.body ?? {};
-  if (!bloco_id || !numero) {
+  const { bloco_id } = req.body ?? {};
+  if (!bloco_id || req.body?.numero === undefined || String(req.body.numero).trim() === '') {
     return res.status(400).json({ error: 'bloco_id e numero são obrigatórios.' });
+  }
+  const numero = lerNumero(req.body.numero);
+  if (!numero) {
+    return res.status(400).json({ error: 'O número do apartamento deve ter de 1 a 5 letras ou números, sem espaços.' });
+  }
+  if (!db.prepare('SELECT 1 FROM blocos WHERE id = ?').get(bloco_id)) {
+    return res.status(404).json({ error: 'Bloco não encontrado.' });
   }
   try {
     const info = db

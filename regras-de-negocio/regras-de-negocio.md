@@ -52,6 +52,14 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Na tela Dados dos Moradores (Admin), a linha do proprietário também mostra a situação das mensalidades do apartamento (seção 4.9). Inquilinos não têm essa informação, exceto em apartamento sem proprietário, que é sinalizado com um aviso e uma etiqueta própria.
 - Um apartamento pode ficar sem proprietário (vazio ou só com inquilinos); o sistema não impede, mas avisa o admin em Dados dos Moradores.
 
+### 3.4 Estrutura do condomínio: blocos e apartamentos (somente API)
+- A estrutura padrão (blocos 01 a 12, cada um com 16 apartamentos: 01–04, 101–104, 201–204 e 301–304) é garantida sempre que o servidor sobe. Não há tela para cadastrar blocos e apartamentos (a estrutura é fixa); as rotas `POST /blocos` e `POST /apartamentos` existem apenas na API, para o Admin.
+- **Número do bloco ou do apartamento:** de 1 a 5 letras ou números, sem espaços nem símbolos. Letras viram maiúsculas. No **bloco**, um único dígito vira dois ("5" vira "05"), igual aos blocos existentes, para não haver "5" e "05" como blocos diferentes.
+- **Unicidade:** não pode haver dois blocos com o mesmo número (409) nem dois apartamentos com o mesmo número no mesmo bloco (409). O mesmo número de apartamento pode existir em blocos diferentes.
+- O apartamento exige um bloco existente (bloco inexistente retorna 404).
+- **Não há exclusão nem edição** de blocos e apartamentos: eles são referenciados por moradores e taxas.
+- Um apartamento novo entra nas **próximas** taxas geradas em lote (seção 4.7); meses já gerados não são refeitos. Cadastrar moradores nele segue o fluxo normal (Cadastro → Moradores). Só o Admin cria; qualquer perfil logado pode listar.
+
 ## 4. Módulo Financeiro
 
 ### 4.1 Receitas — Taxa de Condomínio

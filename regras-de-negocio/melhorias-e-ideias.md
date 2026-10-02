@@ -24,8 +24,8 @@ Hoje o app mostra um mês (Financeiro) ou um ano (Taxa de Inadimplência) por ve
 ### [ ] 1.2 Financeiro com transparência para moradores — esforço P
 Uma versão da tela de evolução, sem dados de inadimplência por apartamento, em "Minha Área → Financeiro". Serve como prestação de contas aos condôminos.
 
-### [ ] 1.3 Tela para cadastrar blocos e apartamentos — esforço P
-As rotas `POST /blocos` e `POST /apartamentos` existem, mas não há tela. Hoje a estrutura é criada automaticamente (12 blocos × 16 apartamentos). Uma tela seria útil se o condomínio mudar de estrutura.
+### [x] 1.3 Tela para cadastrar blocos e apartamentos — esforço P
+*Descartada em 02/10/2026:* a estrutura do condomínio é fixa e não serão adicionados blocos. A tela chegou a ser feita e foi removida no mesmo dia. Ficaram as rotas `POST /blocos` e `POST /apartamentos`, agora com validação do número (1 a 5 letras ou números, bloco de um dígito vira dois), da existência do bloco (404) e da duplicidade, sem tela. Regras na seção 3.4. A suíte de API não assume mais 192 apartamentos.
 
 ### [x] 1.4 Ajuda guiada (ícone de ajuda com tour e guias por tarefa) — esforço M
 *Identificada em 02/10/2026, depois que o admin teve dificuldade para seguir o ciclo da taxa entre telas.* *Implementada em 02/10/2026* em `app/client/src/ajuda/`: ícone `?` sempre visível no cabeçalho, painel com "Nesta tela" (botão "Iniciar tour da tela", que destaca os elementos) e "Como fazer…" (guias por tarefa com "Ir para a tela"), com conteúdo separado para admin e moradores. A primeira versão tinha um switch para desligar a ajuda e um tour que abria sozinho na primeira visita; ambos foram removidos no mesmo dia, por não serem necessários. Regras na seção 8 de `regras-de-negocio.md`.

@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test;
  */
 class GerarTaxasDoMesApiTest extends ApiBase {
 
-    private static final int TOTAL_APARTAMENTOS = 192;
+    /** Quantidade de apartamentos: 192 na estrutura padrão, mais os que forem criados pela tela de estrutura. */
+    private static int TOTAL_APARTAMENTOS;
     private static String admin;
     private static String proprietario;
 
@@ -25,6 +26,7 @@ class GerarTaxasDoMesApiTest extends ApiBase {
     static void preparar() {
         admin = login(ADMIN);
         proprietario = login(PROPRIETARIO);
+        TOTAL_APARTAMENTOS = como(admin).when().get("/apartamentos").then().statusCode(200).extract().path("size()");
     }
 
     private static int anoLivre() {

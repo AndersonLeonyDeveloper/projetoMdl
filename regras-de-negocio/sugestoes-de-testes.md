@@ -486,6 +486,25 @@
 - [ ] **Botão do modal**: "Recalcular juros" preenche o campo com o cálculo, não grava até clicar em Salvar, e some quando o
   campo já é igual ao cálculo. `E2E`
 
+### 7.12 Blocos e apartamentos (somente API)
+
+> Cenários levantados em 02/10/2026 (item 1.3 do backlog; a tela foi descartada, ficou só a API). Regras na seção 3.4 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`EstruturaApiTest`, compilado e ainda não executado). Os testes deixam blocos e
+> apartamentos novos no banco (não há exclusão).
+
+- [ ] **Criar bloco**: devolve o número normalizado (maiúsculas), aparece em `GET /blocos` e uma segunda criação do mesmo número
+  retorna 409 (também trocando maiúsculas e minúsculas). `API`
+- [ ] **Um dígito vira dois**: criar o bloco "5" (ou o número 5) retorna 409 porque "05" já existe; num banco sem o bloco 05,
+  cria "05". `API`
+- [ ] **Bloco inválido** (vazio, só espaços, com espaço no meio, símbolos, mais de 5 caracteres, sem o campo) retorna 400. `API`
+- [ ] **Criar apartamento**: devolve 201; o mesmo número no mesmo bloco retorna 409; o mesmo número em outro bloco é aceito. `API`
+- [ ] **Bloco inexistente** ao criar apartamento retorna 404 (antes era erro interno). `API`
+- [ ] **Apartamento inválido** (vazio, espaços, símbolos, longo demais) ou sem `bloco_id`/`numero` retorna 400. `API`
+- [ ] **Entra no lote**: depois de criar um apartamento, o total de apartamentos da prévia de "Gerar taxas do mês" aumenta em 1, e
+  a geração do mês seguinte cria a taxa dele (meses já gerados não são refeitos). `API`
+- [ ] **A estrutura padrão sobrevive**: reiniciar o servidor não duplica nem remove blocos e apartamentos criados à mão. `API` / `DB/Integridade`
+- [ ] **RBAC**: morador recebe 403 ao criar, 401 sem token, e qualquer perfil logado lista. `API`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt
