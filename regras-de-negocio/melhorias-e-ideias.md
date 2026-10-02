@@ -57,7 +57,7 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 *Identificada em 02/10/2026.* Tela do admin para definir o valor da taxa por ano, a multa (padrão 2%), o juros ao mês (padrão 1%) e o dia de vencimento (padrão 10). O valor da taxa pré-preenche o lançamento. Regras na seção 4.6. Prepara o item 2.4 (taxa por fração ideal). *Implementado em 02/10/2026:* tela Cadastro → Configurações financeiras (`GET`/`PUT /financeiro/configuracoes`), com os valores de 2020 a 2026 vindos do seed.
 
 ### [x] 2.10 Gerar taxas do mês em lote — esforço M
-*Identificada em 02/10/2026.* Hoje o admin lança uma taxa por apartamento (192 por mês). Um botão "Gerar taxas do mês" cria todas com o valor configurado, ignorando as que já existem. Depende do item 2.9. Regras na seção 4.7. *Implementado em 02/10/2026:* `POST /financeiro/taxas/gerar-mes` e o bloco "Gerar taxas do mês" na aba Taxa de Condomínio.
+*Identificada em 02/10/2026.* Hoje o admin lança uma taxa por apartamento (192 por mês). Um botão "Gerar taxas do mês" cria todas com o valor configurado, ignorando as que já existem. Depende do item 2.9. Regras na seção 4.7. *Implementado em 02/10/2026:* `POST /financeiro/taxas/gerar-mes` e o bloco "Gerar taxas do mês" na tela Cadastro → Taxas de condomínio (com valor do ano editável, confirmação e link para as taxas do mês) e `GET /financeiro/taxas/gerar-mes/previa`.
 
 ### [x] 2.11 Juros e multa calculados no pagamento — esforço M
 *Identificada em 02/10/2026.* Hoje o registro de pagamento não calcula nem grava juros (só o seed preenche). O servidor passa a calcular multa mais juros simples pro rata a partir da data de pagamento, com prévia na tela e ajuste manual. Depende do item 2.9. Fecha a ambiguidade de juros da seção 7 de `regras-de-negocio.md`. Fórmula na seção 4.1.1. *Implementado em 02/10/2026:* `calcularJuros` em `app/server/src/utils/juros.js`, usado no registro de pagamento e na edição, e prévia em `GET /financeiro/taxas/:id/calculo-juros`.
@@ -70,6 +70,9 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 
 ### [ ] 2.14 Recalcular juros de taxa já paga — esforço P
 *Identificada em 02/10/2026.* Corrigir o valor ou a data de pagamento de uma taxa não recalcula o juros já gravado (a tela só mostra o novo cálculo). Avaliar um botão "Recalcular juros" e um aviso quando o juros gravado diverge do calculado.
+
+### [ ] 2.15 Tela única "Taxas do mês" — esforço M
+*Identificada em 02/10/2026, ao revisar a usabilidade do ciclo da taxa.* Hoje o ciclo passa por três telas: gerar (Cadastro → Taxas de condomínio), registrar pagamento (Visualizar → Financeiro) e configurar valor, multa e juros (Cadastro → Configurações financeiras). O link "Ver taxas do mês" e o valor editável na geração reduziram o problema. Uma tela única reuniria, para o mês escolhido, o resumo (geradas, pagas, em aberto), o botão gerar e a tabela com "Registrar pagamento", movendo a tabela de taxas de Visualizar → Financeiro.
 
 ## 3. Dados de demonstração e ferramentas
 

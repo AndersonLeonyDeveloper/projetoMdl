@@ -103,6 +103,26 @@ financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, r
   }
 });
 
+// Prévia da geração: quantas taxas seriam criadas e quantas já existem. Não grava nada.
+financeiroRouter.get('/taxas/gerar-mes/previa', requireRole('admin'), (req, res) => {
+  const mes = lerInteiro(req.query.mes_referencia);
+  const ano = lerInteiro(req.query.ano_referencia);
+  if (!mes || mes < 1 || mes > 12 || !ano || ano < 1900 || ano > 2999) {
+    return res.status(400).json({ error: 'mes_referencia (1–12) e ano_referencia são obrigatórios.' });
+  }
+  const totalApartamentos = db.prepare('SELECT COUNT(*) AS total FROM apartamentos').get().total;
+  const existentes = db
+    .prepare('SELECT COUNT(*) AS total FROM taxas_condominio WHERE mes_referencia = ? AND ano_referencia = ?')
+    .get(mes, ano).total;
+  const padrao = db.prepare('SELECT valor FROM taxa_padrao WHERE ano = ?').get(ano);
+  res.json({
+    total_apartamentos: totalApartamentos,
+    existentes,
+    a_criar: totalApartamentos - existentes,
+    valor: padrao?.valor ?? null,
+  });
+});
+
 // Gera, de uma vez, a taxa do mês para todos os apartamentos que ainda não têm uma.
 // Usa o valor configurado para o ano; não altera taxas já existentes (idempotente).
 financeiroRouter.post('/taxas/gerar-mes', requireRole('admin'), (req, res) => {

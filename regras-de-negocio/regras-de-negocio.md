@@ -103,8 +103,13 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Leitura aberta a qualquer usuário autenticado (a tela de lançamento precisa do valor padrão); **alteração só para Admin**.
 
 ### 4.7 Gerar taxas do mês (lote)
+- Fica na tela **Cadastro → Taxas de condomínio**, acima do lançamento individual de taxa.
 - O admin informa mês e ano de referência, e o sistema cria a taxa de **todos os apartamentos** com o valor configurado para aquele ano.
-- É necessário haver valor configurado para o ano; sem ele a geração é recusada (400).
+- **O valor do ano é editável na própria tela de geração.** Se o ano não tem valor, o campo vem vazio e o admin informa ali mesmo; se o valor digitado difere do configurado, ele é **salvo como o novo padrão do ano** (Configurações financeiras) antes de gerar. Taxas já lançadas não mudam.
+- Sem valor para o ano, a geração é recusada (400) pela API, e o botão da tela fica desabilitado até haver um valor maior que zero.
+- **Confirmação antes de gerar:** o sistema mostra quantas taxas serão criadas, o valor, o mês e quantas já existem (e serão ignoradas). Se todas já existem, informa que não há nada a gerar e não pede confirmação.
+- **Prévia na API:** `GET /financeiro/taxas/gerar-mes/previa` devolve o total de apartamentos, as taxas já existentes no mês, quantas seriam criadas e o valor padrão do ano (ou `null`). Não grava nada e é restrita ao admin.
+- Depois de gerar, a tela oferece o link **"Ver taxas do mês"**, que abre Visualizar → Financeiro no mês e ano gerados, onde se registram os pagamentos.
 - **Idempotente:** apartamentos que já têm taxa naquele mês/ano são **ignorados** (não são duplicados nem alterados). O resultado informa quantas taxas foram criadas e quantas foram ignoradas.
 - As taxas nascem `Inadimplente`, sem juros, sem data de pagamento e sem comprovante.
 

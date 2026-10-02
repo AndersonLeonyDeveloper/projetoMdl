@@ -280,8 +280,22 @@
 - [ ] **Ano sem valor configurado** retorna 400 e não cria nada. `API`
 - [ ] **Mês/ano inválidos** (mês 0 ou 13, ano ausente) retornam 400. `API`
 - [ ] **RBAC**: só admin. `API`
-- [ ] **Interface**: o botão informa quantas taxas foram criadas e quantas ignoradas; o resumo do mês passa a mostrar o
-  total inadimplente. `E2E`
+- [ ] **Prévia (`GET .../gerar-mes/previa`)**: em mês cheio devolve `a_criar = 0`; em mês vazio, `a_criar = 192`; em mês
+  parcial, a diferença; depois de gerar, `a_criar = 0`. As contagens batem com o resultado do `POST`. `API`
+- [ ] **Prévia sem valor**: ano sem padrão devolve `valor = null`. `API`
+- [ ] **Prévia: validação e RBAC**: mês 0 ou 13, mês ou ano ausentes retornam 400; morador 403; sem token 401. `API`
+- [ ] **Prévia não grava**: chamar a prévia várias vezes não cria taxas. `API`
+- [ ] **Interface — localização**: a geração fica em Cadastro → Taxas de condomínio (e não em Receitas / Despesas, que
+  fica só com Outras Receitas e Despesas). `E2E`
+- [ ] **Interface — valor do ano editável**: o campo vem preenchido com o padrão do ano e muda ao trocar o ano. Em ano sem
+  valor vem vazio e o botão fica desabilitado até informar um valor. `E2E`
+- [ ] **Interface — salva o padrão**: gerar com um valor diferente do configurado atualiza o padrão do ano
+  (Configurações financeiras e o campo "Valor" do lançamento individual passam a mostrá-lo) e não altera taxas já
+  lançadas. `E2E`
+- [ ] **Interface — confirmação**: o diálogo informa quantidade, valor, mês e ignoradas; cancelar não cria nada; mês já
+  totalmente gerado mostra "nada a gerar" sem diálogo. `E2E`
+- [ ] **Interface — resultado**: informa quantas taxas foram criadas e quantas ignoradas, e o link "Ver taxas do mês"
+  abre Visualizar → Financeiro já no mês e ano gerados, com a tabela de taxas e o total inadimplente. `E2E`
 
 **Juros e multa no pagamento**
 - [ ] **Sem atraso**: pagar no dia do vencimento ou antes resulta em juros 0. `API`

@@ -119,4 +119,69 @@ class GerarTaxasDoMesApiTest extends ApiBase {
         semLogin().contentType(ContentType.JSON).body(Map.of("mes_referencia", 1, "ano_referencia", 2800))
             .when().post("/financeiro/taxas/gerar-mes").then().statusCode(401);
     }
+
+    // ---------- Prévia ----------
+
+    private static Response previa(String token, Object mes, Object ano) {
+        return como(token).queryParam("mes_referencia", mes).queryParam("ano_referencia", ano)
+            .when().get("/financeiro/taxas/gerar-mes/previa");
+    }
+
+    @Test
+    @DisplayName("Prévia: mês cheio do seed não tem nada a criar e mostra o valor do ano")
+    void previaDeMesCheio() {
+        previa(admin, 1, 2026).then().statusCode(200)
+            .body("total_apartamentos", equalTo(TOTAL_APARTAMENTOS)).body("existentes", equalTo(TOTAL_APARTAMENTOS))
+            .body("a_criar", equalTo(0)).body("valor", equalTo(325.0f));
+    }
+
+    @Test
+    @DisplayName("Prévia acompanha a geração: vazio, parcial e depois de gerar (e bate com o resultado do POST)")
+    void previaAcompanhaAGeracao() {
+        int ano = anoLivre();
+        definirTaxaDoAno(admin, ano, 340);
+        previa(admin, 4, ano).then().statusCode(200)
+            .body("existentes", equalTo(0)).body("a_criar", equalTo(TOTAL_APARTAMENTOS)).body("valor", equalTo(340.0f));
+
+        como(admin).contentType(ContentType.JSON)
+            .body(Map.of("apartamento_id", 3, "mes_referencia", 4, "ano_referencia", ano, "valor", 999))
+            .when().post("/financeiro/taxas").then().statusCode(201);
+        previa(admin, 4, ano).then().body("existentes", equalTo(1)).body("a_criar", equalTo(TOTAL_APARTAMENTOS - 1));
+
+        gerar(admin, 4, ano).then().statusCode(201)
+            .body("criadas", equalTo(TOTAL_APARTAMENTOS - 1)).body("ignoradas", equalTo(1));
+        previa(admin, 4, ano).then().body("existentes", equalTo(TOTAL_APARTAMENTOS)).body("a_criar", equalTo(0));
+    }
+
+    @Test
+    @DisplayName("Prévia de ano sem valor devolve valor nulo")
+    void previaSemValor() {
+        int ano = ThreadLocalRandom.current().nextInt(1900, 1950);
+        previa(admin, 1, ano).then().statusCode(200)
+            .body("valor", org.hamcrest.Matchers.nullValue()).body("a_criar", equalTo(TOTAL_APARTAMENTOS));
+    }
+
+    @Test
+    @DisplayName("Prévia não grava nada")
+    void previaNaoGrava() {
+        int ano = anoLivre();
+        definirTaxaDoAno(admin, ano, 340);
+        previa(admin, 5, ano).then().statusCode(200);
+        previa(admin, 5, ano).then().statusCode(200);
+        org.junit.jupiter.api.Assertions.assertEquals(0, taxasDe(ano, 5).size());
+    }
+
+    @Test
+    @DisplayName("Prévia: parâmetros inválidos retornam 400; morador 403; sem token 401")
+    void previaValidacaoERbac() {
+        previa(admin, 0, 2026).then().statusCode(400);
+        previa(admin, 13, 2026).then().statusCode(400);
+        previa(admin, "abc", 2026).then().statusCode(400);
+        como(admin).queryParam("mes_referencia", 1).when().get("/financeiro/taxas/gerar-mes/previa").then().statusCode(400);
+        como(admin).queryParam("ano_referencia", 2026).when().get("/financeiro/taxas/gerar-mes/previa").then().statusCode(400);
+        previa(proprietario, 1, 2026).then().statusCode(403);
+        previa(login(INQUILINO), 1, 2026).then().statusCode(403);
+        semLogin().queryParam("mes_referencia", 1).queryParam("ano_referencia", 2026)
+            .when().get("/financeiro/taxas/gerar-mes/previa").then().statusCode(401);
+    }
 }

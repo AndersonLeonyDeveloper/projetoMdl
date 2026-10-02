@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { ComprovanteLink } from '../../components/ComprovanteLink';
 import { LancamentosDoMes } from '../../components/LancamentosDoMes';
@@ -38,8 +39,10 @@ const MESES = [
 ];
 
 export function VisualizarFinanceiro() {
-  const [ano, setAno] = useState(new Date().getFullYear());
-  const [mes, setMes] = useState(new Date().getMonth() + 1);
+  // ano e mes podem vir da URL (link "Ver taxas do mês" da tela de geração de taxas).
+  const [params] = useSearchParams();
+  const [ano, setAno] = useState(Number(params.get('ano')) || new Date().getFullYear());
+  const [mes, setMes] = useState(Number(params.get('mes')) || new Date().getMonth() + 1);
   const [resumoMensal, setResumoMensal] = useState<ResumoMensal | null>(null);
   const [resumoBlocos, setResumoBlocos] = useState<ResumoBloco[]>([]);
   const [taxas, setTaxas] = useState<Taxa[]>([]);
