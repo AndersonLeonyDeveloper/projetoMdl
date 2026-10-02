@@ -122,6 +122,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do condomínio no mês.', alvo: 'resumo-mensal' },
       { titulo: 'Resumo por bloco', descricao: 'Quanto cada bloco tem em dia e em aberto.', alvo: 'tabela-resumo-blocos' },
       { titulo: 'Comprovantes', descricao: 'Nas listas de outras receitas e despesas, "Ver comprovante" abre o arquivo em uma nova aba.', alvo: 'tabela-despesas' },
+      { titulo: 'Evolução do condomínio', descricao: 'No fim da tela, os gráficos mostram receitas, despesas e saldo ao longo dos anos (mensal ou anual). É um resumo do condomínio, sem dados de cada morador.', alvo: 'evolucao-do-condominio' },
     ],
   },
 };

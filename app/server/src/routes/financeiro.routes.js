@@ -468,13 +468,17 @@ financeiroRouter.get('/resumo/inadimplencia', requireRole('admin'), (req, res) =
 // Taxas entram pela competência (mês de referência), como em /resumo/mensal.
 // "atrasadas" = pagas depois do vencimento ou em aberto e já vencidas (a inadimplência no vencimento). O vencimento é o
 // dia configurado; taxas em aberto ainda no prazo ficam em "a_vencer" e não contam como atraso nem como em aberto.
-financeiroRouter.get('/resumo/evolucao', requireRole('admin'), (req, res) => {
+function lerPeriodoDaEvolucao(req, res) {
   const anoInicio = Number(req.query.ano_inicio);
   const anoFim = Number(req.query.ano_fim);
   if (!anoInicio || !anoFim || anoInicio > anoFim) {
-    return res.status(400).json({ error: 'ano_inicio e ano_fim são obrigatórios (ano_inicio <= ano_fim).' });
+    res.status(400).json({ error: 'ano_inicio e ano_fim são obrigatórios (ano_inicio <= ano_fim).' });
+    return null;
   }
+  return { anoInicio, anoFim };
+}
 
+function evolucaoMensal({ anoInicio, anoFim }) {
   const taxas = db
     .prepare(
       `SELECT
@@ -510,16 +514,34 @@ financeiroRouter.get('/resumo/evolucao', requireRole('admin'), (req, res) => {
   const outrasReceitas = somaPorMes('outras_receitas');
   const despesas = somaPorMes('despesas');
 
+  return taxas
+    .sort((a, b) => a.ano - b.ano || a.mes - b.mes)
+    .map((t) => {
+      const chave = `${t.ano}-${t.mes}`;
+      return {
+        ...t,
+        receitas_outras: outrasReceitas.get(chave) ?? 0,
+        despesas: despesas.get(chave) ?? 0,
+      };
+    });
+}
+
+financeiroRouter.get('/resumo/evolucao', requireRole('admin'), (req, res) => {
+  const periodo = lerPeriodoDaEvolucao(req, res);
+  if (periodo) res.json(evolucaoMensal(periodo));
+});
+
+// Versão aberta a qualquer perfil logado (prestação de contas aos condôminos): só receitas e despesas por mês.
+// Não traz faturamento, atraso nem unidades, que permitiriam deduzir a inadimplência.
+financeiroRouter.get('/resumo/evolucao-publica', (req, res) => {
+  const periodo = lerPeriodoDaEvolucao(req, res);
+  if (!periodo) return;
   res.json(
-    taxas
-      .sort((a, b) => a.ano - b.ano || a.mes - b.mes)
-      .map((t) => {
-        const chave = `${t.ano}-${t.mes}`;
-        return {
-          ...t,
-          receitas_outras: outrasReceitas.get(chave) ?? 0,
-          despesas: despesas.get(chave) ?? 0,
-        };
-      })
+    evolucaoMensal(periodo).map((l) => ({
+      ano: l.ano,
+      mes: l.mes,
+      receitas: l.receitas_taxas + l.receitas_outras,
+      despesas: l.despesas,
+    }))
   );
 });

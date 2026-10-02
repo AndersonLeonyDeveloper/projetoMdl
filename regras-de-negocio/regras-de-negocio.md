@@ -14,7 +14,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 | Perfil | Pode fazer |
 |---|---|
 | **Admin** (síndico) | Cadastrar/editar moradores; lançar e **editar** receitas, despesas e taxas; registrar pagamentos; configurar valor da taxa, multa e juros; gerar as taxas do mês; visualizar financeiro consolidado de todos os blocos; visualizar inadimplência geral; gerenciar usuários |
-| **Proprietário** | Visualizar/editar seus próprios dados e do inquilino vinculado ao seu apartamento; visualizar o financeiro do condomínio (leitura); visualizar sua própria situação de adimplência |
+| **Proprietário** | Visualizar/editar seus próprios dados e do inquilino vinculado ao seu apartamento; visualizar o financeiro do condomínio (leitura, inclusive a evolução de receitas e despesas, sem inadimplência); visualizar sua própria situação de adimplência |
 | **Inquilino** | Visualizar seus próprios dados; visualizar o financeiro do condomínio (leitura) |
 
 **Regras de acesso:**
@@ -105,6 +105,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Financeiro pode ser filtrado por Ano → Mês → Tipo de receita (Taxa de Condomínio / Outras Receitas) → Bloco.
 - A tabela de taxas de Visualizar → Financeiro também pode ser filtrada por **apartamento**, mas só por link (não há campo na tela): os meses em atraso de Dados dos Moradores (seção 4.9) abrem a tela com `ano`, `mes` e `apartamento_id` na URL. Com o filtro ativo, a tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos". O filtro vale só para a tabela de taxas; os resumos do mês não mudam.
 - Tela de Evolução (Admin): tendência mensal/anual de receitas, despesas, saldo e inadimplência em vários anos (ano inicial/final), com cartões dos últimos 12 meses.
+- **Evolução para moradores:** em Minha Área → Financeiro, Proprietário e Inquilino veem, no fim da tela, a evolução do condomínio ao longo dos anos (visão mensal ou anual, cartões dos últimos 12 meses, gráfico e resumo anual) com **somente receitas, despesas e saldo**. É a prestação de contas aos condôminos. **Nenhum dado de inadimplência** aparece, nem agregado: sem faturamento, percentual em atraso, unidades em aberto ou "a vencer". Por isso a API pública (`GET /financeiro/resumo/evolucao-publica`, qualquer perfil logado) devolve só `ano`, `mes`, `receitas` (taxas pagas + outras receitas) e `despesas`, e a evolução completa continua restrita ao Admin.
 - Tela de Inadimplência: consolidado anual, com drill-down por mês → bloco → apartamento (lista de proprietário/inquilino e situação).
 
 ### 4.6 Configurações Financeiras (Admin)

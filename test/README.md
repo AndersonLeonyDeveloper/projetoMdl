@@ -5,7 +5,7 @@ Suítes de teste do sistema em [`../app`](../app), uma pasta por ferramenta. Cad
 | Pasta | Ferramenta | Tipo | Status |
 |---|---|---|---|
 | [`playwright/`](./playwright) | Playwright (TypeScript) | E2E (interface) | [ ] a criar |
-| [`restassured/`](./restassured) | RestAssured (Java/Maven) | API | [~] 9 classes escritas e compiladas, ainda não executadas |
+| [`restassured/`](./restassured) | RestAssured (Java/Maven) | API | [~] 10 classes escritas e compiladas, ainda não executadas |
 
 ## Pré-requisitos para qualquer suíte
 1. Subir a aplicação (`cd app && npm run dev`).

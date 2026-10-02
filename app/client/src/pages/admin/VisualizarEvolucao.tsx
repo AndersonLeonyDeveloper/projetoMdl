@@ -120,7 +120,16 @@ function GraficoLinhas({ titulo, descricao, testId, dados, series, formatar, eix
   );
 }
 
-export function VisualizarEvolucao() {
+interface LinhaPublica {
+  ano: number;
+  mes: number;
+  receitas: number;
+  despesas: number;
+}
+
+// `publico`: versão para moradores (Minha Área → Financeiro). Mostra só receitas, despesas e saldo, sem nenhum dado de
+// inadimplência (a API pública nem envia faturamento, atraso ou unidades).
+export function VisualizarEvolucao({ publico = false }: { publico?: boolean }) {
   const anoAtual = new Date().getFullYear();
   const [anoInicio, setAnoInicio] = useState(2020);
   const [anoFim, setAnoFim] = useState(anoAtual);
@@ -129,12 +138,28 @@ export function VisualizarEvolucao() {
 
   useEffect(() => {
     if (!anoInicio || !anoFim || anoInicio > anoFim) return;
-    api
-      .get<LinhaEvolucao[]>('/financeiro/resumo/evolucao', {
-        params: { ano_inicio: anoInicio, ano_fim: anoFim },
-      })
-      .then((res) => setLinhas(res.data));
-  }, [anoInicio, anoFim]);
+    const params = { ano_inicio: anoInicio, ano_fim: anoFim };
+    if (publico) {
+      api.get<LinhaPublica[]>('/financeiro/resumo/evolucao-publica', { params }).then((res) =>
+        setLinhas(
+          res.data.map((l) => ({
+            ano: l.ano,
+            mes: l.mes,
+            unidades: 0,
+            faturamento: 0,
+            receitas_taxas: l.receitas,
+            receitas_outras: 0,
+            despesas: l.despesas,
+            atrasadas: 0,
+            em_aberto: 0,
+            em_aberto_3_meses: 0,
+          }))
+        )
+      );
+    } else {
+      api.get<LinhaEvolucao[]>('/financeiro/resumo/evolucao', { params }).then((res) => setLinhas(res.data));
+    }
+  }, [anoInicio, anoFim, publico]);
 
   const mensal = useMemo(
     () => agrupar(linhas, (l) => `${l.ano}-${l.mes}`, (l) => `${MESES[l.mes - 1]}/${String(l.ano).slice(2)}`),
@@ -150,11 +175,14 @@ export function VisualizarEvolucao() {
   const ultimoMes = linhas.at(-1);
   const atrasoAtual = ultimoMes ? (ultimoMes.atrasadas / ultimoMes.unidades) * 100 : 0;
 
-  const colunas: ColumnsType<Ponto> = [
-    { title: 'Ano', dataIndex: 'ano' },
+  const colunasInadimplencia: ColumnsType<Ponto> = [
     { title: 'Faturamento', dataIndex: 'faturamento', render: brl },
     { title: 'Em atraso no vencimento', dataIndex: 'pctAtraso', render: pct },
     { title: 'Em aberto hoje', dataIndex: 'pctAberto', render: pct },
+  ];
+  const colunas: ColumnsType<Ponto> = [
+    { title: 'Ano', dataIndex: 'ano' },
+    ...(publico ? [] : colunasInadimplencia),
     { title: 'Receitas', dataIndex: 'receitas', render: brl },
     { title: 'Despesas', dataIndex: 'despesas', render: brl },
     {
@@ -197,8 +225,12 @@ export function VisualizarEvolucao() {
             />
           </Card>
         </Col>
-        <Col xs={12} md={8} xl={5}><Card><Statistic title="Em atraso no último mês" value={pct(atrasoAtual)} /></Card></Col>
-        <Col xs={12} md={8} xl={4}><Card><Statistic title="Unidades com 3+ meses em aberto" value={ultimoMes?.em_aberto_3_meses ?? 0} /></Card></Col>
+        {!publico && (
+          <>
+            <Col xs={12} md={8} xl={5}><Card><Statistic title="Em atraso no último mês" value={pct(atrasoAtual)} /></Card></Col>
+            <Col xs={12} md={8} xl={4}><Card><Statistic title="Unidades com 3+ meses em aberto" value={ultimoMes?.em_aberto_3_meses ?? 0} /></Card></Col>
+          </>
+        )}
       </Row>
 
       <GraficoLinhas
@@ -214,7 +246,7 @@ export function VisualizarEvolucao() {
         eixo={mil}
       />
 
-      <GraficoLinhas
+      {!publico && <GraficoLinhas
         titulo="Inadimplência"
         descricao="Percentual de unidades que pagaram depois do dia 10 ou ainda não pagaram, e das que seguem em aberto hoje."
         testId="grafico-inadimplencia"
@@ -225,7 +257,7 @@ export function VisualizarEvolucao() {
         ]}
         formatar={pct}
         eixo={(v) => `${v}%`}
-      />
+      />}
 
       <Card>
         <Title level={5} style={{ marginTop: 0 }}>Resumo anual</Title>

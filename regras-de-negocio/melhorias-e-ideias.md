@@ -21,8 +21,8 @@ Hoje o app mostra um mês (Financeiro) ou um ano (Taxa de Inadimplência) por ve
 - **Cuidado com os dados:** a inadimplência "no vencimento" deve ser calculada por `data_pagamento` nula ou posterior ao dia 10. Se usar só `situacao = 'inadimplente'`, o pico da pandemia some, porque quase tudo foi pago depois.
 - **Dependência nova:** `recharts`, adicionada ao cliente.
 
-### [ ] 1.2 Financeiro com transparência para moradores — esforço P
-Uma versão da tela de evolução, sem dados de inadimplência por apartamento, em "Minha Área → Financeiro". Serve como prestação de contas aos condôminos.
+### [x] 1.2 Financeiro com transparência para moradores — esforço P
+Uma versão da tela de evolução, sem dados de inadimplência por apartamento, em "Minha Área → Financeiro". Serve como prestação de contas aos condôminos. *Implementado em 02/10/2026:* Minha Área → Financeiro ganhou a seção "Evolução do condomínio" (a mesma tela de Evolução do admin em modo público, só com receitas, despesas e saldo) e o endpoint `GET /financeiro/resumo/evolucao-publica`, que não envia faturamento, atraso nem unidades. Regras na seção 4.5. A tela carrega a biblioteca de gráficos sob demanda.
 
 ### [x] 1.3 Tela para cadastrar blocos e apartamentos — esforço P
 *Descartada em 02/10/2026:* a estrutura do condomínio é fixa e não serão adicionados blocos. A tela chegou a ser feita e foi removida no mesmo dia. Ficaram as rotas `POST /blocos` e `POST /apartamentos`, agora com validação do número (1 a 5 letras ou números, bloco de um dígito vira dois), da existência do bloco (404) e da duplicidade, sem tela. Regras na seção 3.4. A suíte de API não assume mais 192 apartamentos.

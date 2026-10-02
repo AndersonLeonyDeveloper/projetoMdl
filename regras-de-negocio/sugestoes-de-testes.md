@@ -505,6 +505,25 @@
 - [ ] **A estrutura padrão sobrevive**: reiniciar o servidor não duplica nem remove blocos e apartamentos criados à mão. `API` / `DB/Integridade`
 - [ ] **RBAC**: morador recebe 403 ao criar, 401 sem token, e qualquer perfil logado lista. `API`
 
+### 7.13 Evolução do condomínio para moradores
+
+> Cenários levantados em 02/10/2026 (item 1.2 do backlog). Regras na seção 4.5 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`EvolucaoPublicaApiTest`, compilado e ainda não executado).
+
+- [ ] **Acesso**: proprietário, inquilino e admin recebem 200 em `GET /financeiro/resumo/evolucao-publica`; sem token, 401; período
+  inválido ou ausente, 400. `API`
+- [ ] **Sem inadimplência**: cada linha tem só `ano`, `mes`, `receitas` e `despesas`, e o texto da resposta não contém
+  faturamento, atraso, em aberto, unidades nem inadimplência. `API`
+- [ ] **Bate com o admin**: `receitas` é igual a taxas pagas + outras receitas da evolução do admin, e `despesas` é igual, mês a mês. `API`
+- [ ] **Evolução do admin segue restrita**: proprietário e inquilino recebem 403 em `GET /financeiro/resumo/evolucao`. `API`
+- [ ] **Tela do morador**: o fim de Minha Área → Financeiro mostra "Evolução do condomínio" com os cartões de receitas, despesas e
+  saldo (12 meses), o gráfico de receitas e despesas e o resumo anual (Ano, Receitas, Despesas, Saldo). `E2E`
+- [ ] **Nada de inadimplência na tela**: não aparecem os cartões "Em atraso no último mês" e "Unidades com 3+ meses em aberto", o
+  gráfico de Inadimplência nem as colunas Faturamento, "Em atraso no vencimento" e "Em aberto hoje". `E2E`
+- [ ] **Filtros**: trocar ano inicial e final e alternar Mensal/Anual atualiza os gráficos e a tabela, como na tela do admin. `E2E`
+- [ ] **Admin inalterado**: a tela Visualizar → Evolução continua com todos os cartões, os dois gráficos e todas as colunas. `E2E`
+- [ ] **Carregamento sob demanda**: a biblioteca de gráficos só é baixada ao abrir Financeiro (morador) ou Evolução (admin). `E2E` / performance
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt
