@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../../api/client';
+import { LancamentosDoMes } from '../../components/LancamentosDoMes';
 
 const { Title } = Typography;
 
@@ -107,6 +108,8 @@ export function FinanceiroCondominio() {
           pagination={{ pageSize: 5 }}
         />
       </Card>
+
+      <LancamentosDoMes ano={ano} mes={mes} />
     </Space>
   );
 }

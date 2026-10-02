@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../../api/client';
+import { ComprovanteLink } from '../../components/ComprovanteLink';
+import { LancamentosDoMes } from '../../components/LancamentosDoMes';
 
 const { Title } = Typography;
 
@@ -27,6 +29,7 @@ interface Taxa {
   situacao: 'adimplente' | 'inadimplente';
   meses_atraso: number;
   data_pagamento: string | null;
+  comprovante_path: string | null;
 }
 
 const MESES = [
@@ -87,6 +90,11 @@ export function VisualizarFinanceiro() {
     { title: 'Juros', dataIndex: 'juros', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Meses em atraso', dataIndex: 'meses_atraso' },
     { title: 'Data pagamento', dataIndex: 'data_pagamento', render: (v: string | null) => v ?? '—' },
+    {
+      title: 'Comprovante',
+      dataIndex: 'comprovante_path',
+      render: (arquivo: string | null) => <ComprovanteLink arquivo={arquivo} />,
+    },
   ];
 
   return (
@@ -152,6 +160,8 @@ export function VisualizarFinanceiro() {
           pagination={{ pageSize: 5, showSizeChanger: true, pageSizeOptions: [5, 10, 20] }}
         />
       </Card>
+
+      <LancamentosDoMes ano={ano} mes={mes} />
     </Space>
   );
 }

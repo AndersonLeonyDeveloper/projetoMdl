@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import type { UploadFile } from 'antd';
 import { Card, Form, Input, Select, InputNumber, DatePicker, Button, Alert, Tabs, Space } from 'antd';
 import dayjs from 'dayjs';
 import { api } from '../../api/client';
+import { CampoComprovante, montarFormData, validarComprovante } from '../../components/CampoComprovante';
 
 interface Bloco {
   id: number;
@@ -41,13 +43,20 @@ function LancarTaxa() {
     mes_referencia: number;
     ano_referencia: number;
     valor: number;
+    comprovante?: UploadFile[];
   }) {
     setMensagem(null);
+    const erroArquivo = validarComprovante(values.comprovante);
+    if (erroArquivo) return setMensagem({ tipo: 'error', texto: erroArquivo });
     setSalvando(true);
     try {
-      await api.post('/financeiro/taxas', values);
+      const { apartamento_id, mes_referencia, ano_referencia, valor } = values;
+      await api.post(
+        '/financeiro/taxas',
+        montarFormData({ apartamento_id, mes_referencia, ano_referencia, valor }, values.comprovante)
+      );
       setMensagem({ tipo: 'success', texto: 'Taxa lançada com sucesso.' });
-      form.resetFields(['valor']);
+      form.resetFields(['valor', 'comprovante']);
     } catch (err) {
       const texto =
         (err as { response?: { data?: { error?: string } } }).response?.data?.error ??
@@ -102,6 +111,7 @@ function LancarTaxa() {
             data-testid="input-valor-taxa"
           />
         </Form.Item>
+        <CampoComprovante testId="upload-comprovante-taxa" />
       </Space>
       {mensagem && (
         <Alert type={mensagem.tipo} message={mensagem.texto} showIcon style={{ marginBottom: 16 }} data-testid="mensagem-taxa" />
@@ -120,15 +130,24 @@ function LancarOutraReceita() {
   );
   const [salvando, setSalvando] = useState(false);
 
-  async function handleFinish(values: { descricao: string; valor: number; data: dayjs.Dayjs }) {
+  async function handleFinish(values: {
+    descricao: string;
+    valor: number;
+    data: dayjs.Dayjs;
+    comprovante?: UploadFile[];
+  }) {
     setMensagem(null);
+    const erroArquivo = validarComprovante(values.comprovante);
+    if (erroArquivo) return setMensagem({ tipo: 'error', texto: erroArquivo });
     setSalvando(true);
     try {
-      await api.post('/financeiro/outras-receitas', {
-        descricao: values.descricao,
-        valor: values.valor,
-        data: values.data.format('YYYY-MM-DD'),
-      });
+      await api.post(
+        '/financeiro/outras-receitas',
+        montarFormData(
+          { descricao: values.descricao, valor: values.valor, data: values.data.format('YYYY-MM-DD') },
+          values.comprovante
+        )
+      );
       setMensagem({ tipo: 'success', texto: 'Receita lançada com sucesso.' });
       form.resetFields();
     } catch {
@@ -150,6 +169,7 @@ function LancarOutraReceita() {
         <Form.Item label="Data" name="data" rules={[{ required: true }]}>
           <DatePicker style={{ width: 160 }} format="DD/MM/YYYY" data-testid="input-data-receita" />
         </Form.Item>
+        <CampoComprovante testId="upload-comprovante-receita" />
       </Space>
       {mensagem && (
         <Alert type={mensagem.tipo} message={mensagem.texto} showIcon style={{ marginBottom: 16 }} data-testid="mensagem-receita" />
@@ -168,15 +188,24 @@ function LancarDespesa() {
   );
   const [salvando, setSalvando] = useState(false);
 
-  async function handleFinish(values: { descricao: string; valor: number; data: dayjs.Dayjs }) {
+  async function handleFinish(values: {
+    descricao: string;
+    valor: number;
+    data: dayjs.Dayjs;
+    comprovante?: UploadFile[];
+  }) {
     setMensagem(null);
+    const erroArquivo = validarComprovante(values.comprovante);
+    if (erroArquivo) return setMensagem({ tipo: 'error', texto: erroArquivo });
     setSalvando(true);
     try {
-      await api.post('/financeiro/despesas', {
-        descricao: values.descricao,
-        valor: values.valor,
-        data: values.data.format('YYYY-MM-DD'),
-      });
+      await api.post(
+        '/financeiro/despesas',
+        montarFormData(
+          { descricao: values.descricao, valor: values.valor, data: values.data.format('YYYY-MM-DD') },
+          values.comprovante
+        )
+      );
       setMensagem({ tipo: 'success', texto: 'Despesa lançada com sucesso.' });
       form.resetFields();
     } catch {
@@ -198,6 +227,7 @@ function LancarDespesa() {
         <Form.Item label="Data" name="data" rules={[{ required: true }]}>
           <DatePicker style={{ width: 160 }} format="DD/MM/YYYY" data-testid="input-data-despesa" />
         </Form.Item>
+        <CampoComprovante testId="upload-comprovante-despesa" />
       </Space>
       {mensagem && (
         <Alert type={mensagem.tipo} message={mensagem.texto} showIcon style={{ marginBottom: 16 }} data-testid="mensagem-despesa" />

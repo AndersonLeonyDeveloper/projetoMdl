@@ -1,5 +1,6 @@
 import { db, runMigrations, withTransaction } from './index.js';
 import { criarPrng } from './fake-data.js';
+import { gerarComprovantesExemplo, NOMES_COMPROVANTES_EXEMPLO } from './comprovantes-exemplo.js';
 
 // Histórico financeiro fictício (jan/2020 → set/2026) de um condomínio de 192 unidades.
 // Determinístico (semente fixa) e idempotente: limpa e recria taxas, receitas e despesas.
@@ -226,7 +227,7 @@ for (const id of apartamentos) {
       data_pagamento: data,
       situacao: data ? 'adimplente' : 'inadimplente',
       meses_atraso: data ? 0 : sequencia,
-      comprovante_path: null,
+      comprovante_path: null, // preenchido na gravação, só para taxas pagas
     });
   }
 }
@@ -294,17 +295,27 @@ const insertTaxa = db.prepare(`
     (apartamento_id, mes_referencia, ano_referencia, valor, juros, data_pagamento, situacao, meses_atraso, comprovante_path)
   VALUES (@apartamento_id, @mes_referencia, @ano_referencia, @valor, @juros, @data_pagamento, @situacao, @meses_atraso, @comprovante_path)
 `);
-const insertReceita = db.prepare('INSERT INTO outras_receitas (descricao, valor, data) VALUES (?, ?, ?)');
-const insertDespesa = db.prepare('INSERT INTO despesas (descricao, valor, data) VALUES (?, ?, ?)');
+const insertReceita = db.prepare('INSERT INTO outras_receitas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)');
+const insertDespesa = db.prepare('INSERT INTO despesas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)');
+
+// Comprovantes de exemplo: parte dos lançamentos aponta para um dos modelos gerados (PDF ou JPEG).
+// Escolha por posição (não usa o gerador aleatório), então não altera os valores já sorteados.
+gerarComprovantesExemplo();
+const comprovanteDe = (tipo, indice, percentual) =>
+  (indice * 37) % 100 < percentual
+    ? NOMES_COMPROVANTES_EXEMPLO[tipo][indice % NOMES_COMPROVANTES_EXEMPLO[tipo].length]
+    : null;
 
 withTransaction(() => {
   db.exec('DELETE FROM taxas_condominio');
   db.exec('DELETE FROM outras_receitas');
   db.exec('DELETE FROM despesas');
   db.exec("DELETE FROM sqlite_sequence WHERE name IN ('taxas_condominio','outras_receitas','despesas')");
-  for (const l of linhasTaxas) insertTaxa.run(l);
-  for (const r of receitas) insertReceita.run(...r);
-  for (const d of despesas) insertDespesa.run(...d);
+  linhasTaxas.forEach((l, i) =>
+    insertTaxa.run({ ...l, comprovante_path: l.situacao === 'adimplente' ? comprovanteDe('taxa', i, 60) : null })
+  );
+  receitas.forEach((r, i) => insertReceita.run(...r, comprovanteDe('receita', i, 80)));
+  despesas.forEach((d, i) => insertDespesa.run(...d, comprovanteDe('despesa', i, 90)));
 });
 
 // ---------- Resumo ----------

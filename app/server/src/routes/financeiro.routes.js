@@ -1,9 +1,28 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { Router } from 'express';
 import { db, isUniqueConstraintError } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { COMPROVANTES_DIR, MIME_POR_EXTENSAO, salvarComprovante, uploadComprovante } from '../utils/comprovantes.js';
 
 export const financeiroRouter = Router();
 financeiroRouter.use(requireAuth);
+
+// ---------- Comprovantes ----------
+// Qualquer usuário autenticado pode ver. O nome do arquivo é validado antes de tocar no disco.
+
+financeiroRouter.get('/comprovantes/:arquivo', (req, res) => {
+  const { arquivo } = req.params;
+  const extensao = arquivo.split('.').pop();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(arquivo) || !MIME_POR_EXTENSAO[extensao]) {
+    return res.status(404).json({ error: 'Comprovante não encontrado.' });
+  }
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.type(MIME_POR_EXTENSAO[extensao]);
+  res.sendFile(arquivo, { root: COMPROVANTES_DIR, dotfiles: 'deny' }, (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'Comprovante não encontrado.' });
+  });
+});
 
 // ---------- Taxas de Condomínio ----------
 
@@ -30,23 +49,26 @@ financeiroRouter.get('/taxas', (req, res) => {
   res.json(taxas);
 });
 
-financeiroRouter.post('/taxas', requireRole('admin'), (req, res) => {
+financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, res) => {
   const { apartamento_id, mes_referencia, ano_referencia, valor, juros = 0 } = req.body ?? {};
   if (!apartamento_id || !mes_referencia || !ano_referencia || valor == null) {
     return res.status(400).json({
       error: 'apartamento_id, mes_referencia, ano_referencia e valor são obrigatórios.',
     });
   }
+  const comprovante = salvarComprovante(req.file);
+  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
   try {
     const info = db
       .prepare(
         `INSERT INTO taxas_condominio
-           (apartamento_id, mes_referencia, ano_referencia, valor, juros, situacao, meses_atraso)
-         VALUES (?, ?, ?, ?, ?, 'inadimplente', 0)`
+           (apartamento_id, mes_referencia, ano_referencia, valor, juros, situacao, meses_atraso, comprovante_path)
+         VALUES (?, ?, ?, ?, ?, 'inadimplente', 0, ?)`
       )
-      .run(apartamento_id, mes_referencia, ano_referencia, valor, juros);
+      .run(apartamento_id, mes_referencia, ano_referencia, valor, juros, comprovante.nome);
     res.status(201).json({ id: info.lastInsertRowid });
   } catch (err) {
+    if (comprovante.nome) fs.rmSync(path.join(COMPROVANTES_DIR, comprovante.nome), { force: true });
     if (isUniqueConstraintError(err)) {
       return res
         .status(409)
@@ -57,18 +79,20 @@ financeiroRouter.post('/taxas', requireRole('admin'), (req, res) => {
 });
 
 // Registrar pagamento: muda situação para adimplente e zera meses em atraso.
-financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), (req, res) => {
-  const { data_pagamento, comprovante_path } = req.body ?? {};
+financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprovante, (req, res) => {
+  const { data_pagamento } = req.body ?? {};
   if (!data_pagamento) {
     return res.status(400).json({ error: 'data_pagamento é obrigatória.' });
   }
+  const comprovante = salvarComprovante(req.file);
+  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
   const info = db
     .prepare(
       `UPDATE taxas_condominio
        SET data_pagamento = ?, situacao = 'adimplente', meses_atraso = 0, comprovante_path = COALESCE(?, comprovante_path)
        WHERE id = ?`
     )
-    .run(data_pagamento, comprovante_path ?? null, req.params.id);
+    .run(data_pagamento, comprovante.nome, req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: 'Taxa não encontrada.' });
   res.json({ message: 'Pagamento registrado.' });
 });
@@ -87,16 +111,18 @@ financeiroRouter.get('/outras-receitas', (req, res) => {
   );
 });
 
-financeiroRouter.post('/outras-receitas', requireRole('admin'), (req, res) => {
-  const { descricao, valor, data, comprovante_path } = req.body ?? {};
+financeiroRouter.post('/outras-receitas', requireRole('admin'), uploadComprovante, (req, res) => {
+  const { descricao, valor, data } = req.body ?? {};
   if (!descricao || valor == null || !data) {
     return res.status(400).json({ error: 'descricao, valor e data são obrigatórios.' });
   }
+  const comprovante = salvarComprovante(req.file);
+  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
   const info = db
     .prepare(
       'INSERT INTO outras_receitas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)'
     )
-    .run(descricao, valor, data, comprovante_path ?? null);
+    .run(descricao, valor, data, comprovante.nome);
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
@@ -112,16 +138,18 @@ financeiroRouter.get('/despesas', (req, res) => {
   res.json(db.prepare(`SELECT * FROM despesas ${where} ORDER BY data DESC`).all(params));
 });
 
-financeiroRouter.post('/despesas', requireRole('admin'), (req, res) => {
-  const { descricao, valor, data, comprovante_path } = req.body ?? {};
+financeiroRouter.post('/despesas', requireRole('admin'), uploadComprovante, (req, res) => {
+  const { descricao, valor, data } = req.body ?? {};
   if (!descricao || valor == null || !data) {
     return res.status(400).json({ error: 'descricao, valor e data são obrigatórios.' });
   }
+  const comprovante = salvarComprovante(req.file);
+  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
   const info = db
     .prepare(
       'INSERT INTO despesas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)'
     )
-    .run(descricao, valor, data, comprovante_path ?? null);
+    .run(descricao, valor, data, comprovante.nome);
   res.status(201).json({ id: info.lastInsertRowid });
 });
 

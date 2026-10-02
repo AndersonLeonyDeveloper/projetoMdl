@@ -8,7 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const dbPath = process.env.DATABASE_PATH ?? './data/condominio.sqlite';
 const resolvedPath = path.resolve(process.cwd(), dbPath);
-fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+export const DATA_DIR = path.dirname(resolvedPath);
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 export const db = new DatabaseSync(resolvedPath);
 db.exec('PRAGMA foreign_keys = ON');

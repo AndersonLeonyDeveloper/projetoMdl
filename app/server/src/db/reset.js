@@ -1,4 +1,6 @@
+import fs from 'node:fs';
 import { db, runMigrations, withTransaction } from './index.js';
+import { COMPROVANTES_DIR } from '../utils/comprovantes.js';
 
 runMigrations();
 
@@ -30,6 +32,8 @@ withTransaction(() => {
     WHERE name IN ('moradores','password_reset_tokens','taxas_condominio','outras_receitas','despesas')
   `);
 });
+
+fs.rmSync(COMPROVANTES_DIR, { recursive: true, force: true });
 
 const admins = db.prepare("SELECT email FROM usuarios WHERE role = 'admin'").all();
 console.log('Banco zerado com sucesso. Mantidos a estrutura (blocos/apartamentos) e o(s) administrador(es):');

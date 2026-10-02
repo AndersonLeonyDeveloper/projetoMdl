@@ -11,7 +11,8 @@
     "db:seed": "node src/db/seed.js",
     "db:reset": "node src/db/reset.js",
     "db:seed:moradores": "node src/db/seed-moradores.js",
-    "db:seed:financeiro": "node src/db/seed-financeiro.js"
+    "db:seed:financeiro": "node src/db/seed-financeiro.js",
+    "db:comprovantes": "node src/db/comprovantes-exemplo.js"
   },
   "engines": {
     "node": ">=22.5.0"
@@ -21,6 +22,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2"
+    "jpeg-js": "^0.4.4",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0"
   }
 }

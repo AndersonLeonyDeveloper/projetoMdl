@@ -15,6 +15,7 @@
     "db:reset": "npm run db:reset -w server",
     "db:seed:moradores": "npm run db:seed:moradores -w server",
     "db:seed:financeiro": "npm run db:seed:financeiro -w server",
+    "db:comprovantes": "npm run db:comprovantes -w server",
     "build": "npm run build -w client"
   },
   "devDependencies": {
