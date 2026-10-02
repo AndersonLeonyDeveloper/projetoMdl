@@ -101,6 +101,13 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Total adimplente (mês/bloco)** = soma dos valores de taxa de condomínio pagos no prazo.
 - **Total inadimplente (mês/bloco)** = soma dos valores de taxa de condomínio **em atraso** (em aberto e já vencidas). Taxas em aberto ainda no prazo aparecem à parte, como **A vencer**, e não entram no inadimplente nem no saldo por bloco. O mesmo vale para a Inadimplência anual e para a Evolução ("em aberto" e "atrasadas"), que usam o dia de vencimento configurado. Para o histórico, nada muda, porque tudo já venceu; só o mês corrente é afetado. Alterar o dia de vencimento em Configurações financeiras reclassifica retroativamente quais taxas contam como atrasadas nesses resumos.
 - Indicadores visuais: saldo positivo (verde/seta para cima) e saldo negativo (vermelho/seta para baixo).
+- **Regime do resumo do mês (competência ou caixa):** o resumo mensal (receitas, despesas e saldo) pode ser lido de duas formas, escolhidas por um seletor em Visualizar → Financeiro e em Minha Área → Financeiro.
+  - **Competência** (padrão): a taxa conta no **mês de referência**, mesmo que paga depois. É o que o sistema sempre mostrou.
+  - **Caixa:** a taxa conta no **mês em que foi paga** (data de pagamento), com o juros. Um atraso pago em março entra nas receitas de março, e não nas do mês original.
+  - **Não muda** entre os regimes: as despesas e as outras receitas (usam a própria data). Cancelados ficam de fora dos dois.
+  - Os dois regimes somam o mesmo total no longo prazo (cada taxa paga entra uma vez); só muda o mês em que cai. No seed, de 2020 a 2026 os totais coincidem.
+  - O seletor vale **só para o resumo do mês** (cartões de receitas, despesas e saldo). O resumo por bloco, a inadimplência, a evolução e as listas continuam por competência.
+  - API: `GET /financeiro/resumo/mensal?regime=competencia|caixa` (padrão competência; outro valor retorna 400); a resposta informa o `regime` usado.
 
 ### 4.5 Consultas / Filtros
 - Financeiro pode ser filtrado por Ano → Mês → Tipo de receita (Taxa de Condomínio / Outras Receitas) → Bloco.

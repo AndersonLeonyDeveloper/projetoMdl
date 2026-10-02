@@ -577,6 +577,26 @@
 - [ ] **Botão bloqueado**: em taxa paga o botão "Cancelar" fica desabilitado e explica por quê. `E2E`
 - [ ] **Perfil morador**: não há "Mostrar cancelados" nem botões de ação nas listas. `E2E`
 
+### 7.16 Resumo do mês por regime (competência e caixa)
+
+> Cenários levantados em 02/10/2026 (item 2.2 do backlog). Regras na seção 4.4 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`RegimeDeCaixaApiTest`, compilado e ainda não executado).
+
+- [ ] **Padrão**: sem `regime`, vale a competência e a resposta informa `regime`; `regime=caixa` informa `caixa`. `API`
+- [ ] **Validação**: regime desconhecido retorna 400; sem ano ou mês continua 400. `API`
+- [ ] **Os regimes diferem**: em um mês com atrasos pagos depois (ex.: 05/2023), as receitas de competência e de caixa são
+  diferentes, e as despesas são iguais. `API`
+- [ ] **Pagamento em outro mês**: pagar em março uma taxa de janeiro sobe a receita de janeiro na competência e a de março no
+  caixa, e não mexe no caixa de janeiro nem na competência de março. `API`
+- [ ] **Totais convergem**: de 2020 a 2026 a soma das receitas é a mesma nos dois regimes. `API` / `DB/Integridade`
+- [ ] **Conferência no banco**: a competência de um mês é igual à soma das taxas pagas com aquele mês de referência mais as outras
+  receitas; o caixa, à das taxas com data de pagamento naquele mês mais as outras receitas. `DB/Integridade`
+- [ ] **Cancelados**: despesa ou receita cancelada sai dos dois regimes e volta ao restaurar. `API`
+- [ ] **Acesso**: qualquer perfil logado consulta os dois regimes; sem token, 401. `API`
+- [ ] **Seletor**: "Competência | Caixa" aparece no resumo do mês, nas telas do admin e do morador; trocar atualiza os cartões
+  de receitas, despesas e saldo e a explicação ao lado, sem mudar o resumo por bloco nem as listas. `E2E`
+- [ ] **Valor inicial**: a tela abre sempre em Competência. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

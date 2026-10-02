@@ -3,6 +3,7 @@ import { Card, Select, InputNumber, Spin, Table, Typography, Space, Statistic, R
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../../api/client';
 import { LancamentosDoMes } from '../../components/LancamentosDoMes';
+import { SeletorRegime, type Regime } from '../../components/SeletorRegime';
 
 const { Title } = Typography;
 
@@ -33,15 +34,16 @@ export function FinanceiroCondominio() {
   const [mes, setMes] = useState(new Date().getMonth() + 1);
   const [resumoMensal, setResumoMensal] = useState<ResumoMensal | null>(null);
   const [resumoBlocos, setResumoBlocos] = useState<ResumoBloco[]>([]);
+  const [regime, setRegime] = useState<Regime>('competencia');
 
   useEffect(() => {
-    api.get<ResumoMensal>('/financeiro/resumo/mensal', { params: { ano, mes } }).then((res) =>
+    api.get<ResumoMensal>('/financeiro/resumo/mensal', { params: { ano, mes, regime } }).then((res) =>
       setResumoMensal(res.data)
     );
     api.get<ResumoBloco[]>('/financeiro/resumo/blocos', { params: { ano, mes } }).then((res) =>
       setResumoBlocos(res.data)
     );
-  }, [ano, mes]);
+  }, [ano, mes, regime]);
 
   const columns: ColumnsType<ResumoBloco> = [
     {
@@ -82,6 +84,7 @@ export function FinanceiroCondominio() {
               options={MESES.map((m, idx) => ({ value: idx + 1, label: m }))}
             />
           </div>
+          <SeletorRegime valor={regime} onChange={setRegime} />
         </Space>
       </Card>
 

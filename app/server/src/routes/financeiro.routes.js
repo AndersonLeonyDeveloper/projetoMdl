@@ -523,16 +523,31 @@ financeiroRouter.get('/auditoria', requireRole('admin'), (req, res) => {
 // ---------- Resumos ----------
 
 // Visão geral do mês (equivalente ao card "JANEIRO" do protótipo): receita - despesa.
+// regime=competencia (padrão): as taxas entram no mês de referência. regime=caixa: entram no mês em que foram pagas.
+// Outras receitas e despesas usam a própria data nos dois regimes.
 financeiroRouter.get('/resumo/mensal', (req, res) => {
   const { ano, mes } = req.query;
   if (!ano || !mes) return res.status(400).json({ error: 'ano e mes são obrigatórios.' });
+  const regime = req.query.regime ?? 'competencia';
+  if (!['competencia', 'caixa'].includes(regime)) {
+    return res.status(400).json({ error: 'regime deve ser "competencia" ou "caixa".' });
+  }
 
-  const receitasTaxas = db
-    .prepare(
-      `SELECT COALESCE(SUM(valor + juros), 0) AS total FROM taxas_condominio
-       WHERE ano_referencia = ? AND mes_referencia = ? AND situacao = 'adimplente' AND cancelado_em IS NULL`
-    )
-    .get(ano, mes).total;
+  const receitasTaxas =
+    regime === 'caixa'
+      ? db
+          .prepare(
+            `SELECT COALESCE(SUM(valor + juros), 0) AS total FROM taxas_condominio
+             WHERE strftime('%Y', data_pagamento) = ? AND strftime('%m', data_pagamento) = ?
+               AND situacao = 'adimplente' AND cancelado_em IS NULL`
+          )
+          .get(String(ano), String(mes).padStart(2, '0')).total
+      : db
+          .prepare(
+            `SELECT COALESCE(SUM(valor + juros), 0) AS total FROM taxas_condominio
+             WHERE ano_referencia = ? AND mes_referencia = ? AND situacao = 'adimplente' AND cancelado_em IS NULL`
+          )
+          .get(ano, mes).total;
 
   const receitasOutras = db
     .prepare(
@@ -549,7 +564,7 @@ financeiroRouter.get('/resumo/mensal', (req, res) => {
     .get(String(ano), String(mes).padStart(2, '0')).total;
 
   const receitas = receitasTaxas + receitasOutras;
-  res.json({ receitas, despesas, saldo: receitas - despesas });
+  res.json({ regime, receitas, despesas, saldo: receitas - despesas });
 });
 
 // Visão por bloco (equivalente aos cards "Bloco 1..6" do protótipo).

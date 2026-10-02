@@ -69,7 +69,8 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       'Mostra o financeiro de um mês. É aqui que você registra o pagamento das taxas, corrige lançamentos e abre os comprovantes.',
     passos: [
       { titulo: 'Período', descricao: 'Escolha o ano e o mês que quer consultar.', alvo: 'input-ano' },
-      { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido.', alvo: 'resumo-mensal' },
+      { titulo: 'Regime: competência ou caixa', descricao: 'Competência conta a taxa no mês a que ela se refere; Caixa conta no mês em que foi paga. Isso muda as receitas e o saldo do mês (despesas e outras receitas não mudam).', alvo: 'segmented-regime' },
+      { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido, no regime selecionado.', alvo: 'resumo-mensal' },
       { titulo: 'Taxas do mês', descricao: 'A situação mostra Adimplente, A vencer (em aberto, ainda no prazo) ou Em atraso (vencida). Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Se você chegou por um mês em atraso de Dados dos Moradores, a lista mostra só aquele apartamento; use "Ver todos os apartamentos" para voltar.', alvo: 'tabela-taxas' },
       { titulo: 'Corrigir uma taxa', descricao: 'Nas taxas já pagas o botão é Editar: corrija o valor, a data ou o comprovante.', alvo: 'botao-editar-taxa' },
       { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento, o Cancelar (com motivo; some dos totais e pode ser restaurado com "Mostrar cancelados") e o link para ver o comprovante.', alvo: 'tabela-despesas' },
@@ -128,7 +129,8 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     resumo: 'Mostra o financeiro do condomínio em modo leitura: receitas, despesas, saldo e comprovantes.',
     passos: [
       { titulo: 'Período', descricao: 'Escolha o ano e o mês que quer consultar.', alvo: 'input-ano' },
-      { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do condomínio no mês.', alvo: 'resumo-mensal' },
+      { titulo: 'Regime: competência ou caixa', descricao: 'Competência conta a taxa no mês a que ela se refere; Caixa conta no mês em que foi paga. Escolha como quer ler as receitas do mês.', alvo: 'segmented-regime' },
+      { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do condomínio no mês, no regime selecionado.', alvo: 'resumo-mensal' },
       { titulo: 'Resumo por bloco', descricao: 'Quanto cada bloco tem em dia e em aberto.', alvo: 'tabela-resumo-blocos' },
       { titulo: 'Comprovantes', descricao: 'Nas listas de outras receitas e despesas, "Ver comprovante" abre o arquivo em uma nova aba.', alvo: 'tabela-despesas' },
       { titulo: 'Evolução do condomínio', descricao: 'No fim da tela, os gráficos mostram receitas, despesas e saldo ao longo dos anos (mensal ou anual). É um resumo do condomínio, sem dados de cada morador.', alvo: 'evolucao-do-condominio' },

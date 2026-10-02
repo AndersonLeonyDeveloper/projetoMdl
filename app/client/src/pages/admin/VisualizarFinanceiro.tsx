@@ -6,6 +6,7 @@ import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
 import { ComprovanteLink } from '../../components/ComprovanteLink';
 import { LancamentosDoMes } from '../../components/LancamentosDoMes';
 import { CancelarRestaurar } from '../../components/CancelarRestaurar';
+import { SeletorRegime, type Regime } from '../../components/SeletorRegime';
 import { EditarTaxaModal } from '../../components/EditarTaxaModal';
 
 const { Title } = Typography;
@@ -56,10 +57,11 @@ export function VisualizarFinanceiro() {
   const [taxas, setTaxas] = useState<Taxa[]>([]);
   const [editando, setEditando] = useState<Taxa | null>(null);
   const [mostrarCanceladas, setMostrarCanceladas] = useState(false);
+  const [regime, setRegime] = useState<Regime>('competencia');
   const [recarregar, setRecarregar] = useState(0);
 
   useEffect(() => {
-    api.get<ResumoMensal>('/financeiro/resumo/mensal', { params: { ano, mes } }).then((res) =>
+    api.get<ResumoMensal>('/financeiro/resumo/mensal', { params: { ano, mes, regime } }).then((res) =>
       setResumoMensal(res.data)
     );
     api.get<ResumoBloco[]>('/financeiro/resumo/blocos', { params: { ano, mes } }).then((res) =>
@@ -70,7 +72,7 @@ export function VisualizarFinanceiro() {
         params: { ano, mes, apartamento_id: apartamentoId ?? undefined, incluir_cancelados: mostrarCanceladas ? 'true' : undefined },
       })
       .then((res) => setTaxas(res.data));
-  }, [ano, mes, apartamentoId, mostrarCanceladas, recarregar]);
+  }, [ano, mes, regime, apartamentoId, mostrarCanceladas, recarregar]);
 
   async function recalcularJuros(id: number) {
     try {
@@ -199,6 +201,7 @@ export function VisualizarFinanceiro() {
               options={MESES.map((m, idx) => ({ value: idx + 1, label: m }))}
             />
           </div>
+          <SeletorRegime valor={regime} onChange={setRegime} />
         </Space>
       </Card>
 

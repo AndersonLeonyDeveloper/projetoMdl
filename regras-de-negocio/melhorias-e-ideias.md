@@ -41,8 +41,8 @@ Uma versão da tela de evolução, sem dados de inadimplência por apartamento, 
 ### [ ] 2.1 Fundo de reserva como entidade — esforço G
 Hoje ele está embutido na taxa e só aparece no saldo anual. Modelá-lo (percentual da taxa, saldo acumulado, retiradas para obras) permitiria mostrar "a obra de 2023 foi paga pelo fundo de reserva" com números.
 
-### [ ] 2.2 Saldo por regime de caixa — esforço M
-`/financeiro/resumo/mensal` soma as taxas pelo **mês de referência**, e não pela data do pagamento. Um atraso pago depois conta como receita do mês original. Uma visão por data de pagamento (regime de caixa) daria outra leitura e poderia ser oferecida ao lado.
+### [x] 2.2 Saldo por regime de caixa — esforço M
+`/financeiro/resumo/mensal` soma as taxas pelo **mês de referência**, e não pela data do pagamento. Um atraso pago depois conta como receita do mês original. Uma visão por data de pagamento (regime de caixa) daria outra leitura e poderia ser oferecida ao lado. *Implementado em 02/10/2026:* `GET /financeiro/resumo/mensal?regime=caixa` (por data de pagamento) ao lado da competência (padrão) e o seletor "Competência | Caixa" no resumo do mês de Visualizar → Financeiro e de Minha Área → Financeiro. Regras na seção 4.4. Ficam de fora o regime de caixa na Evolução e no resumo por bloco.
 
 ### [ ] 2.3 Rateio de despesas por bloco — esforço G
 Já está em aberto em `regras-de-negocio.md`, seção 7. O saldo por bloco hoje usa adimplente − inadimplente, e não receita − despesa.
