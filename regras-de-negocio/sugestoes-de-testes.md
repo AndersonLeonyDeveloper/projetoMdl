@@ -224,6 +224,79 @@
 - [ ] **Distribuição**: taxas em aberto não têm comprovante; parte das taxas pagas, receitas e despesas têm. `API`
 - [ ] **Reset**: `db:reset` apaga a pasta de comprovantes, e os lançamentos novos voltam a funcionar. `DB/Integridade`
 
+### 7.5 Edição de lançamentos, configurações financeiras, taxas em lote e juros
+
+> Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seções 4.1.1 e 4.6 a 4.8
+> (itens 2.8 a 2.11 do backlog). Pré-requisito: `npm run db:seed && npm run db:seed:financeiro`.
+
+**Edição de despesas e outras receitas**
+- [ ] **Corrigir valor, descrição e data**: `PUT` altera o lançamento, a listagem mostra o novo valor e o resumo mensal
+  (receitas, despesas, saldo) muda na mesma medida. `API` / `E2E`
+- [ ] **Validação**: descrição vazia, valor ausente ou data ausente retornam 400 e o lançamento não muda. `API`
+- [ ] **Inexistente**: editar um `id` que não existe retorna 404. `API`
+- [ ] **RBAC**: proprietário e inquilino recebem 403; sem token, 401. A coluna "Ações" não aparece para morador. `API` / `E2E`
+- [ ] **Valor-limite**: valor 0 e valor com centavos (ex.: 10,005) respeitam a mesma regra do cadastro. `API`
+- [ ] **Resumos refletem a edição**: editar uma despesa de um mês reflete no resumo mensal, por bloco e na evolução
+  (não em outros meses). `API`
+
+**Comprovante na edição**
+- [ ] **Mantém**: editar sem enviar arquivo preserva o `comprovante_path`. `API`
+- [ ] **Substitui**: enviar novo arquivo troca o comprovante, e o arquivo antigo deixa de existir (404 ao acessá-lo). `API`
+- [ ] **Remove**: a opção de remover deixa `comprovante_path` nulo e apaga o arquivo do disco. `API`
+- [ ] **Arquivo inválido na edição** (conteúdo falso ou acima de 5 MB) retorna 400/413 e **não altera nada**, nem os
+  outros campos nem o comprovante atual. `API`
+- [ ] **Comprovante de exemplo compartilhado**: remover ou trocar o comprovante de um lançamento do seed **não apaga**
+  o arquivo `exemplo-*` usado por outros lançamentos. `API`
+
+**Edição de taxas**
+- [ ] **Campos editáveis**: valor, juros, data de pagamento e comprovante mudam; `apartamento_id`, mês e ano enviados no
+  corpo são ignorados ou recusados. `API`
+- [ ] **Situação derivada**: informar a data de pagamento torna a taxa adimplente com `meses_atraso = 0`; remover a data
+  volta a inadimplente. `API`
+- [ ] **Registrar pagamento pela interface**: o admin abre a taxa em aberto, informa a data, confere a prévia do juros e
+  confirma; a linha passa a adimplente. `E2E`
+- [ ] **Editar valor não recalcula o juros gravado**: a tela mostra o novo cálculo, mas o juros só muda se o admin
+  confirmar. `API` / `E2E`
+
+**Configurações financeiras**
+- [ ] **Leitura e escrita**: `GET` para qualquer perfil autenticado, `PUT` só para admin (403 para morador, 401 sem token). `API`
+- [ ] **Validações**: valor da taxa negativo; multa acima de 2% ou negativa; juros negativo; vencimento fora de 1–28 retornam
+  400 e nada é salvo. `API`
+- [ ] **Valor padrão por ano**: o formulário de taxa vem preenchido com o valor do ano escolhido, muda ao trocar o ano,
+  e o campo continua editável. Ano sem valor configurado deixa o campo vazio. `E2E`
+- [ ] **Alterar a configuração não altera o histórico**: mudar o valor de 2026 não muda as taxas já lançadas. `API`
+- [ ] **Seed**: após `db:seed:financeiro`, os valores de 2020 a 2026 coincidem com os usados na carga (230 … 325),
+  multa 2%, juros 1% e vencimento dia 10. `API`
+
+**Gerar taxas do mês (lote)**
+- [ ] **Cria uma taxa por apartamento**: em um mês sem taxas, gera 192, todas com o valor do ano, inadimplentes, sem juros
+  e sem comprovante. `API`
+- [ ] **Idempotência**: gerar de novo o mesmo mês não cria nem altera nada (resposta: 0 criadas, 192 ignoradas). `API`
+- [ ] **Mês parcialmente lançado**: com algumas taxas já lançadas à mão, gera só as que faltam e **não sobrescreve** o valor
+  das existentes. `API`
+- [ ] **Ano sem valor configurado** retorna 400 e não cria nada. `API`
+- [ ] **Mês/ano inválidos** (mês 0 ou 13, ano ausente) retornam 400. `API`
+- [ ] **RBAC**: só admin. `API`
+- [ ] **Interface**: o botão informa quantas taxas foram criadas e quantas ignoradas; o resumo do mês passa a mostrar o
+  total inadimplente. `E2E`
+
+**Juros e multa no pagamento**
+- [ ] **Sem atraso**: pagar no dia do vencimento ou antes resulta em juros 0. `API`
+- [ ] **Valor-limite do vencimento**: pagar no dia 10 → 0 dia de atraso; no dia 11 → 1 dia, com multa de 2% mais
+  1/30 do juros mensal. `API`
+- [ ] **Fórmula**: taxa de R$ 325,00 paga com 10 dias de atraso resulta em juros de R$ 7,58 e total de R$ 332,58. `API`
+- [ ] **Arredondamento**: casos que caem em meio centavo (ex.: R$ 8,125) arredondam como na regra definida e o valor
+  salvo é igual ao exibido. `API`
+- [ ] **Pagamento em outro mês**: o vencimento é o do **mês de referência** da taxa (pagar em março a taxa de janeiro
+  resulta em 49 dias de atraso, não em atraso do mês corrente). `API`
+- [ ] **Vencimento configurável**: mudar o dia de vencimento altera o cálculo dos pagamentos seguintes, mas não o dos
+  já registrados. `API`
+- [ ] **Ajuste manual**: informar o juros no pagamento (incluindo 0 em um acordo) prevalece sobre o cálculo. `API`
+- [ ] **Prévia = valor gravado**: os valores mostrados antes de confirmar (dias, multa, juros, total) são iguais aos
+  gravados depois. `E2E`
+- [ ] **Total do morador** = valor + juros, e os resumos (adimplente, receitas) usam esse total. `API`
+- [ ] **Data de pagamento inválida ou futura**: comportamento definido (recusa ou aceita), sem erro 500. `API`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt
