@@ -85,14 +85,14 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 
 ## 3. Dados de demonstração e ferramentas
 
-### [ ] 3.1 Comando único `db:populate` — esforço P
-Rodar `db:reset`, `db:seed:moradores` e `db:seed:financeiro` em sequência. Hoje são três comandos.
+### [x] 3.1 Comando único `db:populate` — esforço P
+Rodar `db:reset`, `db:seed:moradores` e `db:seed:financeiro` em sequência. Hoje são três comandos. *Implementado em 02/10/2026:* `npm run db:populate` (`app/server/src/db/populate.js`) roda `db:reset`, `db:seed:moradores` e `db:seed:financeiro` em sequência, parando no primeiro erro, e funciona também em banco novo (o reset cria o administrador se faltar).
 
-### [ ] 3.2 Unificar com o `db:seed` antigo — esforço P
-O `db:seed` (7 moradores de exemplo) apaga e recria moradores e conflita com `db:seed:moradores`. Pode virar um modo "pequeno" do novo script, ou ser removido quando os testes automatizados não dependerem mais dele.
+### [x] 3.2 Unificar com o `db:seed` antigo — esforço P
+O `db:seed` (7 moradores de exemplo) apaga e recria moradores e conflita com `db:seed:moradores`. Pode virar um modo "pequeno" do novo script, ou ser removido quando os testes automatizados não dependerem mais dele. *Implementado em 02/10/2026:* o `db:seed` foi removido. Os logins de teste e os cenários de borda (apartamento vazio, só inquilinos, histórico de inquilino) passaram para o `db:seed:moradores`, e a suíte de API roda com `db:populate`, sem apagar os 768 moradores.
 
-### [ ] 3.3 Logins para os moradores gerados — esforço P
-Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra permitiria demonstrar as telas de proprietário e inquilino com dados volumosos.
+### [x] 3.3 Logins para os moradores gerados — esforço P
+Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra permitiria demonstrar as telas de proprietário e inquilino com dados volumosos. *Implementado em 02/10/2026:* o `db:seed:moradores` cria logins (`senha123`) para `anderson@`, `maria@` e `carlos.inquilino@example.com` e para o proprietário e o inquilino do apartamento 01 dos blocos 01 a 03, ligados a moradores gerados.
 
 ### [x] 3.4 Comprovantes de exemplo — esforço M
 *Implementado em 02/10/2026.* O script `db:comprovantes` gera 12 arquivos fictícios (PDF e JPEG, 2 modelos por tipo) em `app/server/data/comprovantes/`, e o `db:seed:financeiro` já o chama. Parte dos lançamentos aponta para eles (60% das taxas pagas, 80% das receitas, 90% das despesas). Os três formulários de cadastro têm o campo opcional "Comprovante" (PDF, JPEG ou PNG, até 5 MB), e os dois perfis veem o arquivo pelo link "Ver comprovante" (taxas na tela do admin, receitas e despesas nas telas de Financeiro dos dois perfis).

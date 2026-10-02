@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -59,3 +60,17 @@ export function isUniqueConstraintError(err) {
 
 // Parâmetros financeiros (multa, juros e dia de vencimento): uma única linha, id = 1.
 export const lerConfiguracao = () => db.prepare('SELECT * FROM configuracao_financeira WHERE id = 1').get();
+
+export const SENHA_PADRAO = 'senha123';
+export const EMAIL_ADMIN_PADRAO = 'admin@condominio.com';
+
+// Cria o administrador padrão se o banco ainda não tiver nenhum. Retorna true quando criou.
+export function garantirAdmin() {
+  if (db.prepare("SELECT id FROM usuarios WHERE role = 'admin' LIMIT 1").get()) return false;
+  db.prepare('INSERT INTO usuarios (email, senha_hash, role, pessoa_id) VALUES (?, ?, ?, NULL)').run(
+    EMAIL_ADMIN_PADRAO,
+    bcrypt.hashSync(SENHA_PADRAO, 10),
+    'admin'
+  );
+  return true;
+}

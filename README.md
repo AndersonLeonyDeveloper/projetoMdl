@@ -38,7 +38,7 @@ cp client/.env.example client/.env.local
 
 # criar o banco e popular com dados de exemplo
 npm run db:migrate
-npm run db:seed
+npm run db:populate   # admin, 768 moradores com logins de teste e o histórico financeiro
 
 # subir backend (porta 3001) e frontend (porta 5173) juntos
 npm run dev
@@ -54,13 +54,15 @@ Acesse `http://localhost:5173`.
 | anderson@example.com | proprietario | vinculado a 2 apartamentos (Bl.08/203 e Bl.09/101) |
 | maria@example.com | proprietario | Bl.08/101 |
 | carlos.inquilino@example.com | inquilino | Bl.08/203 |
+| proprietario.bloco01@example.com … bloco03 | proprietario | apartamento 01 de cada bloco 01–03 |
+| inquilino.bloco01@example.com … bloco03 | inquilino | apartamento 01 de cada bloco 01–03 |
 
 ## Scripts úteis (rodar dentro de `app/`)
 
 - `npm run dev` — sobe server + client em paralelo
 - `npm run dev:server` / `npm run dev:client` — sobem individualmente
 - `npm run db:migrate` — aplica o schema (`app/server/src/db/schema.sql`)
-- `npm run db:seed` — popula o banco com dados cobrindo os cenários de `regras-de-negocio/sugestoes-de-testes.md`
+- `npm run db:populate` — monta o banco completo de demonstração: `db:reset` + `db:seed:moradores` (com os logins de teste) + `db:seed:financeiro`
 - `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
 - `npm run db:seed:moradores` — 1 proprietário + 3 inquilinos em cada um dos 192 apartamentos
 - `npm run db:seed:financeiro` — histórico financeiro de jan/2020 a set/2026 (já gera os comprovantes de exemplo)

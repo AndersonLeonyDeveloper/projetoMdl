@@ -6,8 +6,7 @@ Suíte de testes de API em Java/Maven (JUnit 5 + RestAssured). A API roda em `ht
 
 ## Como rodar
 1. Subir a aplicação (`cd app && npm run dev`).
-2. Popular o banco: `npm run db:seed && npm run db:seed:financeiro` (cria os usuários de teste, o histórico financeiro e os comprovantes de exemplo).
-> **Atenção:** o `db:seed` **apaga todos os moradores, pessoas e usuários** antes de criar os 4 usuários de teste (admin, anderson, maria e carlos.inquilino) e alguns moradores nos blocos 08 e 09. Isso **remove os 768 moradores** criados por `db:seed:moradores`, e a tela "Dados dos Moradores" fica quase toda vazia. Os dois seeds não se combinam: use o `db:seed` só para rodar esta suíte, e depois volte ao banco completo com `npm run db:reset && npm run db:seed:moradores && npm run db:seed:financeiro` (isso apaga de novo os usuários de teste, e o admin continua).
+2. Popular o banco: `npm run db:populate` (cria os logins de teste, os 768 moradores, o histórico financeiro e os comprovantes de exemplo).
 3. Rodar a suíte: `cd test/restassured && mvn test`. Para outra URL: `mvn test -DapiUrl=http://host:porta/api`.
 
 Requisitos: Java 17+ e Maven 3.9+.
@@ -22,6 +21,6 @@ Requisitos: Java 17+ e Maven 3.9+.
 | `DadosMoradoresApiTest` | Coluna Mensalidades de Dados dos Moradores: RBAC, formato por tipo de linha, taxa vencida × futura, ordem, pagar tira da lista, valor-limite do dia de vencimento, valor devido com juros até hoje e filtro por apartamento (seção 7.7) |
 | `JurosNoPagamentoApiTest` | Fórmula de multa e juros, valores-limite do vencimento, arredondamento, ajuste manual e histórico preservado (seção 7.5) |
 
-Os testes **criam lançamentos que a API não permite apagar** (inclusive 192 taxas por mês gerado, em anos futuros) e alteram um lançamento do seed (o teste do comprovante de exemplo compartilhado). Os que mexem na configuração financeira a restauram ao final. Para voltar ao estado inicial da suíte, rode de novo `db:seed` e `db:seed:financeiro`. Para ter os 768 moradores de volta, veja o aviso acima.
+Os testes **criam lançamentos que a API não permite apagar** (inclusive 192 taxas por mês gerado, em anos futuros) e alteram um lançamento do seed (o teste do comprovante de exemplo compartilhado). Os que mexem na configuração financeira a restauram ao final. Para voltar ao estado inicial, rode `npm run db:populate` de novo.
 
 Casos candidatos às próximas classes: itens marcados `API` em [`../../regras-de-negocio/sugestoes-de-testes.md`](../../regras-de-negocio/sugestoes-de-testes.md).

@@ -1,18 +1,11 @@
 import fs from 'node:fs';
-import { db, runMigrations, withTransaction } from './index.js';
+import { db, garantirAdmin, runMigrations, withTransaction } from './index.js';
 import { COMPROVANTES_DIR } from '../utils/comprovantes.js';
 
 runMigrations();
 
-const { total: totalAdmins } = db
-  .prepare("SELECT COUNT(*) AS total FROM usuarios WHERE role = 'admin'")
-  .get();
-
-if (totalAdmins === 0) {
-  console.error('Nenhum usuário admin encontrado — reset abortado para não deixar o sistema sem acesso.');
-  console.error('Rode "npm run db:seed" para criar o admin padrão.');
-  process.exit(1);
-}
+// Em um banco novo ainda não há administrador: cria o padrão para o sistema nunca ficar sem acesso.
+if (garantirAdmin()) console.log('Administrador padrão criado (senha padrão: "senha123").');
 
 withTransaction(() => {
   db.exec('DELETE FROM password_reset_tokens');

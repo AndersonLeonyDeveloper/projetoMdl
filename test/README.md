@@ -9,7 +9,7 @@ Suítes de teste do sistema em [`../app`](../app), uma pasta por ferramenta. Cad
 
 ## Pré-requisitos para qualquer suíte
 1. Subir a aplicação (`cd app && npm run dev`).
-2. Popular o banco: `npm run db:reset && npm run db:seed:moradores && npm run db:seed:financeiro`. A suíte de API (RestAssured) precisa dos usuários de teste, então use `npm run db:seed && npm run db:seed:financeiro`, **que apaga os 768 moradores** (veja o aviso em [`restassured/README.md`](./restassured/README.md)).
+2. Popular o banco: `npm run db:populate` (admin, 768 moradores com os logins de teste e o histórico financeiro). Pode ser repetido a qualquer momento para voltar ao estado inicial.
 3. Usuário administrador: `admin@condominio.com` (senha padrão no README da raiz).
 
 ## De onde vêm os casos de teste

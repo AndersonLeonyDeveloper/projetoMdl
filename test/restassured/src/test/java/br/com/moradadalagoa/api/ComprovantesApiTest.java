@@ -23,7 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 /**
  * Comprovantes (upload e visualização) — cenários da seção 7.4 de sugestoes-de-testes.md.
  *
- * Pré-requisito: banco com `npm run db:seed && npm run db:seed:financeiro` (usuários de teste + histórico
+ * Pré-requisito: banco com `npm run db:populate` (usuários de teste + histórico
  * financeiro + comprovantes de exemplo). Os testes criam lançamentos que não podem ser apagados pela API.
  */
 class ComprovantesApiTest extends ApiBase {

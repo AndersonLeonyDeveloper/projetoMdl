@@ -9,7 +9,8 @@ O condomínio fictício "Morada da Lagoa" tem **12 blocos**, cada um com **16 ap
 | Comando | O que carrega | Quando usar |
 |---|---|---|
 | (automático ao iniciar o servidor) | Estrutura: blocos 01–12 e seus apartamentos | Nunca precisa rodar à mão |
-| `npm run db:seed:moradores` | 192 proprietários e 576 inquilinos | Para ter o cadastro completo de moradores |
+| `npm run db:populate` | Tudo abaixo, em sequência: reset, moradores com logins e financeiro | **O jeito normal**: banco completo em um comando |
+| `npm run db:seed:moradores` | 192 proprietários e 576 inquilinos, os logins de teste e os cenários de borda | Para refazer só o cadastro de moradores |
 | `npm run db:seed:financeiro` | Taxas, receitas e despesas de jan/2020 a set/2026 | Para ter o histórico financeiro |
 | `npm run db:reset` | Zera moradores e financeiro, mantém a estrutura e o administrador | Para recomeçar do zero |
 
@@ -23,7 +24,11 @@ npm run db:seed:financeiro
 
 Os dois scripts de carga podem ser repetidos quantas vezes for preciso. Eles apagam o que já carregaram e recriam tudo com o mesmo resultado, porque usam uma semente fixa de sorteio. Quem rodar duas vezes verá os mesmos nomes, valores e datas.
 
-O comando antigo `npm run db:seed` continua existindo, com um conjunto pequeno de 7 moradores de exemplo usado nos testes automatizados. Ele **não deve ser misturado** com os dois novos, porque também apaga e recria moradores.
+O comando antigo `db:seed` (7 moradores de exemplo) foi **removido**. Os logins de teste e os cenários de borda que ele criava agora fazem parte do `db:seed:moradores`:
+
+- **Logins** (senha `senha123`): `anderson@example.com` (proprietário de Bl.08/203 e Bl.09/101), `maria@example.com` (proprietária de Bl.08/101), `carlos.inquilino@example.com` (inquilino de Bl.08/203) e uma amostra com o proprietário e o inquilino do apartamento 01 dos blocos 01 a 03 (`proprietario.bloco01@example.com`, `inquilino.bloco01@example.com`, e assim por diante). Os demais moradores não têm login. O administrador `admin@condominio.com` é criado pelo `db:reset` se ainda não existir.
+- **Cenários de borda:** Bl.08/301 sem nenhum morador; Bl.07/301 só com inquilinos (sem proprietário); Bl.09/204 com um inquilino desativado (histórico de troca de inquilino).
+- Por causa dos cenários, os vínculos ativos são **763**, e não 768 (192 × 4), e há 1 vínculo inativo.
 
 ## 2. O que mudou no sistema
 

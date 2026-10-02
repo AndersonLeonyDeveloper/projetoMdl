@@ -171,7 +171,7 @@
 > Cenários levantados em 02/10/2026, ao implementar o item 3.4 de [`melhorias-e-ideias.md`](./melhorias-e-ideias.md).
 > Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seção 6. Os marcados `API` já têm teste em
 > `test/restassured` (`ComprovantesApiTest`), mas ainda não foram executados.
-> Pré-requisito: `npm run db:seed && npm run db:seed:financeiro`.
+> Pré-requisito: `npm run db:populate`.
 
 **Upload válido**
 - [ ] **Formatos aceitos**: PDF, JPEG e PNG anexados a uma despesa e a uma outra receita retornam 201, e o arquivo
@@ -227,7 +227,7 @@
 ### 7.5 Edição de lançamentos, configurações financeiras, taxas em lote e juros
 
 > Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seções 4.1.1 e 4.6 a 4.8
-> (itens 2.8 a 2.11 do backlog). Pré-requisito: `npm run db:seed && npm run db:seed:financeiro`.
+> (itens 2.8 a 2.11 do backlog). Pré-requisito: `npm run db:populate`.
 > Os cenários `API` têm teste em `test/restassured` (`EdicaoDeLancamentosApiTest`, `ConfiguracoesFinanceirasApiTest`,
 > `GerarTaxasDoMesApiTest` e `JurosNoPagamentoApiTest`), compilados mas ainda não executados. Os `E2E` ainda não têm teste,
 > e as telas novas ainda não foram abertas em navegador.
@@ -394,6 +394,23 @@
   numérico) sem quebrar a tela. `E2E`
 - [ ] **Volume**: com os 768 moradores e paginação, a tela carrega sem lentidão perceptível e a coluna aparece em todas as
   páginas. `E2E` / performance
+
+### 7.8 Carga de dados (`db:populate`) e logins de teste
+
+> Cenários levantados em 02/10/2026 (itens 3.1 a 3.3 do backlog). Detalhes em [`dados-de-demonstracao.md`](./dados-de-demonstracao.md).
+
+- [ ] **Banco novo**: em um banco sem nenhum dado, `npm run db:populate` termina sem erro, cria o administrador e deixa 192
+  apartamentos, 763 vínculos ativos e 1 inativo, 15.552 taxas e os 7 valores de taxa por ano. `DB/Integridade`
+- [ ] **Idempotência**: rodar `db:populate` duas vezes dá exatamente o mesmo resultado (mesmos totais, nomes e valores) e um
+  único administrador. `DB/Integridade`
+- [ ] **Falha no meio**: se uma etapa falhar, o comando para, informa qual etapa e sai com código diferente de zero. `DB/Integridade`
+- [ ] **Logins de teste**: `admin@`, `anderson@`, `maria@`, `carlos.inquilino@` e os da amostra
+  (`proprietario.bloco01@` a `03`, `inquilino.bloco01@` a `03`) entram com `senha123`. `API`
+- [ ] **Ligação dos logins**: o Anderson vê 2 apartamentos (Bl.08/203 e Bl.09/101); Maria vê Bl.08/101; Carlos vê Bl.08/203. `API`
+- [ ] **Sem login para o restante**: um morador gerado fora da lista não consegue entrar. `API`
+- [ ] **Cenários de borda**: Bl.08/301 sem morador; Bl.07/301 só com inquilinos; Bl.09/204 com inquilino desativado que não
+  aparece em Dados dos Moradores. `API` / `E2E`
+- [ ] **Sem pessoas órfãs**: depois da carga, nenhuma pessoa fica sem vínculo e sem login. `DB/Integridade`
 
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 

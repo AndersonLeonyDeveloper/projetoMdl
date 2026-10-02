@@ -11,7 +11,7 @@
     "dev:server": "npm run dev -w server",
     "dev:client": "npm run dev -w client",
     "db:migrate": "npm run db:migrate -w server",
-    "db:seed": "npm run db:seed -w server",
+    "db:populate": "npm run db:populate -w server",
     "db:reset": "npm run db:reset -w server",
     "db:seed:moradores": "npm run db:seed:moradores -w server",
     "db:seed:financeiro": "npm run db:seed:financeiro -w server",
