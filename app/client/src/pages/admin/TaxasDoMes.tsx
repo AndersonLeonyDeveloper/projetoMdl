@@ -23,6 +23,7 @@ interface Apartamento {
   id: number;
   bloco_id: number;
   numero: string;
+  fator_taxa: number;
 }
 interface TaxaPadrao {
   ano: number;
@@ -33,6 +34,7 @@ interface PreviaGeracao {
   existentes: number;
   a_criar: number;
   valor: number | null;
+  com_fator_diferente: number;
 }
 interface Taxa {
   id: number;
@@ -131,6 +133,8 @@ function GerarTaxasDoMes({ ano, mes, taxasPadrao, recarregarPadroes, onGerado }:
             Vai criar <strong>{previa.a_criar}</strong> taxa(s) de <strong>{formatarMoeda(valor)}</strong> para {referencia}
             {previa.existentes > 0 ? ` (${previa.existentes} já existem e serão ignoradas)` : ''}.
             {valor !== padrao && ` O valor será salvo como o padrão de ${ano}.`}
+            {previa.com_fator_diferente > 0 &&
+              ` ${previa.com_fator_diferente} apartamento(s) têm fator diferente de 1,00 e terão o valor ajustado (valor × fator).`}
           </div>
         ),
         onOk: () => executar(valor),
@@ -256,6 +260,11 @@ function LancarTaxa({ taxasPadrao, ano, mes, onLancada }: { taxasPadrao: TaxaPad
           <Select
             style={{ width: 160 }}
             placeholder="Selecione"
+            onChange={(id: number) => {
+              // O valor sugerido é o do ano multiplicado pelo fator do apartamento; continua editável.
+              const apto = apartamentos.find((a) => a.id === id);
+              if (apto && valorPadrao !== undefined) form.setFieldValue('valor', Math.round(valorPadrao * apto.fator_taxa * 100) / 100);
+            }}
             data-testid="select-taxa-apartamento"
             options={apartamentos.map((a) => ({ value: a.id, label: a.numero }))}
           />
@@ -275,7 +284,7 @@ function LancarTaxa({ taxasPadrao, ano, mes, onLancada }: { taxasPadrao: TaxaPad
           rules={[{ required: true }]}
           extra={
             valorPadrao !== undefined
-              ? `Valor padrão de ${anoReferencia}: ${formatarMoeda(valorPadrao)}`
+              ? `Valor padrão de ${anoReferencia}: ${formatarMoeda(valorPadrao)} (multiplicado pelo fator do apartamento, se houver)`
               : 'Sem valor padrão para este ano (Configurações financeiras).'
           }
         >

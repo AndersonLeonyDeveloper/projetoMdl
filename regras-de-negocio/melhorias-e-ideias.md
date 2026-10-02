@@ -47,8 +47,8 @@ Hoje ele está embutido na taxa e só aparece no saldo anual. Modelá-lo (percen
 ### [ ] 2.3 Rateio de despesas por bloco — esforço G
 Já está em aberto em `regras-de-negocio.md`, seção 7. O saldo por bloco hoje usa adimplente − inadimplente, e não receita − despesa.
 
-### [ ] 2.4 Taxa por fração ideal — esforço G
-O modelo assume a mesma taxa para todos os apartamentos. Em muitos condomínios o valor varia com a metragem ou a fração ideal.
+### [x] 2.4 Taxa por fração ideal (fator por apartamento) — esforço G
+O modelo assume a mesma taxa para todos os apartamentos. Em muitos condomínios o valor varia com a metragem ou a fração ideal. *Implementado em 02/10/2026 como um fator por apartamento:* cada apartamento tem um fator (padrão 1,00, de 0,1 a 5) que multiplica o valor-base do ano na geração das taxas do mês e no valor sugerido do lançamento individual. Há tabela de edição por bloco em Configurações financeiras, "Aplicar a todo o bloco", auditoria e `PUT /apartamentos/:id/fator-taxa`. Não é a fração ideal em % do total do condomínio (essa opção foi descartada por mudar o significado do valor do ano). Regras na seção 4.6. Fica de fora recalcular taxas já geradas quando o fator muda.
 
 ### [x] 2.5 Status "a vencer" — esforço P
 `situacao` só tem adimplente e inadimplente. Uma taxa do mês corrente ainda dentro do prazo aparece como inadimplente. Hoje o histórico termina em set/2026 para evitar isso. *Implementado em 02/10/2026:* `GET /financeiro/taxas` devolve `status` (adimplente, a vencer ou em atraso, derivado do vencimento configurado; a situação gravada não muda). A tabela de taxas mostra as etiquetas e filtra por status, e os resumos por bloco, de Inadimplência e da Evolução passaram a tratar "inadimplente" como só em atraso, com "a vencer" à parte. Regras nas seções 4.1 e 4.4 de `regras-de-negocio.md`.

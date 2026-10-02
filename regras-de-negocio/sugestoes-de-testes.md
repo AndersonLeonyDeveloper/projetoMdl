@@ -624,6 +624,30 @@
 - [ ] **Mês sem taxas**: a tabela mostra "Nenhuma taxa neste mês" e o resumo mostra zeros, sem erro. `E2E`
 - [ ] **Ajuda**: o tour de Taxas do mês e o guia "Gerar as taxas do mês e registrar os pagamentos" descrevem a tela nova. `E2E` / revisão manual
 
+### 7.18 Fator da taxa por apartamento
+
+> Cenários levantados em 02/10/2026 (item 2.4 do backlog). Regras na seção 4.6 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`FatorDaTaxaApiTest`, compilado e ainda não executado, e que devolve os fatores a 1 no fim).
+
+- [ ] **Padrão**: todo apartamento vem com fator 1,00 e `GET /apartamentos` devolve `fator_taxa`. `API` / `DB/Integridade`
+- [ ] **Definir e arredondar**: definir 1,2 grava; 1,23456789 é gravado como 1,2346 (4 casas). `API`
+- [ ] **Valores-limite**: 0,1 e 5 são aceitos; 0, 0,05, 5,01, negativo, texto e vazio retornam 400. `API`
+- [ ] **Acesso**: apartamento inexistente 404; morador 403; sem token 401 (também no endpoint do bloco). `API`
+- [ ] **Bloco**: aplicar um fator ao bloco muda os 16 apartamentos e informa quantos foram alterados; repetir o mesmo fator
+  informa 0 alterados; bloco inexistente 404; fator inválido 400. `API`
+- [ ] **Geração em lote**: a taxa de cada apartamento é valor-base × fator, com 2 casas (300 × 1,2 = 360,00; 300 × 1,0333 = 309,99); os
+  demais ficam em 300. `API`
+- [ ] **Prévia e resultado**: a prévia e a resposta da geração informam `com_fator_diferente` e o valor-base. `API`
+- [ ] **Taxas já geradas não mudam**: alterar o fator depois da geração não altera o valor das taxas existentes. `API`
+- [ ] **Histórico do seed intacto**: as taxas de 2020 a 2026 continuam todas com o valor do ano. `API` / `DB/Integridade`
+- [ ] **Auditoria**: mudar um fator grava "editar" com antes e depois, aplicar a um bloco grava "editar_bloco" com a contagem, e
+  repetir o mesmo valor não grava. `API`
+- [ ] **Lançamento individual**: ao escolher o apartamento, o campo Valor vem com valor-base × fator do apartamento e continua
+  editável. `E2E`
+- [ ] **Confirmação da geração**: o diálogo cita quantos apartamentos têm fator diferente de 1,00 quando houver. `E2E`
+- [ ] **Tela de fatores**: em Configurações financeiras, escolher um bloco lista os apartamentos com o fator; "Salvar" só habilita
+  quando o valor muda; "Aplicar a todo o bloco" atualiza a tabela e o resumo ("N apartamento(s) com fator diferente de 1,00"). `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

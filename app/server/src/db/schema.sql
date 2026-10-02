@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS apartamentos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   bloco_id INTEGER NOT NULL REFERENCES blocos(id) ON DELETE RESTRICT,
   numero TEXT NOT NULL,
+  -- Multiplica o valor da taxa do ano (1 = valor padrão; ex.: 1,2 para uma cobertura).
+  fator_taxa REAL NOT NULL DEFAULT 1,
   UNIQUE (bloco_id, numero)
 );
 
@@ -118,7 +120,7 @@ CREATE TABLE IF NOT EXISTS taxa_padrao (
 -- Histórico de alterações financeiras: só se grava, nunca se edita nem se apaga pela aplicação.
 CREATE TABLE IF NOT EXISTS auditoria (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  entidade TEXT NOT NULL CHECK (entidade IN ('taxa', 'despesa', 'outra_receita', 'configuracao')),
+  entidade TEXT NOT NULL,
   entidade_id INTEGER,
   acao TEXT NOT NULL,
   usuario_id INTEGER,

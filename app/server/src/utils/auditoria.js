@@ -32,6 +32,13 @@ export function registrarAuditoria(req, { entidade, entidadeId = null, acao, ant
   );
 }
 
+export function rotuloDoApartamento(apartamentoId) {
+  const apto = db
+    .prepare('SELECT a.numero AS apartamento, b.numero AS bloco FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id WHERE a.id = ?')
+    .get(apartamentoId);
+  return `Bl.${apto?.bloco ?? '?'}/Ap.${apto?.apartamento ?? '?'}`;
+}
+
 // "Bl.08/Ap.203 · 03/2026", para a lista do histórico.
 export function rotuloDaTaxa(taxa) {
   const apto = db

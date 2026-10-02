@@ -64,6 +64,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Multa, juros e vencimento', descricao: 'A multa vai até 2%. O juros é ao mês, proporcional aos dias de atraso. Salve para valer nos próximos pagamentos.', alvo: 'form-parametros-financeiros' },
       { titulo: 'Valor da taxa por ano', descricao: 'Edite o valor de um ano e clique em Salvar na linha. Esse valor já vem preenchido ao lançar e gerar taxas.', alvo: 'tabela-taxas-padrao' },
       { titulo: 'Novo ano', descricao: 'Para um ano que ainda não está na lista, informe o ano e o valor aqui.', alvo: 'form-nova-taxa-ano' },
+      { titulo: 'Fator por apartamento', descricao: 'Cada apartamento tem um fator (1,00 = valor do ano; ex.: 1,20 para uma cobertura) que multiplica o valor da taxa ao gerar o mês. Escolha o bloco, ajuste o fator de cada apartamento ou aplique a todo o bloco. Taxas já geradas não mudam.', alvo: 'fator-por-apartamento' },
     ],
   },
   '/admin/visualizar/financeiro': {

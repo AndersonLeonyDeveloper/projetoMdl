@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Form, InputNumber, Space, Table, Typography } from 'antd';
+import { Alert, Button, Card, Form, InputNumber, Select, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
 
@@ -16,6 +16,131 @@ interface Configuracao {
   taxas_padrao: TaxaPadrao[];
 }
 type Mensagem = { tipo: 'success' | 'error'; texto: string } | null;
+
+interface Bloco {
+  id: number;
+  numero: string;
+}
+interface ApartamentoComFator {
+  id: number;
+  bloco_id: number;
+  numero: string;
+  fator_taxa: number;
+}
+
+// Fator da taxa por apartamento: multiplica o valor-base do ano na geração das taxas do mês (1 = valor-base).
+function FatorPorApartamento() {
+  const [blocos, setBlocos] = useState<Bloco[]>([]);
+  const [apartamentos, setApartamentos] = useState<ApartamentoComFator[]>([]);
+  const [blocoId, setBlocoId] = useState<number>();
+  const [valores, setValores] = useState<Record<number, number>>({});
+  const [fatorDoBloco, setFatorDoBloco] = useState<number | null>(1);
+  const [mensagem, setMensagem] = useState<Mensagem>(null);
+  const [versao, setVersao] = useState(0);
+
+  useEffect(() => {
+    Promise.all([api.get<Bloco[]>('/blocos'), api.get<ApartamentoComFator[]>('/apartamentos')]).then(([b, a]) => {
+      setBlocos(b.data);
+      setApartamentos(a.data);
+      setValores(Object.fromEntries(a.data.map((x) => [x.id, x.fator_taxa])));
+      setBlocoId((atual) => atual ?? b.data[0]?.id);
+    });
+  }, [versao]);
+
+  const diferentes = apartamentos.filter((a) => a.fator_taxa !== 1).length;
+  const doBloco = apartamentos.filter((a) => a.bloco_id === blocoId);
+  const blocoAtual = blocos.find((b) => b.id === blocoId);
+
+  async function salvar(id: number) {
+    setMensagem(null);
+    try {
+      await api.put(`/apartamentos/${id}/fator-taxa`, { fator: valores[id] });
+      setMensagem({ tipo: 'success', texto: 'Fator salvo. Vale para as próximas taxas geradas; as já lançadas não mudam.' });
+      setVersao((v) => v + 1);
+    } catch (err) {
+      setMensagem({ tipo: 'error', texto: mensagemDeErro(err, 'Erro ao salvar o fator.') });
+    }
+  }
+
+  async function aplicarAoBloco() {
+    if (!blocoId || fatorDoBloco == null) return;
+    setMensagem(null);
+    try {
+      const { data } = await api.post<{ alterados: number }>(`/blocos/${blocoId}/fator-taxa`, { fator: fatorDoBloco });
+      setMensagem({ tipo: 'success', texto: `Fator ${fatorDoBloco} aplicado ao bloco ${blocoAtual?.numero}: ${data.alterados} apartamento(s) alterado(s).` });
+      setVersao((v) => v + 1);
+    } catch (err) {
+      setMensagem({ tipo: 'error', texto: mensagemDeErro(err, 'Erro ao aplicar o fator ao bloco.') });
+    }
+  }
+
+  const colunas: ColumnsType<ApartamentoComFator> = [
+    { title: 'Apartamento', dataIndex: 'numero' },
+    {
+      title: 'Fator',
+      dataIndex: 'fator_taxa',
+      render: (_: number, linha) => (
+        <InputNumber
+          value={valores[linha.id]}
+          min={0.1}
+          max={5}
+          step={0.05}
+          onChange={(v) => setValores((atual) => ({ ...atual, [linha.id]: Number(v) }))}
+          data-testid={`input-fator-${linha.id}`}
+        />
+      ),
+    },
+    {
+      title: 'Ações',
+      key: 'acoes',
+      render: (_: unknown, linha) => (
+        <Button
+          type="link"
+          size="small"
+          disabled={valores[linha.id] === undefined || valores[linha.id] === linha.fator_taxa}
+          onClick={() => salvar(linha.id)}
+          data-testid={`botao-salvar-fator-${linha.id}`}
+        >
+          Salvar
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <Card data-testid="fator-por-apartamento">
+      <Title level={4}>Fator da taxa por apartamento</Title>
+      <Paragraph type="secondary">
+        O valor da taxa de cada apartamento é o valor do ano multiplicado pelo fator (1,00 = valor padrão; por exemplo, 1,20
+        para uma cobertura). O fator só vale para as taxas geradas daqui para a frente; taxas já lançadas não mudam.{' '}
+        <strong data-testid="resumo-fatores">
+          {diferentes === 0 ? 'Todos os apartamentos usam o fator 1,00.' : `${diferentes} apartamento(s) com fator diferente de 1,00.`}
+        </strong>
+      </Paragraph>
+      <Space wrap style={{ marginBottom: 16 }} align="end">
+        <div>
+          <div>Bloco</div>
+          <Select
+            style={{ width: 120 }}
+            value={blocoId}
+            onChange={setBlocoId}
+            options={blocos.map((b) => ({ value: b.id, label: b.numero }))}
+            data-testid="select-fator-bloco"
+          />
+        </div>
+        <div>
+          <div>Aplicar a todo o bloco</div>
+          <Space.Compact>
+            <InputNumber value={fatorDoBloco} onChange={setFatorDoBloco} min={0.1} max={5} step={0.05} data-testid="input-fator-bloco" />
+            <Button onClick={aplicarAoBloco} data-testid="botao-aplicar-fator-bloco">Aplicar</Button>
+          </Space.Compact>
+        </div>
+      </Space>
+      <Table data-testid="tabela-fatores" rowKey="id" columns={colunas} dataSource={doBloco} pagination={false} size="small" />
+      {mensagem && <Alert type={mensagem.tipo} message={mensagem.texto} showIcon style={{ marginTop: 16 }} data-testid="mensagem-fator" />}
+    </Card>
+  );
+}
 
 export function ConfiguracoesFinanceiras() {
   const [parametros] = Form.useForm();
@@ -173,6 +298,8 @@ export function ConfiguracoesFinanceiras() {
           <Alert type={msgTaxas.tipo} message={msgTaxas.texto} showIcon style={{ marginTop: 16 }} data-testid="mensagem-taxas-padrao" />
         )}
       </Card>
+
+      <FatorPorApartamento />
     </Space>
   );
 }

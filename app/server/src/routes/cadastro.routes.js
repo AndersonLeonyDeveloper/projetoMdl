@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db, withTransaction, isUniqueConstraintError, lerConfiguracao } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { calcularJuros, hojeISO, sqlVencida } from '../utils/juros.js';
+import { instantaneo, registrarAuditoria, rotuloDoApartamento } from '../utils/auditoria.js';
 
 export const cadastroRouter = Router();
 cadastroRouter.use(requireAuth);
@@ -75,6 +76,49 @@ cadastroRouter.post('/apartamentos', requireRole('admin'), (req, res) => {
     }
     throw err;
   }
+});
+
+// Fator da taxa: multiplica o valor-base do ano ao gerar as taxas do mês (1 = valor-base; ex.: 1,2 para uma cobertura).
+// Não altera taxas já lançadas. Aceita de 0,1 a 5, com até 4 casas decimais.
+function lerFator(valor) {
+  if (valor === undefined || valor === null || valor === '' || !Number.isFinite(Number(valor))) return null;
+  const fator = Math.round(Number(valor) * 10000) / 10000;
+  return fator >= 0.1 && fator <= 5 ? fator : null;
+}
+const MENSAGEM_FATOR = 'fator deve ser um número entre 0,1 e 5.';
+
+cadastroRouter.put('/apartamentos/:id/fator-taxa', requireRole('admin'), (req, res) => {
+  const apto = db.prepare('SELECT * FROM apartamentos WHERE id = ?').get(req.params.id);
+  if (!apto) return res.status(404).json({ error: 'Apartamento não encontrado.' });
+  const fator = lerFator(req.body?.fator);
+  if (fator === null) return res.status(400).json({ error: MENSAGEM_FATOR });
+  db.prepare('UPDATE apartamentos SET fator_taxa = ? WHERE id = ?').run(fator, apto.id);
+  if (fator !== apto.fator_taxa) {
+    registrarAuditoria(req, {
+      entidade: 'apartamento', entidadeId: apto.id, acao: 'editar',
+      antes: { fator_taxa: apto.fator_taxa }, depois: { fator_taxa: fator }, detalhe: `${rotuloDoApartamento(apto.id)} · fator da taxa`,
+    });
+  }
+  res.json({ id: apto.id, fator_taxa: fator });
+});
+
+// Aplica o mesmo fator a todos os apartamentos de um bloco.
+cadastroRouter.post('/blocos/:id/fator-taxa', requireRole('admin'), (req, res) => {
+  const bloco = db.prepare('SELECT * FROM blocos WHERE id = ?').get(req.params.id);
+  if (!bloco) return res.status(404).json({ error: 'Bloco não encontrado.' });
+  const fator = lerFator(req.body?.fator);
+  if (fator === null) return res.status(400).json({ error: MENSAGEM_FATOR });
+  const antes = db.prepare('SELECT id, fator_taxa FROM apartamentos WHERE bloco_id = ?').all(bloco.id);
+  const alterados = antes.filter((a) => a.fator_taxa !== fator).length;
+  db.prepare('UPDATE apartamentos SET fator_taxa = ? WHERE bloco_id = ?').run(fator, bloco.id);
+  if (alterados > 0) {
+    registrarAuditoria(req, {
+      entidade: 'apartamento', acao: 'editar_bloco',
+      depois: { bloco: bloco.numero, fator_taxa: fator, apartamentos_alterados: alterados },
+      detalhe: `Bloco ${bloco.numero} · fator da taxa ${fator} em ${alterados} apartamento(s)`,
+    });
+  }
+  res.json({ bloco_id: bloco.id, fator_taxa: fator, apartamentos: antes.length, alterados });
 });
 
 // Detalhe de um apartamento com moradores ativos (proprietário/inquilino)

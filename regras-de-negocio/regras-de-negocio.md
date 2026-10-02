@@ -122,16 +122,23 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Percentual de juros ao mês** (padrão 1%).
 - **Dia de vencimento** (padrão 10, de 1 a 28).
 - Validações: valores não negativos; multa entre 0 e 2; dia de vencimento entre 1 e 28.
+- **Fator da taxa por apartamento:** cada apartamento tem um **fator** (padrão 1,00) que multiplica o valor-base do ano. Serve para taxas que variam com a metragem ou a fração ideal (ex.: 1,20 para uma cobertura). O valor do ano passa a ser entendido como o **valor-base** (o do apartamento com fator 1,00).
+  - **Faixa:** de 0,1 a 5, com até 4 casas decimais (arredondado). Fora disso, 400.
+  - **Onde vale:** na **geração em lote** (seção 4.7), a taxa de cada apartamento é `valor-base × fator`, arredondada a 2 casas. No lançamento individual o valor sugerido também é `valor-base × fator`, e continua editável.
+  - **O que não muda:** taxas já lançadas ou geradas **não são recalculadas** quando o fator muda, e o histórico do seed (todas iguais) não é afetado. O fator vale só do momento da mudança em diante.
+  - **Edição (Admin):** em Configurações financeiras, a tabela "Fator da taxa por apartamento" mostra os apartamentos de um bloco, com edição por apartamento e o botão "Aplicar a todo o bloco". O resumo informa quantos apartamentos têm fator diferente de 1,00.
+  - **API:** `PUT /apartamentos/:id/fator-taxa` e `POST /blocos/:id/fator-taxa` (só Admin); `GET /apartamentos` devolve `fator_taxa`. Mudanças entram no histórico de alterações (seção 4.10); repetir o mesmo valor não grava.
+  - **Não é a fração ideal legal:** os fatores não precisam somar nada em particular, e o sistema não calcula rateio por fração ideal. É um multiplicador simples sobre o valor do ano.
 - **Alterar uma configuração não muda lançamentos já criados.** O valor da taxa só pré-preenche e gera taxas novas. Os percentuais só valem para pagamentos registrados depois da alteração.
 - Leitura aberta a qualquer usuário autenticado (a tela de lançamento precisa do valor padrão); **alteração só para Admin**.
 
 ### 4.7 Gerar taxas do mês (lote)
 - Fica na tela **Taxas do mês** (seção 4.12), no menu principal, e vale para o mês e o ano escolhidos no topo da tela.
-- O admin informa mês e ano de referência, e o sistema cria a taxa de **todos os apartamentos** com o valor configurado para aquele ano.
+- O admin informa mês e ano de referência, e o sistema cria a taxa de **todos os apartamentos** com o valor configurado para aquele ano, multiplicado pelo **fator** de cada apartamento (seção 4.6).
 - **O valor do ano é editável na própria tela de geração.** Se o ano não tem valor, o campo vem vazio e o admin informa ali mesmo; se o valor digitado difere do configurado, ele é **salvo como o novo padrão do ano** (Configurações financeiras) antes de gerar. Taxas já lançadas não mudam.
 - Sem valor para o ano, a geração é recusada (400) pela API, e o botão da tela fica desabilitado até haver um valor maior que zero.
-- **Confirmação antes de gerar:** o sistema mostra quantas taxas serão criadas, o valor, o mês e quantas já existem (e serão ignoradas). Se todas já existem, informa que não há nada a gerar e não pede confirmação.
-- **Prévia na API:** `GET /financeiro/taxas/gerar-mes/previa` devolve o total de apartamentos, as taxas já existentes no mês, quantas seriam criadas e o valor padrão do ano (ou `null`). Não grava nada e é restrita ao admin.
+- **Confirmação antes de gerar:** o sistema mostra quantas taxas serão criadas, o valor-base, o mês, quantas já existem (e serão ignoradas) e, se houver, quantos apartamentos têm fator diferente de 1,00 (o valor deles será ajustado). Se todas já existem, informa que não há nada a gerar e não pede confirmação.
+- **Prévia na API:** `GET /financeiro/taxas/gerar-mes/previa` devolve o total de apartamentos, as taxas já existentes no mês, quantas seriam criadas, o valor-base do ano (ou `null`) e `com_fator_diferente` (quantos apartamentos têm fator diferente de 1). Não grava nada e é restrita ao admin.
 - Depois de gerar, a mesma tela já mostra as taxas criadas, com o resumo do mês atualizado, e é nela que se registram os pagamentos (não é preciso trocar de tela).
 - **Idempotente:** apartamentos que já têm taxa naquele mês/ano são **ignorados** (não são duplicados nem alterados). O resultado informa quantas taxas foram criadas e quantas foram ignoradas.
 - As taxas nascem `Inadimplente`, sem juros, sem data de pagamento e sem comprovante.

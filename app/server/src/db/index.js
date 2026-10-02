@@ -18,24 +18,58 @@ db.exec('PRAGMA foreign_keys = ON');
 export function runMigrations() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
-  garantirColunasDeCancelamento();
+  garantirColunas();
+  garantirAuditoriaSemRestricaoDeEntidade();
   garantirEstrutura();
 }
 
-// Bancos criados antes do cancelamento de lançamentos não têm estas colunas (o schema só cria tabelas que não existem).
-// Idempotente: só acrescenta o que falta e nunca mexe nos dados.
-function garantirColunasDeCancelamento() {
-  const colunas = [
-    ['cancelado_em', 'TEXT'],
-    ['cancelado_por', 'INTEGER'],
-    ['motivo_cancelamento', 'TEXT'],
-  ];
-  for (const tabela of ['taxas_condominio', 'outras_receitas', 'despesas']) {
+// Colunas acrescentadas depois da criação das tabelas. Bancos antigos não as têm (o schema só cria tabelas que não
+// existem), então são acrescentadas aqui. Idempotente: só acrescenta o que falta e nunca mexe nos dados.
+const COLUNAS_ADICIONAIS = [
+  ['taxas_condominio', 'cancelado_em', 'TEXT'],
+  ['taxas_condominio', 'cancelado_por', 'INTEGER'],
+  ['taxas_condominio', 'motivo_cancelamento', 'TEXT'],
+  ['outras_receitas', 'cancelado_em', 'TEXT'],
+  ['outras_receitas', 'cancelado_por', 'INTEGER'],
+  ['outras_receitas', 'motivo_cancelamento', 'TEXT'],
+  ['despesas', 'cancelado_em', 'TEXT'],
+  ['despesas', 'cancelado_por', 'INTEGER'],
+  ['despesas', 'motivo_cancelamento', 'TEXT'],
+  ['apartamentos', 'fator_taxa', 'REAL NOT NULL DEFAULT 1'],
+];
+
+function garantirColunas() {
+  for (const [tabela, nome, definicao] of COLUNAS_ADICIONAIS) {
     const existentes = new Set(db.prepare(`PRAGMA table_info(${tabela})`).all().map((c) => c.name));
-    for (const [nome, tipo] of colunas) {
-      if (!existentes.has(nome)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${nome} ${tipo}`);
-    }
+    if (!existentes.has(nome)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${nome} ${definicao}`);
   }
+}
+
+// A primeira versão da auditoria restringia o tipo da entidade a quatro valores. Para aceitar novos tipos (apartamento,
+// acordo...) recria a tabela sem a restrição, preservando as linhas. Só roda se a restrição ainda existir.
+function garantirAuditoriaSemRestricaoDeEntidade() {
+  const definicao = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'auditoria'").get()?.sql ?? '';
+  if (!/CHECK\s*\(\s*entidade\s+IN/i.test(definicao)) return;
+  withTransaction(() => {
+    db.exec('ALTER TABLE auditoria RENAME TO auditoria_antiga');
+    db.exec(`CREATE TABLE auditoria (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entidade TEXT NOT NULL,
+      entidade_id INTEGER,
+      acao TEXT NOT NULL,
+      usuario_id INTEGER,
+      usuario_email TEXT,
+      antes TEXT,
+      depois TEXT,
+      detalhe TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    db.exec(`INSERT INTO auditoria (id, entidade, entidade_id, acao, usuario_id, usuario_email, antes, depois, detalhe, criado_em)
+             SELECT id, entidade, entidade_id, acao, usuario_id, usuario_email, antes, depois, detalhe, criado_em FROM auditoria_antiga`);
+    db.exec('DROP TABLE auditoria_antiga');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_auditoria_entidade ON auditoria(entidade, entidade_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_auditoria_criado_em ON auditoria(criado_em)');
+  });
 }
 
 // Estrutura fixa do condomínio: blocos 01..12, cada um com os mesmos 16 apartamentos.

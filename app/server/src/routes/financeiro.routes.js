@@ -205,6 +205,7 @@ financeiroRouter.get('/taxas/gerar-mes/previa', requireRole('admin'), (req, res)
     existentes,
     a_criar: totalApartamentos - existentes,
     valor: padrao?.valor ?? null,
+    com_fator_diferente: db.prepare('SELECT COUNT(*) AS total FROM apartamentos WHERE fator_taxa <> 1').get().total,
   });
 });
 
@@ -225,18 +226,19 @@ financeiroRouter.post('/taxas/gerar-mes', requireRole('admin'), (req, res) => {
   const insert = db.prepare(
     `INSERT OR IGNORE INTO taxas_condominio
        (apartamento_id, mes_referencia, ano_referencia, valor, juros, situacao, meses_atraso)
-     SELECT id, ?, ?, ?, 0, 'inadimplente', 0 FROM apartamentos`
+     SELECT id, ?, ?, ROUND(? * fator_taxa, 2), 0, 'inadimplente', 0 FROM apartamentos`
   );
   const totalApartamentos = db.prepare('SELECT COUNT(*) AS total FROM apartamentos').get().total;
   const criadas = Number(withTransaction(() => insert.run(mes, ano, padrao.valor)).changes);
+  const comFator = db.prepare('SELECT COUNT(*) AS total FROM apartamentos WHERE fator_taxa <> 1').get().total;
   if (criadas > 0) {
     registrarAuditoria(req, {
       entidade: 'taxa', acao: 'gerar_mes',
-      depois: { mes_referencia: mes, ano_referencia: ano, valor: padrao.valor, criadas, ignoradas: totalApartamentos - criadas },
+      depois: { mes_referencia: mes, ano_referencia: ano, valor: padrao.valor, criadas, ignoradas: totalApartamentos - criadas, apartamentos_com_fator_diferente: comFator },
       detalhe: `${criadas} taxa(s) geradas para ${String(mes).padStart(2, '0')}/${ano}`,
     });
   }
-  res.status(201).json({ criadas, ignoradas: totalApartamentos - criadas, valor: padrao.valor });
+  res.status(201).json({ criadas, ignoradas: totalApartamentos - criadas, valor: padrao.valor, com_fator_diferente: comFator });
 });
 
 // Prévia do juros para uma data de pagamento (a tela mostra antes de confirmar).
