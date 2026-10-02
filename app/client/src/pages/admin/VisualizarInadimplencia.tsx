@@ -8,7 +8,8 @@ const { Title } = Typography;
 interface LinhaInadimplencia {
   mes_referencia: number;
   adimplente: number;
-  inadimplente: number;
+  inadimplente: number; // em atraso (vencidas)
+  a_vencer: number; // em aberto, ainda no prazo
 }
 
 const MESES = [
@@ -28,11 +29,13 @@ export function VisualizarInadimplencia() {
 
   const totalAdimplente = linhas.reduce((acc, l) => acc + l.adimplente, 0);
   const totalInadimplente = linhas.reduce((acc, l) => acc + l.inadimplente, 0);
+  const totalAVencer = linhas.reduce((acc, l) => acc + l.a_vencer, 0);
 
   const columns: ColumnsType<LinhaInadimplencia> = [
     { title: 'Mês', dataIndex: 'mes_referencia', render: (m: number) => MESES[m - 1] },
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Inadimplente', dataIndex: 'inadimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { title: 'A vencer', dataIndex: 'a_vencer', render: (v: number) => `R$ ${v.toFixed(2)}` },
   ];
 
   return (
@@ -59,6 +62,11 @@ export function VisualizarInadimplencia() {
               valueStyle={{ color: '#cf1322' }}
             />
           </Col>
+          {totalAVencer > 0 && (
+            <Col>
+              <Statistic title="A vencer (ainda no prazo)" prefix="R$" value={totalAVencer.toFixed(2)} data-testid="total-a-vencer" />
+            </Col>
+          )}
         </Row>
         <Title level={4}>Taxa de Inadimplência {ano}</Title>
         <Table

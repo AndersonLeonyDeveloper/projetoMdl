@@ -70,7 +70,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     passos: [
       { titulo: 'Período', descricao: 'Escolha o ano e o mês que quer consultar.', alvo: 'input-ano' },
       { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido.', alvo: 'resumo-mensal' },
-      { titulo: 'Taxas do mês', descricao: 'Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Se você chegou por um mês em atraso de Dados dos Moradores, a lista mostra só aquele apartamento; use "Ver todos os apartamentos" para voltar.', alvo: 'tabela-taxas' },
+      { titulo: 'Taxas do mês', descricao: 'A situação mostra Adimplente, A vencer (em aberto, ainda no prazo) ou Em atraso (vencida). Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Se você chegou por um mês em atraso de Dados dos Moradores, a lista mostra só aquele apartamento; use "Ver todos os apartamentos" para voltar.', alvo: 'tabela-taxas' },
       { titulo: 'Corrigir uma taxa', descricao: 'Nas taxas já pagas o botão é Editar: corrija o valor, a data ou o comprovante.', alvo: 'botao-editar-taxa' },
       { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento e o link para ver o comprovante.', alvo: 'tabela-despesas' },
     ],

@@ -5,6 +5,8 @@ import static io.restassured.RestAssured.given;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import java.util.Map;
+import org.hamcrest.CustomMatcher;
+import org.hamcrest.Matcher;
 
 /** Configuração comum: URL da API e login por perfil (token Bearer). */
 public abstract class ApiBase {
@@ -55,5 +57,18 @@ public abstract class ApiBase {
             .body(Map.of("taxas_padrao", java.util.List.of(Map.of("ano", ano, "valor", valor))))
             .when().put("/financeiro/configuracoes")
             .then().statusCode(200);
+    }
+
+    /**
+     * Compara números do JSON sem depender do tipo: o RestAssured devolve 325 como Integer e 7.58 como Float,
+     * então `equalTo(325.0f)` falharia. Aceita diferença de até meio centavo.
+     */
+    protected static Matcher<Object> numero(double esperado) {
+        return new CustomMatcher<Object>("número " + esperado) {
+            @Override
+            public boolean matches(Object atual) {
+                return atual instanceof Number n && Math.abs(n.doubleValue() - esperado) < 0.0051;
+            }
+        };
     }
 }

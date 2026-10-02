@@ -57,8 +57,8 @@ class ConfiguracoesFinanceirasApiTest extends ApiBase {
         for (String token : List.of(admin, proprietario, inquilino)) {
             como(token).when().get("/financeiro/configuracoes")
                 .then().statusCode(200)
-                .body("multa_percentual", equalTo(((Number) original.get("multa_percentual")).floatValue()))
-                .body("juros_mensal_percentual", equalTo(((Number) original.get("juros_mensal_percentual")).floatValue()))
+                .body("multa_percentual", numero(((Number) original.get("multa_percentual")).doubleValue()))
+                .body("juros_mensal_percentual", numero(((Number) original.get("juros_mensal_percentual")).doubleValue()))
                 .body("dia_vencimento", equalTo(((Number) original.get("dia_vencimento")).intValue()));
         }
         semLogin().when().get("/financeiro/configuracoes").then().statusCode(401);
@@ -68,9 +68,9 @@ class ConfiguracoesFinanceirasApiTest extends ApiBase {
     @DisplayName("Seed: valores da taxa de 2020 a 2026")
     void valoresDoSeed() {
         como(admin).when().get("/financeiro/configuracoes").then().statusCode(200)
-            .body("taxas_padrao.find { it.ano == 2020 }.valor", equalTo(230.0f))
-            .body("taxas_padrao.find { it.ano == 2023 }.valor", equalTo(280.0f))
-            .body("taxas_padrao.find { it.ano == 2026 }.valor", equalTo(325.0f));
+            .body("taxas_padrao.find { it.ano == 2020 }.valor", numero(230.0))
+            .body("taxas_padrao.find { it.ano == 2023 }.valor", numero(280.0))
+            .body("taxas_padrao.find { it.ano == 2026 }.valor", numero(325.0));
     }
 
     @Test
@@ -95,7 +95,7 @@ class ConfiguracoesFinanceirasApiTest extends ApiBase {
             .when().put("/financeiro/configuracoes").then().statusCode(400);
         // nada foi salvo
         como(admin).when().get("/financeiro/configuracoes").then()
-            .body("multa_percentual", equalTo(((Number) original.get("multa_percentual")).floatValue()))
+            .body("multa_percentual", numero(((Number) original.get("multa_percentual")).doubleValue()))
             .body("dia_vencimento", equalTo(((Number) original.get("dia_vencimento")).intValue()));
     }
 
@@ -103,9 +103,9 @@ class ConfiguracoesFinanceirasApiTest extends ApiBase {
     @DisplayName("Valores-limite aceitos: multa 0 e 2, vencimento 1 e 28")
     void valoresLimite() {
         put(admin, Map.of("multa_percentual", 0, "dia_vencimento", 1)).then().statusCode(200)
-            .body("multa_percentual", equalTo(0.0f)).body("dia_vencimento", equalTo(1));
+            .body("multa_percentual", numero(0.0)).body("dia_vencimento", equalTo(1));
         put(admin, Map.of("multa_percentual", 2, "dia_vencimento", 28)).then().statusCode(200)
-            .body("multa_percentual", equalTo(2.0f)).body("dia_vencimento", equalTo(28));
+            .body("multa_percentual", numero(2.0)).body("dia_vencimento", equalTo(28));
     }
 
     @Test
@@ -114,10 +114,10 @@ class ConfiguracoesFinanceirasApiTest extends ApiBase {
         int ano = ThreadLocalRandom.current().nextInt(2100, 2900);
         definirTaxaDoAno(admin, ano, 340);
         como(admin).when().get("/financeiro/configuracoes").then()
-            .body("taxas_padrao.find { it.ano == " + ano + " }.valor", equalTo(340.0f));
+            .body("taxas_padrao.find { it.ano == " + ano + " }.valor", numero(340.0));
         definirTaxaDoAno(admin, ano, 355.5);
         como(admin).when().get("/financeiro/configuracoes").then()
-            .body("taxas_padrao.find { it.ano == " + ano + " }.valor", equalTo(355.5f))
+            .body("taxas_padrao.find { it.ano == " + ano + " }.valor", numero(355.5))
             .body("taxas_padrao.ano", hasItem(2026));
 
         // Alterar o valor de 2026 não muda as taxas de 2026 já lançadas.

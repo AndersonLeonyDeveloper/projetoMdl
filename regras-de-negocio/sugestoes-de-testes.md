@@ -429,6 +429,30 @@
   definido: mensagem ou nova tentativa). `E2E`
 - [ ] **Tamanho**: o pacote de entrada do build fica abaixo de 300 kB. `E2E` / performance
 
+### 7.10 Status "a vencer" e resumos
+
+> Cenários levantados em 02/10/2026 (item 2.5 do backlog). Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seções 4.1
+> e 4.4. Os `API` têm teste em `test/restassured` (`StatusDaTaxaApiTest`, compilado e ainda não executado).
+
+- [ ] **Status coerente**: toda taxa devolvida traz `status`; as adimplentes são `adimplente` e as em aberto são `a_vencer` ou
+  `em_atraso`. `API`
+- [ ] **Mês passado em aberto = em atraso; mês futuro = a vencer; pagar = adimplente.** `API`
+- [ ] **Valor-limite**: com o dia de vencimento igual a hoje, a taxa do mês corrente é `a_vencer`; no dia anterior, `em_atraso`
+  (só roda entre os dias 2 e 28). `API`
+- [ ] **Resumo por bloco**: taxa de mês futuro soma em `a_vencer` e nada em `inadimplente`; taxa de mês passado soma em
+  `inadimplente` e nada em `a_vencer`; `inadimplente + a_vencer` é o total em aberto do mês. `API`
+- [ ] **Histórico não muda**: de 2020 a 2025, `a_vencer` é 0 e "inadimplente", "atrasadas" e "em aberto" são iguais aos do
+  cálculo anterior. `API` / `DB/Integridade`
+- [ ] **Inadimplência anual e Evolução**: taxa de mês futuro não conta como inadimplente, atrasada nem em aberto, e aparece em
+  `a_vencer`. `API`
+- [ ] **Vencimento configurável**: mudar o dia de vencimento reclassifica o que é atrasado e a vencer nos resumos do mês
+  corrente (e as "atrasadas" históricas da Evolução). `API`
+- [ ] **Consistência com Dados dos Moradores**: uma taxa `a_vencer` não aparece em "N em atraso", e uma `em_atraso` aparece. `API`
+- [ ] **Etiquetas**: "Adimplente" verde, "A vencer" azul, "Em atraso" vermelha na tabela de taxas, com filtro por status; a
+  tabela de resumo por bloco (admin e morador) e a de Inadimplência mostram a coluna "A vencer". `E2E`
+- [ ] **Gerar taxas do mês corrente**: depois de gerar, todas aparecem como "A vencer" e nenhuma como "Em atraso" até o dia
+  seguinte ao vencimento. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

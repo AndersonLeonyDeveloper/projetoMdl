@@ -8,7 +8,7 @@ import {
   salvarComprovante,
   uploadComprovante,
 } from '../utils/comprovantes.js';
-import { calcularJuros, ehDataValida } from '../utils/juros.js';
+import { calcularJuros, ehDataValida, hojeISO, sqlVencida, statusDaTaxa } from '../utils/juros.js';
 
 export const financeiroRouter = Router();
 financeiroRouter.use(requireAuth);
@@ -70,7 +70,9 @@ financeiroRouter.get('/taxas', (req, res) => {
        ORDER BY t.ano_referencia, t.mes_referencia, b.numero, a.numero`
     )
     .all(params);
-  res.json(taxas);
+  const dia = lerConfiguracao().dia_vencimento;
+  const hoje = hojeISO();
+  res.json(taxas.map((t) => ({ ...t, status: statusDaTaxa(t, dia, hoje) })));
 });
 
 financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, res) => {
@@ -397,15 +399,16 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
       `SELECT
          b.numero AS bloco_numero,
          COALESCE(SUM(CASE WHEN t.situacao = 'adimplente' THEN t.valor + t.juros ELSE 0 END), 0) AS adimplente,
-         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' THEN t.valor + t.juros ELSE 0 END), 0) AS inadimplente
+         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND ${sqlVencida('t.')} THEN t.valor + t.juros ELSE 0 END), 0) AS inadimplente,
+         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND NOT (${sqlVencida('t.')}) THEN t.valor + t.juros ELSE 0 END), 0) AS a_vencer
        FROM blocos b
        LEFT JOIN apartamentos a ON a.bloco_id = b.id
        LEFT JOIN taxas_condominio t
-         ON t.apartamento_id = a.id AND t.ano_referencia = ? AND t.mes_referencia = ?
+         ON t.apartamento_id = a.id AND t.ano_referencia = @ano AND t.mes_referencia = @mes
        GROUP BY b.id
        ORDER BY b.numero`
     )
-    .all(ano, mes);
+    .all({ ano, mes, dia: lerConfiguracao().dia_vencimento, hoje: hojeISO() });
 
   res.json(
     linhas.map((linha) => ({
@@ -425,20 +428,22 @@ financeiroRouter.get('/resumo/inadimplencia', requireRole('admin'), (req, res) =
       `SELECT
          mes_referencia,
          COALESCE(SUM(CASE WHEN situacao = 'adimplente' THEN valor + juros ELSE 0 END), 0) AS adimplente,
-         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' THEN valor + juros ELSE 0 END), 0) AS inadimplente
+         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} THEN valor + juros ELSE 0 END), 0) AS inadimplente,
+         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) THEN valor + juros ELSE 0 END), 0) AS a_vencer
        FROM taxas_condominio
-       WHERE ano_referencia = ?
+       WHERE ano_referencia = @ano
        GROUP BY mes_referencia
        ORDER BY mes_referencia`
     )
-    .all(ano);
+    .all({ ano, dia: lerConfiguracao().dia_vencimento, hoje: hojeISO() });
 
   res.json(linhas);
 });
 
 // Evolução mês a mês (para a tela "Evolução"): receitas, despesas e inadimplência no período.
 // Taxas entram pela competência (mês de referência), como em /resumo/mensal.
-// "atrasadas" = pagas depois do dia 10 ou ainda em aberto (a inadimplência no vencimento).
+// "atrasadas" = pagas depois do vencimento ou em aberto e já vencidas (a inadimplência no vencimento). O vencimento é o
+// dia configurado; taxas em aberto ainda no prazo ficam em "a_vencer" e não contam como atraso nem como em aberto.
 financeiroRouter.get('/resumo/evolucao', requireRole('admin'), (req, res) => {
   const anoInicio = Number(req.query.ano_inicio);
   const anoFim = Number(req.query.ano_fim);
@@ -454,16 +459,17 @@ financeiroRouter.get('/resumo/evolucao', requireRole('admin'), (req, res) => {
          COUNT(*) AS unidades,
          COALESCE(SUM(valor), 0) AS faturamento,
          COALESCE(SUM(CASE WHEN situacao = 'adimplente' THEN valor + juros ELSE 0 END), 0) AS receitas_taxas,
-         SUM(CASE WHEN data_pagamento IS NULL
-                    OR data_pagamento > printf('%04d-%02d-10', ano_referencia, mes_referencia)
+         SUM(CASE WHEN (data_pagamento IS NULL AND ${sqlVencida()})
+                    OR data_pagamento > printf('%04d-%02d-%02d', ano_referencia, mes_referencia, @dia)
                   THEN 1 ELSE 0 END) AS atrasadas,
-         SUM(CASE WHEN situacao = 'inadimplente' THEN 1 ELSE 0 END) AS em_aberto,
-         SUM(CASE WHEN situacao = 'inadimplente' AND meses_atraso >= 3 THEN 1 ELSE 0 END) AS em_aberto_3_meses
+         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} THEN 1 ELSE 0 END) AS em_aberto,
+         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} AND meses_atraso >= 3 THEN 1 ELSE 0 END) AS em_aberto_3_meses,
+         SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) THEN 1 ELSE 0 END) AS a_vencer
        FROM taxas_condominio
-       WHERE ano_referencia BETWEEN ? AND ?
+       WHERE ano_referencia BETWEEN @anoInicio AND @anoFim
        GROUP BY ano_referencia, mes_referencia`
     )
-    .all(anoInicio, anoFim);
+    .all({ anoInicio, anoFim, dia: lerConfiguracao().dia_vencimento, hoje: hojeISO() });
 
   const somaPorMes = (tabela) =>
     new Map(

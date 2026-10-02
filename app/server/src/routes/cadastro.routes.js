@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db, withTransaction, isUniqueConstraintError, lerConfiguracao } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { calcularJuros } from '../utils/juros.js';
+import { calcularJuros, hojeISO, sqlVencida } from '../utils/juros.js';
 
 export const cadastroRouter = Router();
 cadastroRouter.use(requireAuth);
@@ -209,17 +209,17 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
     .all();
 
   const configuracao = lerConfiguracao();
-  const hoje = new Date().toLocaleDateString('sv-SE'); // AAAA-MM-DD, no fuso do servidor
+  const hoje = hojeISO();
   const emAtraso = new Map();
   const vencidas = db
     .prepare(
       `SELECT id, apartamento_id, mes_referencia, ano_referencia, valor
        FROM taxas_condominio
        WHERE situacao = 'inadimplente'
-         AND printf('%04d-%02d-%02d', ano_referencia, mes_referencia, ?) < ?
+         AND ${sqlVencida()}
        ORDER BY ano_referencia, mes_referencia`
     )
-    .all(configuracao.dia_vencimento, hoje);
+    .all({ dia: configuracao.dia_vencimento, hoje });
   for (const taxa of vencidas) {
     const { dias_em_atraso, juros, total } = calcularJuros({ ...taxa, data_pagamento: hoje }, configuracao);
     if (!emAtraso.has(taxa.apartamento_id)) emAtraso.set(taxa.apartamento_id, []);

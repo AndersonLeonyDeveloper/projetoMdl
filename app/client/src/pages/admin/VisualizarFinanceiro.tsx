@@ -12,7 +12,8 @@ const { Title } = Typography;
 interface ResumoBloco {
   bloco_numero: string;
   adimplente: number;
-  inadimplente: number;
+  inadimplente: number; // em atraso (vencidas)
+  a_vencer: number; // em aberto, ainda no prazo
   saldo: number;
 }
 interface ResumoMensal {
@@ -29,6 +30,7 @@ interface Taxa {
   valor: number;
   juros: number;
   situacao: 'adimplente' | 'inadimplente';
+  status: 'adimplente' | 'a_vencer' | 'em_atraso';
   meses_atraso: number;
   data_pagamento: string | null;
   comprovante_path: string | null;
@@ -66,6 +68,7 @@ export function VisualizarFinanceiro() {
     { title: 'Bloco', dataIndex: 'bloco_numero' },
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Inadimplente', dataIndex: 'inadimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { title: 'A vencer', dataIndex: 'a_vencer', render: (v: number) => `R$ ${v.toFixed(2)}` },
     {
       title: 'Saldo',
       dataIndex: 'saldo',
@@ -85,15 +88,25 @@ export function VisualizarFinanceiro() {
     { title: 'Apartamento', dataIndex: 'apartamento_numero' },
     {
       title: 'Situação',
-      dataIndex: 'situacao',
+      dataIndex: 'status',
       filters: [
         { text: 'Adimplente', value: 'adimplente' },
-        { text: 'Inadimplente', value: 'inadimplente' },
+        { text: 'A vencer', value: 'a_vencer' },
+        { text: 'Em atraso', value: 'em_atraso' },
       ],
-      onFilter: (value, record) => record.situacao === value,
-      render: (situacao: Taxa['situacao']) => (
-        <Tag color={situacao === 'adimplente' ? 'success' : 'error'}>{situacao}</Tag>
-      ),
+      onFilter: (value, record) => record.status === value,
+      render: (status: Taxa['status']) => {
+        const visual = {
+          adimplente: { cor: 'success', texto: 'Adimplente' },
+          a_vencer: { cor: 'processing', texto: 'A vencer' },
+          em_atraso: { cor: 'error', texto: 'Em atraso' },
+        }[status];
+        return (
+          <Tag color={visual.cor} data-testid={`status-${status}`}>
+            {visual.texto}
+          </Tag>
+        );
+      },
     },
     { title: 'Valor', dataIndex: 'valor', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Juros', dataIndex: 'juros', render: (v: number) => `R$ ${v.toFixed(2)}` },

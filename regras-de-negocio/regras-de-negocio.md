@@ -59,6 +59,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Valor padrão:** ao lançar uma taxa, o campo "Valor" já vem preenchido com o valor configurado para o ano de referência (seção 4.6). O admin pode alterar o valor antes de salvar.
 - **Geração em lote:** o admin pode gerar de uma vez as taxas de um mês para todos os apartamentos (seção 4.7), em vez de lançar uma a uma.
 - **Situação é derivada**: se não houver `data_pagamento` registrada até o vencimento, o apartamento passa a `Inadimplente` no mês de referência. Uma taxa recém-lançada ou gerada nasce `Inadimplente` e sem juros. Registrar a data de pagamento a torna `Adimplente`.
+- **Status exibido (derivado):** além da situação gravada (Adimplente/Inadimplente), a taxa tem um status calculado na consulta: **Adimplente**; **A vencer** (em aberto, mas o vencimento ainda não passou, no próprio dia do vencimento inclusive); **Em atraso** (em aberto e vencida, ou seja, o dia de vencimento do mês de referência já passou). Isso evita tratar como inadimplente a taxa do mês corrente que ainda está no prazo. A situação gravada não muda; o status acompanha o calendário e o dia de vencimento configurado.
 - **Meses em atraso**: contagem cumulativa de meses consecutivos em que o apartamento está sem pagamento — exibido no cadastro (ex.: "3 meses"). Registrar o pagamento zera o contador da taxa.
 - **Juros por atraso (calculados pelo sistema):** ao registrar o pagamento, o servidor calcula o juros e grava o valor na taxa (ver 4.1.1).
 - **Total pago pelo morador** = valor + juros.
@@ -86,7 +87,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Saldo mensal (por bloco)** = soma(receitas do bloco no mês) − soma(despesas do bloco no mês).
   - Despesas de nível condomínio são rateadas/atribuídas conforme regra a definir (ex.: rateio igualitário entre blocos, ou lançamento manual por bloco).
 - **Total adimplente (mês/bloco)** = soma dos valores de taxa de condomínio pagos no prazo.
-- **Total inadimplente (mês/bloco)** = soma dos valores de taxa de condomínio em aberto/atrasados.
+- **Total inadimplente (mês/bloco)** = soma dos valores de taxa de condomínio **em atraso** (em aberto e já vencidas). Taxas em aberto ainda no prazo aparecem à parte, como **A vencer**, e não entram no inadimplente nem no saldo por bloco. O mesmo vale para a Inadimplência anual e para a Evolução ("em aberto" e "atrasadas"), que usam o dia de vencimento configurado. Para o histórico, nada muda, porque tudo já venceu; só o mês corrente é afetado. Alterar o dia de vencimento em Configurações financeiras reclassifica retroativamente quais taxas contam como atrasadas nesses resumos.
 - Indicadores visuais: saldo positivo (verde/seta para cima) e saldo negativo (vermelho/seta para baixo).
 
 ### 4.5 Consultas / Filtros

@@ -260,8 +260,8 @@ class DadosMoradoresApiTest extends ApiBase {
                 .when().get("/financeiro/taxas/" + item.get("id") + "/calculo-juros")
                 .then().statusCode(200)
                 .body("dias_em_atraso", org.hamcrest.Matchers.equalTo(((Number) item.get("dias_em_atraso")).intValue()))
-                .body("juros", org.hamcrest.Matchers.equalTo(((Number) item.get("juros")).floatValue()))
-                .body("total", org.hamcrest.Matchers.equalTo(((Number) item.get("total")).floatValue()));
+                .body("juros", numero(((Number) item.get("juros")).doubleValue()))
+                .body("total", numero(((Number) item.get("total")).doubleValue()));
         }
     }
 

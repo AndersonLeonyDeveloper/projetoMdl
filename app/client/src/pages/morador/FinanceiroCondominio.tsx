@@ -9,7 +9,8 @@ const { Title } = Typography;
 interface ResumoBloco {
   bloco_numero: string;
   adimplente: number;
-  inadimplente: number;
+  inadimplente: number; // em atraso (vencidas)
+  a_vencer: number; // em aberto, ainda no prazo
   saldo: number;
 }
 interface ResumoMensal {
@@ -46,6 +47,7 @@ export function FinanceiroCondominio() {
     },
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Inadimplente', dataIndex: 'inadimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { title: 'A vencer', dataIndex: 'a_vencer', render: (v: number) => `R$ ${v.toFixed(2)}` },
     {
       title: 'Saldo',
       dataIndex: 'saldo',

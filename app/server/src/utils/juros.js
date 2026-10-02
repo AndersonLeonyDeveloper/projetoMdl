@@ -39,3 +39,21 @@ export function calcularJuros({ valor, mes_referencia, ano_referencia, data_paga
     total: arredondar(valor + juros),
   };
 }
+
+// Data de hoje no fuso do servidor, como AAAA-MM-DD.
+export const hojeISO = () => new Date().toLocaleDateString('sv-SE');
+
+// Uma taxa está vencida quando o dia de vencimento do mês de referência já passou (no próprio dia ainda não).
+export const estaVencida = (ano, mes, diaVencimento, hoje = hojeISO()) => vencimentoDe(ano, mes, diaVencimento) < hoje;
+
+// Status derivado para exibição. O valor gravado (`situacao`) continua adimplente/inadimplente:
+//   adimplente | a_vencer (em aberto, ainda no prazo) | em_atraso (em aberto e vencida).
+export function statusDaTaxa({ situacao, mes_referencia, ano_referencia }, diaVencimento, hoje = hojeISO()) {
+  if (situacao === 'adimplente') return 'adimplente';
+  return estaVencida(ano_referencia, mes_referencia, diaVencimento, hoje) ? 'em_atraso' : 'a_vencer';
+}
+
+// Trecho SQL equivalente a estaVencida, para usar nos resumos. Parâmetros nomeados: @dia e @hoje.
+export const sqlVencida = (alias = '') =>
+  `printf('%04d-%02d-%02d', ${alias}ano_referencia, ${alias}mes_referencia, @dia) < @hoje`;
+

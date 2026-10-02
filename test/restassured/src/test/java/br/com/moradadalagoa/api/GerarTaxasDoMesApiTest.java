@@ -50,7 +50,7 @@ class GerarTaxasDoMesApiTest extends ApiBase {
         definirTaxaDoAno(admin, ano, 340);
 
         gerar(admin, 1, ano).then().statusCode(201)
-            .body("criadas", equalTo(TOTAL_APARTAMENTOS)).body("ignoradas", equalTo(0)).body("valor", equalTo(340.0f));
+            .body("criadas", equalTo(TOTAL_APARTAMENTOS)).body("ignoradas", equalTo(0)).body("valor", numero(340.0));
 
         List<Map<String, Object>> taxas = taxasDe(ano, 1);
         org.junit.jupiter.api.Assertions.assertEquals(TOTAL_APARTAMENTOS, taxas.size());
@@ -132,7 +132,7 @@ class GerarTaxasDoMesApiTest extends ApiBase {
     void previaDeMesCheio() {
         previa(admin, 1, 2026).then().statusCode(200)
             .body("total_apartamentos", equalTo(TOTAL_APARTAMENTOS)).body("existentes", equalTo(TOTAL_APARTAMENTOS))
-            .body("a_criar", equalTo(0)).body("valor", equalTo(325.0f));
+            .body("a_criar", equalTo(0)).body("valor", numero(325.0));
     }
 
     @Test
@@ -141,7 +141,7 @@ class GerarTaxasDoMesApiTest extends ApiBase {
         int ano = anoLivre();
         definirTaxaDoAno(admin, ano, 340);
         previa(admin, 4, ano).then().statusCode(200)
-            .body("existentes", equalTo(0)).body("a_criar", equalTo(TOTAL_APARTAMENTOS)).body("valor", equalTo(340.0f));
+            .body("existentes", equalTo(0)).body("a_criar", equalTo(TOTAL_APARTAMENTOS)).body("valor", numero(340.0));
 
         como(admin).contentType(ContentType.JSON)
             .body(Map.of("apartamento_id", 3, "mes_referencia", 4, "ano_referencia", ano, "valor", 999))

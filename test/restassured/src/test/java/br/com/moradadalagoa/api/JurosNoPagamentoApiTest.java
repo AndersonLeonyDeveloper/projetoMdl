@@ -78,8 +78,8 @@ class JurosNoPagamentoApiTest extends ApiBase {
     void semAtraso() {
         int[] t = novaTaxa();
         previa(t[0], t[1] + "-01-10").then().statusCode(200)
-            .body("dias_em_atraso", equalTo(0)).body("juros", equalTo(0.0f)).body("total", equalTo(325.0f));
-        previa(t[0], t[1] + "-01-02").then().body("dias_em_atraso", equalTo(0)).body("juros", equalTo(0.0f));
+            .body("dias_em_atraso", equalTo(0)).body("juros", numero(0.0)).body("total", numero(325.0));
+        previa(t[0], t[1] + "-01-02").then().body("dias_em_atraso", equalTo(0)).body("juros", numero(0.0));
     }
 
     @Test
@@ -87,8 +87,8 @@ class JurosNoPagamentoApiTest extends ApiBase {
     void primeiroDiaDeAtraso() {
         int[] t = novaTaxa();
         previa(t[0], t[1] + "-01-11").then().statusCode(200)
-            .body("dias_em_atraso", equalTo(1)).body("multa", equalTo(6.5f))
-            .body("juros", equalTo(6.61f)).body("total", equalTo(331.61f));
+            .body("dias_em_atraso", equalTo(1)).body("multa", numero(6.5))
+            .body("juros", numero(6.61)).body("total", numero(331.61));
     }
 
     @Test
@@ -97,7 +97,7 @@ class JurosNoPagamentoApiTest extends ApiBase {
         int[] t = novaTaxa();
         previa(t[0], t[1] + "-01-20").then().statusCode(200)
             .body("vencimento", equalTo(t[1] + "-01-10")).body("dias_em_atraso", equalTo(10))
-            .body("juros", equalTo(7.58f)).body("total", equalTo(332.58f));
+            .body("juros", numero(7.58)).body("total", numero(332.58));
     }
 
     @Test
@@ -105,7 +105,7 @@ class JurosNoPagamentoApiTest extends ApiBase {
     void arredondamento() {
         int[] t = novaTaxa();
         previa(t[0], t[1] + "-01-25").then().statusCode(200)
-            .body("dias_em_atraso", equalTo(15)).body("juros", equalTo(8.13f));
+            .body("dias_em_atraso", equalTo(15)).body("juros", numero(8.13));
     }
 
     @Test
@@ -120,7 +120,7 @@ class JurosNoPagamentoApiTest extends ApiBase {
     @DisplayName("Pagamento calcula e grava o juros; a taxa fica adimplente")
     void pagamentoGravaOJuros() {
         int[] t = novaTaxa();
-        pagar(t[0], t[1] + "-01-20", null).then().statusCode(200).body("juros", equalTo(7.58f));
+        pagar(t[0], t[1] + "-01-20", null).then().statusCode(200).body("juros", numero(7.58));
         Map<String, Object> gravada = taxa(t[0], t[1]);
         org.junit.jupiter.api.Assertions.assertEquals(7.58, ((Number) gravada.get("juros")).doubleValue());
         org.junit.jupiter.api.Assertions.assertEquals("adimplente", gravada.get("situacao"));
@@ -131,11 +131,11 @@ class JurosNoPagamentoApiTest extends ApiBase {
     @DisplayName("Ajuste manual prevalece sobre o cálculo, inclusive juros 0 (acordo)")
     void ajusteManual() {
         int[] t = novaTaxa();
-        pagar(t[0], t[1] + "-03-01", "0").then().statusCode(200).body("juros", equalTo(0.0f));
+        pagar(t[0], t[1] + "-03-01", "0").then().statusCode(200).body("juros", numero(0.0));
         org.junit.jupiter.api.Assertions.assertEquals(0.0, ((Number) taxa(t[0], t[1]).get("juros")).doubleValue());
 
         int[] u = novaTaxa();
-        pagar(u[0], u[1] + "-03-01", "12.34").then().statusCode(200).body("juros", equalTo(12.34f));
+        pagar(u[0], u[1] + "-03-01", "12.34").then().statusCode(200).body("juros", numero(12.34));
     }
 
     @Test
@@ -163,7 +163,7 @@ class JurosNoPagamentoApiTest extends ApiBase {
         salvarConfiguracao(admin, 0, 3, 10);
         // 325 × (0 + 3% × 30/30) = 9,75
         previa(t[0], t[1] + "-02-09").then().statusCode(200)
-            .body("dias_em_atraso", equalTo(30)).body("juros", equalTo(9.75f));
+            .body("dias_em_atraso", equalTo(30)).body("juros", numero(9.75));
     }
 
     @Test

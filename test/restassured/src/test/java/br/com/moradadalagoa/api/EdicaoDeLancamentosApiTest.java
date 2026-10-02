@@ -276,7 +276,7 @@ class EdicaoDeLancamentosApiTest extends ApiBase {
     void taxaPagaEDespaga() {
         int[] t = novaTaxa(null);
         editarTaxa(t, Map.of("data_pagamento", t[1] + "-01-20")).then().statusCode(200)
-            .body("situacao", equalTo("adimplente")).body("juros", equalTo(7.58f));
+            .body("situacao", equalTo("adimplente")).body("juros", numero(7.58));
         Map<String, Object> paga = taxa(t);
         org.junit.jupiter.api.Assertions.assertEquals("adimplente", paga.get("situacao"));
         org.junit.jupiter.api.Assertions.assertEquals(0, ((Number) paga.get("meses_atraso")).intValue());
@@ -303,8 +303,8 @@ class EdicaoDeLancamentosApiTest extends ApiBase {
     @DisplayName("Taxa: juros informado prevalece; trocar a data sem juros recalcula")
     void jurosManualEDataNova() {
         int[] t = novaTaxa(null);
-        editarTaxa(t, Map.of("data_pagamento", t[1] + "-01-20", "juros", "1.50")).then().statusCode(200).body("juros", equalTo(1.5f));
-        editarTaxa(t, Map.of("data_pagamento", t[1] + "-01-11")).then().statusCode(200).body("juros", equalTo(6.61f));
+        editarTaxa(t, Map.of("data_pagamento", t[1] + "-01-20", "juros", "1.50")).then().statusCode(200).body("juros", numero(1.5));
+        editarTaxa(t, Map.of("data_pagamento", t[1] + "-01-11")).then().statusCode(200).body("juros", numero(6.61));
     }
 
     @Test

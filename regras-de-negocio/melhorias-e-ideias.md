@@ -50,8 +50,8 @@ Já está em aberto em `regras-de-negocio.md`, seção 7. O saldo por bloco hoje
 ### [ ] 2.4 Taxa por fração ideal — esforço G
 O modelo assume a mesma taxa para todos os apartamentos. Em muitos condomínios o valor varia com a metragem ou a fração ideal.
 
-### [ ] 2.5 Status "a vencer" — esforço P
-`situacao` só tem adimplente e inadimplente. Uma taxa do mês corrente ainda dentro do prazo aparece como inadimplente. Hoje o histórico termina em set/2026 para evitar isso.
+### [x] 2.5 Status "a vencer" — esforço P
+`situacao` só tem adimplente e inadimplente. Uma taxa do mês corrente ainda dentro do prazo aparece como inadimplente. Hoje o histórico termina em set/2026 para evitar isso. *Implementado em 02/10/2026:* `GET /financeiro/taxas` devolve `status` (adimplente, a vencer ou em atraso, derivado do vencimento configurado; a situação gravada não muda). A tabela de taxas mostra as etiquetas e filtra por status, e os resumos por bloco, de Inadimplência e da Evolução passaram a tratar "inadimplente" como só em atraso, com "a vencer" à parte. Regras nas seções 4.1 e 4.4 de `regras-de-negocio.md`.
 
 ### [ ] 2.6 Alerta de apartamento sem proprietário — esforço P
 O sistema permite apartamento sem proprietário. Um relatório ou aviso de "unidades sem proprietário" ajudaria a manter o cadastro limpo.
