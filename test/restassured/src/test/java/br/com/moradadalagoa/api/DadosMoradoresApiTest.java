@@ -90,18 +90,51 @@ class DadosMoradoresApiTest extends ApiBase {
     }
 
     @Test
-    @DisplayName("Só o proprietário tem a lista (vazia = em dia); inquilino e apartamento vazio têm null")
+    @DisplayName("Proprietário tem a lista; inquilino de apartamento com proprietário tem null; sem proprietário tem a lista do apartamento")
     void formatoPorTipo() {
         List<Map<String, Object>> linhas = dados();
         org.junit.jupiter.api.Assertions.assertFalse(linhas.isEmpty());
         for (Map<String, Object> linha : linhas) {
             Object atrasos = linha.get("taxas_em_atraso");
-            if ("proprietario".equals(linha.get("tipo"))) {
-                org.junit.jupiter.api.Assertions.assertTrue(atrasos instanceof List, "proprietário deve ter lista");
+            boolean semProprietario = Boolean.TRUE.equals(linha.get("sem_proprietario"));
+            if ("proprietario".equals(linha.get("tipo")) || semProprietario) {
+                org.junit.jupiter.api.Assertions.assertTrue(atrasos instanceof List, "esperava lista: " + linha);
             } else {
-                org.junit.jupiter.api.Assertions.assertNull(atrasos, "inquilino/vazio deve ter null: " + linha);
+                org.junit.jupiter.api.Assertions.assertNull(atrasos, "inquilino com proprietário deve ter null: " + linha);
             }
         }
+    }
+
+    @Test
+    @DisplayName("sem_proprietario vale exatamente para apartamentos sem nenhuma linha de proprietário (vazios e só com inquilinos)")
+    void marcaSemProprietario() {
+        List<Map<String, Object>> linhas = dados();
+        java.util.Set<Object> comDono = new java.util.HashSet<>();
+        for (Map<String, Object> linha : linhas) {
+            if ("proprietario".equals(linha.get("tipo"))) comDono.add(linha.get("apartamento_id"));
+        }
+        for (Map<String, Object> linha : linhas) {
+            org.junit.jupiter.api.Assertions.assertEquals(!comDono.contains(linha.get("apartamento_id")),
+                linha.get("sem_proprietario"), "linha: " + linha);
+        }
+    }
+
+    @Test
+    @DisplayName("Cenários do seed: Bl.08/301 vazio e Bl.07/301 só com inquilinos aparecem como sem proprietário")
+    void cenariosDoSeed() {
+        List<Map<String, Object>> linhas = dados();
+        List<Map<String, Object>> vazio = linhas.stream()
+            .filter(l -> "08".equals(l.get("bloco")) && "301".equals(l.get("apartamento"))).toList();
+        Assumptions.assumeFalse(vazio.isEmpty(), "banco sem os cenários de db:populate");
+        org.junit.jupiter.api.Assertions.assertEquals(1, vazio.size());
+        org.junit.jupiter.api.Assertions.assertNull(vazio.get(0).get("tipo"));
+        org.junit.jupiter.api.Assertions.assertEquals(true, vazio.get(0).get("sem_proprietario"));
+
+        List<Map<String, Object>> soInquilinos = linhas.stream()
+            .filter(l -> "07".equals(l.get("bloco")) && "301".equals(l.get("apartamento"))).toList();
+        org.junit.jupiter.api.Assertions.assertFalse(soInquilinos.isEmpty());
+        org.junit.jupiter.api.Assertions.assertTrue(soInquilinos.stream().allMatch(l ->
+            "inquilino".equals(l.get("tipo")) && Boolean.TRUE.equals(l.get("sem_proprietario"))));
     }
 
     // ---------- Regra de atraso ----------

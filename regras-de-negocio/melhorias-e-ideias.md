@@ -53,8 +53,8 @@ O modelo assume a mesma taxa para todos os apartamentos. Em muitos condomínios 
 ### [x] 2.5 Status "a vencer" — esforço P
 `situacao` só tem adimplente e inadimplente. Uma taxa do mês corrente ainda dentro do prazo aparece como inadimplente. Hoje o histórico termina em set/2026 para evitar isso. *Implementado em 02/10/2026:* `GET /financeiro/taxas` devolve `status` (adimplente, a vencer ou em atraso, derivado do vencimento configurado; a situação gravada não muda). A tabela de taxas mostra as etiquetas e filtra por status, e os resumos por bloco, de Inadimplência e da Evolução passaram a tratar "inadimplente" como só em atraso, com "a vencer" à parte. Regras nas seções 4.1 e 4.4 de `regras-de-negocio.md`.
 
-### [ ] 2.6 Alerta de apartamento sem proprietário — esforço P
-O sistema permite apartamento sem proprietário. Um relatório ou aviso de "unidades sem proprietário" ajudaria a manter o cadastro limpo.
+### [x] 2.6 Alerta de apartamento sem proprietário — esforço P
+O sistema permite apartamento sem proprietário. Um relatório ou aviso de "unidades sem proprietário" ajudaria a manter o cadastro limpo. *Implementado em 02/10/2026:* aviso no topo de Dados dos Moradores ("N apartamento(s) sem proprietário", vazios e só com inquilinos, e quantos têm atraso), botão "Mostrar apenas esses" e etiqueta "Sem proprietário" na coluna Mensalidades, que também mostra o atraso do apartamento nessas linhas. `GET /dados-moradores` ganhou `sem_proprietario`. Regras na seção 4.9.
 
 ### [ ] 2.7 Acordos e parcelamentos de dívida — esforço G
 Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro de acordo, parcelas ou cobrança judicial.

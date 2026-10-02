@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Popover, Table, Typography, Tag } from 'antd';
+import { Alert, Button, Card, Popover, Table, Typography, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
 import { api, formatarMoeda } from '../../api/client';
@@ -31,13 +31,16 @@ interface DadoMorador {
   nome: string | null;
   telefone: string | null;
   email: string | null;
-  // Só nas linhas de proprietário: mensalidades vencidas e não pagas (vazia = em dia). null nas demais.
+  sem_proprietario: boolean; // apartamento sem proprietário ativo (vazio ou só com inquilinos)
+  // Proprietário, ou qualquer linha de apartamento sem proprietário: mensalidades vencidas e não pagas do
+  // apartamento (vazia = em dia). null nas linhas de inquilino de apartamento com proprietário.
   taxas_em_atraso: MesEmAtraso[] | null;
 }
 
 export function VisualizarMoradores() {
   const [dados, setDados] = useState<DadoMorador[]>([]);
   const [blocos, setBlocos] = useState<Bloco[]>([]);
+  const [soSemProprietario, setSoSemProprietario] = useState(false);
 
   useEffect(() => {
     api.get<DadoMorador[]>('/dados-moradores').then((res) => setDados(res.data));
@@ -84,7 +87,13 @@ export function VisualizarMoradores() {
         (value === 'atraso' ? record.taxas_em_atraso.length > 0 : record.taxas_em_atraso.length === 0),
       render: (atrasos: DadoMorador['taxas_em_atraso'], linha: DadoMorador) => {
         if (atrasos === null) return '—';
-        if (atrasos.length === 0) return <Tag color="success" data-testid="tag-em-dia">Em dia</Tag>;
+        if (atrasos.length === 0) {
+          return linha.sem_proprietario ? (
+            <Tag color="warning" data-testid="tag-sem-proprietario">Sem proprietário</Tag>
+          ) : (
+            <Tag color="success" data-testid="tag-em-dia">Em dia</Tag>
+          );
+        }
         const totalDevido = atrasos.reduce((soma, t) => soma + t.total, 0);
         return (
           <Popover
@@ -116,7 +125,7 @@ export function VisualizarMoradores() {
             }
           >
             <Tag color="error" style={{ cursor: 'pointer' }} data-testid="tag-em-atraso">
-              {atrasos.length} em atraso
+              {atrasos.length} em atraso{linha.sem_proprietario ? ' · sem proprietário' : ''}
             </Tag>
           </Popover>
         );
@@ -124,14 +133,44 @@ export function VisualizarMoradores() {
     },
   ];
 
+  // Apartamentos sem proprietário ativo: vazios e só com inquilinos (cada apartamento conta uma vez).
+  const semDono = new Map<number, DadoMorador[]>();
+  dados.filter((d) => d.sem_proprietario).forEach((d) => semDono.set(d.apartamento_id, [...(semDono.get(d.apartamento_id) ?? []), d]));
+  const vazios = [...semDono.values()].filter((linhas) => linhas.every((l) => l.tipo === null)).length;
+  const comAtraso = [...semDono.values()].filter((linhas) => (linhas[0].taxas_em_atraso?.length ?? 0) > 0);
+  const totalDevido = comAtraso.reduce(
+    (soma, linhas) => soma + (linhas[0].taxas_em_atraso ?? []).reduce((s, t) => s + t.total, 0),
+    0
+  );
+  const linhasVisiveis = soSemProprietario ? dados.filter((d) => d.sem_proprietario) : dados;
+
   return (
     <Card>
       <Title level={4}>Dados dos Moradores</Title>
+      {semDono.size > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          data-testid="aviso-sem-proprietario"
+          message={`${semDono.size} apartamento(s) sem proprietário (${vazios} vazio(s), ${semDono.size - vazios} só com inquilinos).`}
+          description={
+            comAtraso.length > 0
+              ? `${comAtraso.length} deles com mensalidades em atraso (total devido hoje: ${formatarMoeda(totalDevido)}).`
+              : undefined
+          }
+          action={
+            <Button size="small" onClick={() => setSoSemProprietario((v) => !v)} data-testid="botao-filtrar-sem-proprietario">
+              {soSemProprietario ? 'Mostrar todos' : 'Mostrar apenas esses'}
+            </Button>
+          }
+        />
+      )}
       <Table
         data-testid="tabela-visualizar-moradores"
         rowKey={(r) => `${r.bloco}-${r.apartamento}-${r.tipo}-${r.email}`}
         columns={columns}
-        dataSource={dados}
+        dataSource={linhasVisiveis}
         pagination={{ pageSize: 5, showSizeChanger: true, pageSizeOptions: [5, 10, 20] }}
       />
     </Card>

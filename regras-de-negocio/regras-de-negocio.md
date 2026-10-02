@@ -49,7 +49,8 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Exclusão/desativação de vínculo é uma ação restrita ao Admin; o histórico de vínculos desativados é preservado (não é hard delete).
 - Um apartamento tem no máximo 1 proprietário ativo, mas pode ter vários inquilinos ativos ao mesmo tempo.
 - Trocar um inquilino de um apartamento desativa o vínculo dele e cria um novo — não sobrescreve o registro existente.
-- Na tela Dados dos Moradores (Admin), a linha do proprietário também mostra a situação das mensalidades do apartamento (seção 4.9). Inquilinos não têm essa informação.
+- Na tela Dados dos Moradores (Admin), a linha do proprietário também mostra a situação das mensalidades do apartamento (seção 4.9). Inquilinos não têm essa informação, exceto em apartamento sem proprietário, que é sinalizado com um aviso e uma etiqueta própria.
+- Um apartamento pode ficar sem proprietário (vazio ou só com inquilinos); o sistema não impede, mas avisa o admin em Dados dos Moradores.
 
 ## 4. Módulo Financeiro
 
@@ -129,14 +130,15 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Fora do escopo desta versão:** excluir lançamentos e histórico/auditoria de quem alterou o quê (ver `melhorias-e-ideias.md`, itens 2.12 e 2.13). Hoje a edição **sobrescreve** o valor anterior sem deixar rastro.
 
 ### 4.9 Situação de pagamento na tela Dados dos Moradores (Admin)
-- Em Visualizar → Dados dos Moradores, a coluna **Mensalidades** mostra a situação de pagamento **somente nas linhas de proprietário**. A taxa pertence ao apartamento, e o proprietário é o responsável por ela. Linhas de inquilino e apartamentos sem morador mostram "—".
+- Em Visualizar → Dados dos Moradores, a coluna **Mensalidades** mostra a situação de pagamento **somente nas linhas de proprietário**. A taxa pertence ao apartamento, e o proprietário é o responsável por ela. Linhas de inquilino em apartamento com proprietário mostram "—". **Exceção:** em apartamento **sem proprietário** (vazio ou só com inquilinos), não há a quem atribuir a dívida, então todas as linhas dele mostram a etiqueta **"Sem proprietário"** (laranja) e, se o apartamento tiver mensalidades em atraso, "N em atraso · sem proprietário", com o mesmo detalhe de valores ao clicar.
 - **Em dia:** o proprietário não tem nenhuma mensalidade vencida e não paga.
 - **Em atraso:** aparece o texto "N em atraso" (singular "1 em atraso"). Ao clicar, abre uma lista com o **mês e o ano** de cada mensalidade em atraso, da mais antiga para a mais recente (ex.: "mar/2026").
 - **O que conta como em atraso:** só a taxa com situação `Inadimplente` cujo **vencimento já passou**. O vencimento é o dia configurado (padrão 10) do mês de referência. No próprio dia do vencimento a taxa ainda **não** é atraso, igual à regra de juros (pagar até o dia do vencimento não gera juros). Uma taxa do mês corrente dentro do prazo, ou de um mês futuro, não conta.
 - **Valor devido:** no clique, cada mês mostra o valor da taxa, o **juros calculado até hoje** e o total (ex.: "mar/2026 · R$ 325,00 + R$ 7,58 = R$ 332,58"), e o rodapé traz o **total devido hoje** (soma dos totais). O juros usa a mesma fórmula do pagamento (seção 4.1.1), como se a taxa fosse paga hoje: multa mais juros simples proporcional aos dias de atraso. É uma **estimativa**: o valor final é calculado na data em que o pagamento for registrado, e nada é gravado por essa tela.
 - **Link para a taxa:** cada mês do clique é um link para Visualizar → Financeiro naquele mês e ano, **filtrado só pelo apartamento**. A tela mostra o aviso "Mostrando só as taxas do apartamento BB/AAA" e o botão "Ver todos os apartamentos", que limpa o filtro. Os resumos do mês (receitas, despesas e por bloco) não são filtrados. Dali, o admin usa "Registrar pagamento".
+- **Alerta de apartamentos sem proprietário:** no topo da tela, quando houver algum, um aviso amarelo informa "N apartamento(s) sem proprietário (X vazio(s), Y só com inquilinos)" e, se algum tiver mensalidades em atraso, quantos são e o total devido hoje. O botão "Mostrar apenas esses" filtra a tabela (e vira "Mostrar todos"). Cada apartamento conta uma vez, mesmo com vários inquilinos.
 - A coluna pode ser ordenada pela quantidade em atraso e filtrada por "Em atraso" e "Em dia".
-- Visível só para o Admin, porque a tela é restrita ao Admin. A API (`GET /dados-moradores`) devolve o campo `taxas_em_atraso`: lista para proprietário (vazia = em dia) e `null` para as demais linhas. Cada item traz `id`, `mes_referencia`, `ano_referencia`, `valor`, `dias_em_atraso`, `juros` e `total`, e cada linha traz `apartamento_id`.
+- Visível só para o Admin, porque a tela é restrita ao Admin. A API (`GET /dados-moradores`) devolve `sem_proprietario` em todas as linhas e `taxas_em_atraso`: lista para proprietário e para qualquer linha de apartamento sem proprietário (vazia = em dia), e `null` nas linhas de inquilino de apartamento com proprietário. Cada item traz `id`, `mes_referencia`, `ano_referencia`, `valor`, `dias_em_atraso`, `juros` e `total`, e cada linha traz `apartamento_id`.
 - Muda quando: uma taxa é paga (sai da lista), o dia de vencimento é alterado em Configurações financeiras (altera quais meses já venceram) ou passa o dia de vencimento de uma taxa em aberto.
 
 ## 5. Autenticação
@@ -169,7 +171,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - ~~Se um apartamento pode ter mais de um inquilino~~ — definido: sim, vários inquilinos ativos. Segue em aberto se pode haver mais de um proprietário (hoje: no máximo 1 ativo).
 - Regra de expiração/validade da "nova senha" enviada por e-mail.
 - **Dívida de quem sai do apartamento:** a coluna Mensalidades (seção 4.9) mostra, para o proprietário atual, **todas** as mensalidades em atraso do apartamento, inclusive as de antes de ele assumir. Hoje a taxa pertence ao apartamento, e não à pessoa. Falta definir se a dívida acompanha o apartamento (comum em condomínios) ou o proprietário da época.
-- **Apartamento sem proprietário e com atraso:** a situação de pagamento só aparece na linha do proprietário. Um apartamento só com inquilinos e com mensalidades vencidas não mostra o atraso em Dados dos Moradores (continua visível em Visualizar → Financeiro e na Inadimplência). Falta definir se a tela deve avisar.
+- ~~Apartamento sem proprietário e com atraso~~ — definido na seção 4.9: a tela avisa no topo e mostra o atraso do apartamento nas linhas dele, com a etiqueta "Sem proprietário".
 - Contagem de `meses_atraso` ao remover um pagamento ou ao pagar uma taxa antiga com outras em aberto: hoje o registro de pagamento zera o contador da própria taxa, e a remoção do pagamento mantém o valor anterior.
 
 ## 8. Ajuda guiada (Admin e moradores)

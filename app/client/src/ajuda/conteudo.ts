@@ -86,9 +86,10 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
   },
   '/admin/visualizar/moradores': {
     resumo:
-      'Lista os moradores cadastrados, com bloco, apartamento e tipo. Nas linhas de proprietário, a coluna Mensalidades mostra se a taxa está em dia ou quantas estão em atraso.',
+      'Lista os moradores cadastrados, com bloco, apartamento e tipo. Nas linhas de proprietário, a coluna Mensalidades mostra se a taxa está em dia ou quantas estão em atraso. Um aviso no topo lista os apartamentos sem proprietário.',
     passos: [
       { titulo: 'Lista de moradores', descricao: 'Use os filtros e a paginação da tabela para localizar uma pessoa.', alvo: 'tabela-visualizar-moradores' },
+      { titulo: 'Apartamentos sem proprietário', descricao: 'Quando existe algum apartamento vazio ou só com inquilinos, um aviso amarelo aparece no topo, com o botão "Mostrar apenas esses". Nesses apartamentos, a coluna Mensalidades mostra "Sem proprietário" (e o atraso, se houver).', alvo: 'tabela-visualizar-moradores' },
       { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver cada mensalidade vencida com valor, juros até hoje e total, mais o total devido. Clique em um mês para abrir a taxa em Visualizar → Financeiro. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
     ],
   },

@@ -195,7 +195,9 @@ cadastroRouter.put('/pessoas/me', (req, res) => {
 // Nas linhas de proprietário, "taxas_em_atraso" lista as mensalidades inadimplentes já vencidas do apartamento
 // (vazia = em dia), com o juros estimado até hoje (mesma fórmula do pagamento, se pago hoje). Vencida: o dia de
 // vencimento do mês de referência já passou (no próprio dia ainda não é atraso).
-// Linhas de inquilino e apartamentos vazios trazem null.
+// Exceção: em apartamento SEM proprietário (vazio ou só com inquilinos) todas as linhas trazem `sem_proprietario: true` e
+// a lista de atraso do apartamento, já que não há proprietário a quem atribuir a dívida. Nas demais linhas de
+// inquilino, `taxas_em_atraso` é null.
 cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
   const linhas = db
     .prepare(
@@ -234,10 +236,16 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
     });
   }
 
+  const comProprietario = new Set(linhas.filter((l) => l.tipo === 'proprietario').map((l) => l.apartamento_id));
   res.json(
-    linhas.map((linha) => ({
-      ...linha,
-      taxas_em_atraso: linha.tipo === 'proprietario' ? (emAtraso.get(linha.apartamento_id) ?? []) : null,
-    }))
+    linhas.map((linha) => {
+      const semProprietario = !comProprietario.has(linha.apartamento_id);
+      return {
+        ...linha,
+        sem_proprietario: semProprietario,
+        taxas_em_atraso:
+          linha.tipo === 'proprietario' || semProprietario ? (emAtraso.get(linha.apartamento_id) ?? []) : null,
+      };
+    })
   );
 });

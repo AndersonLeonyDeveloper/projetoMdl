@@ -362,8 +362,9 @@
 > ainda não têm teste, e a tela ainda não foi aberta em navegador.
 
 - [ ] **RBAC**: `GET /dados-moradores` retorna 200 para admin, 403 para proprietário e inquilino, 401 sem token. `API`
-- [ ] **Formato por tipo**: linha de proprietário traz `taxas_em_atraso` como lista (vazia = em dia); inquilino e apartamento
-  vazio trazem `null`. Em um apartamento com proprietário e inquilinos, só a linha do proprietário tem a lista. `API`
+- [ ] **Formato por tipo**: linha de proprietário traz `taxas_em_atraso` como lista (vazia = em dia); inquilino de apartamento com
+  proprietário traz `null`. Em apartamento **sem proprietário** (vazio ou só com inquilinos), todas as linhas trazem
+  `sem_proprietario = true` e a lista de atraso do apartamento. `API`
 - [ ] **Taxa antiga em aberto conta**; **taxa futura não conta**; a lista vem do mês mais antigo ao mais recente. `API`
 - [ ] **Pagar tira da lista**: depois de registrar o pagamento, o mês some; taxa paga com atraso (adimplente) não conta. `API`
 - [ ] **Valor-limite do vencimento**: com o dia de vencimento igual a hoje, a taxa do mês corrente ainda não é atraso; com o
@@ -373,6 +374,17 @@
   passa a aparecer em atraso por causa delas. `API` / `E2E`
 - [ ] **Consistência**: a soma de mensalidades em atraso nunca passa do total de taxas inadimplentes, e bate com a
   consulta direta às taxas vencidas no mesmo critério. `API` / `DB/Integridade`
+- [ ] **`sem_proprietario` consistente**: vale exatamente para os apartamentos sem nenhuma linha de proprietário; ao reativar o
+  proprietário, o apartamento deixa de ser marcado e os inquilinos voltam a `null`. `API`
+- [ ] **Cenários do seed**: Bl.08/301 (vazio) e Bl.07/301 (só inquilinos) aparecem como sem proprietário. `API`
+- [ ] **Atraso do apartamento sem dono**: uma taxa vencida em aberto de um apartamento sem proprietário aparece nas linhas
+  dele (e no total do aviso); uma taxa a vencer não. `API`
+- [ ] **Aviso no topo**: com ao menos um apartamento sem proprietário, o aviso mostra a contagem (vazios e só inquilinos, cada
+  apartamento uma vez) e, havendo atraso, quantos e o total devido; sem nenhum, o aviso não aparece. `E2E`
+- [ ] **Filtro do aviso**: "Mostrar apenas esses" mostra só as linhas de apartamentos sem proprietário e o botão vira "Mostrar
+  todos". `E2E`
+- [ ] **Etiqueta**: nessas linhas a coluna Mensalidades mostra "Sem proprietário" (ou "N em atraso · sem proprietário", com o
+  popover de valores). `E2E`
 - [ ] **Exibição**: "Em dia" em verde, "N em atraso" em vermelho (singular "1 em atraso"), "—" nas linhas de inquilino e de
   apartamento vazio. `E2E`
 - [ ] **Detalhe ao clicar**: o clique em "N em atraso" abre a lista com "mês/ano" de cada mensalidade (ordem do mais antigo
