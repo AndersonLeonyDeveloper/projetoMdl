@@ -16,6 +16,7 @@
     "db:seed:moradores": "npm run db:seed:moradores -w server",
     "db:seed:financeiro": "npm run db:seed:financeiro -w server",
     "db:comprovantes": "npm run db:comprovantes -w server",
+    "verificar:ajuda": "npm run verificar:ajuda -w client",
     "build": "npm run build -w client"
   },
   "devDependencies": {

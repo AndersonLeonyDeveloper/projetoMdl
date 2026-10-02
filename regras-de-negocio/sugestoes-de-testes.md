@@ -336,7 +336,10 @@
   aparece centralizado e o tour não quebra. `E2E`
 - [ ] **Telas sem conteúdo**: uma rota sem tour mostra "Esta tela ainda não tem tour" no painel e não inicia tour. `E2E`
 - [ ] **Todos os alvos existem**: percorrer o tour de todas as telas de cada perfil confirma que cada passo com alvo encontra o
-  elemento na tela (protege contra renomear `data-testid`). `E2E`
+  elemento na tela (protege contra renomear `data-testid`). A checagem estática `npm run verificar:ajuda` já cobre a
+  existência no código; o E2E cobre a presença na tela renderizada. `E2E`
+- [ ] **Verificador da ajuda**: `npm run verificar:ajuda` passa com o conteúdo atual e falha (código 1) quando um alvo ou uma
+  rota da ajuda não existe nas telas. `Build`
 - [ ] **Não bloqueia o uso**: com o tour fechado, formulários e botões funcionam normalmente; com o tour aberto, ele cobre a
   tela (esperado). `E2E`
 
