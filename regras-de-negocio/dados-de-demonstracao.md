@@ -162,7 +162,7 @@ Pontos para a conversa:
 ## 5. Limites desta simulação
 
 - O **fundo de reserva** não existe como tabela: está embutido na taxa, e seu efeito aparece no saldo de cada ano.
-- Os registros **não têm comprovante** anexado, porque não existem arquivos reais.
+- Os comprovantes são **arquivos fictícios genéricos** (12 modelos, PDF e JPEG, gerados por `npm run db:comprovantes`). Muitos lançamentos compartilham o mesmo arquivo, e o valor impresso nele não corresponde ao do lançamento. Taxas em aberto não têm comprovante.
 - O saldo mensal do sistema é calculado por **mês de referência da taxa**, e não pela data em que o dinheiro entrou. Por isso, um atraso que depois foi pago aparece como receita do mês original.
 - A tela **Visualizar → Evolução** mostra 2020 a 2026 de uma só vez: receitas × despesas, inadimplência e resumo anual. As telas Financeiro e Taxa de Inadimplência continuam mostrando um mês ou um ano por vez.
 - Os números foram escolhidos para ser **plausíveis**, não são dados de um condomínio real. Os percentuais de referência (inadimplência de 5% a 10%, folha como maior despesa, multa de 2% e juros de 1% ao mês) são práticas comuns do mercado, e não vêm de uma pesquisa específica citada aqui.

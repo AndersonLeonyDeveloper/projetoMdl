@@ -61,8 +61,8 @@ O `db:seed` (7 moradores de exemplo) apaga e recria moradores e conflita com `db
 ### [ ] 3.3 Logins para os moradores gerados — esforço P
 Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra permitiria demonstrar as telas de proprietário e inquilino com dados volumosos.
 
-### [ ] 3.4 Comprovantes de exemplo — esforço M
-As taxas, receitas e despesas geradas não têm comprovante. Arquivos fictícios permitiriam demonstrar o fluxo de visualização de comprovante.
+### [x] 3.4 Comprovantes de exemplo — esforço M
+*Implementado em 02/10/2026.* O script `db:comprovantes` gera 12 arquivos fictícios (PDF e JPEG, 2 modelos por tipo) em `app/server/data/comprovantes/`, e o `db:seed:financeiro` já o chama. Parte dos lançamentos aponta para eles (60% das taxas pagas, 80% das receitas, 90% das despesas). Os três formulários de cadastro têm o campo opcional "Comprovante" (PDF, JPEG ou PNG, até 5 MB), e os dois perfis veem o arquivo pelo link "Ver comprovante" (taxas na tela do admin, receitas e despesas nas telas de Financeiro dos dois perfis).
 
 ### [ ] 3.5 Carregamento sob demanda das telas — esforço P
 *Identificada em 01/10/2026, após adicionar o `recharts`.* O build do cliente avisa que o pacote passou de 500 kB. Carregar as telas por rota (`React.lazy`) evitaria baixar a biblioteca de gráficos fora da tela de Evolução.

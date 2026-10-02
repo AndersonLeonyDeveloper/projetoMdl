@@ -63,7 +63,8 @@ Acesse `http://localhost:5173`.
 - `npm run db:seed` — popula o banco com dados cobrindo os cenários de `regras-de-negocio/sugestoes-de-testes.md`
 - `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
 - `npm run db:seed:moradores` — 1 proprietário + 3 inquilinos em cada um dos 192 apartamentos
-- `npm run db:seed:financeiro` — histórico financeiro de jan/2020 a set/2026
+- `npm run db:seed:financeiro` — histórico financeiro de jan/2020 a set/2026 (já gera os comprovantes de exemplo)
+- `npm run db:comprovantes` — só regera os comprovantes fictícios (PDF/JPEG) em `app/server/data/comprovantes/`
 - `npm run build` — build de produção do client
 
 Detalhes e contexto dos dados de demonstração: [`regras-de-negocio/dados-de-demonstracao.md`](regras-de-negocio/dados-de-demonstracao.md)

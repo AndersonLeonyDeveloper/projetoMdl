@@ -166,6 +166,64 @@
 - [ ] **Acessibilidade dos gráficos**: legenda visível com duas séries, tooltip ao passar o mouse e tabela anual
   como alternativa textual. `E2E`
 
+### 7.4 Comprovantes (upload e visualização)
+
+> Cenários levantados em 02/10/2026, ao implementar o item 3.4 de [`melhorias-e-ideias.md`](./melhorias-e-ideias.md).
+> Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seção 6. Os marcados `API` já têm teste em
+> `test/restassured` (`ComprovantesApiTest`), mas ainda não foram executados.
+> Pré-requisito: `npm run db:seed && npm run db:seed:financeiro`.
+
+**Upload válido**
+- [ ] **Formatos aceitos**: PDF, JPEG e PNG anexados a uma despesa e a uma outra receita retornam 201, e o arquivo
+  pode ser baixado depois com o `Content-Type` correto. `API` / `E2E`
+- [ ] **Campo opcional**: lançar receita, despesa e taxa sem arquivo continua funcionando e o lançamento fica sem
+  comprovante. `API` / `E2E`
+- [ ] **Compatibilidade**: o envio em JSON (sem multipart) segue aceito. `API`
+- [ ] **Nome gerado pelo servidor**: um arquivo enviado como `../../etc/passwd.pdf` é salvo como `<uuid>.pdf`. `API`
+- [ ] **Taxa de condomínio**: anexar no lançamento e no registro de pagamento. Pagar com novo arquivo substitui o
+  anterior, e pagar sem arquivo mantém o existente. `API`
+- [ ] **`comprovante_path` no corpo é ignorado**: enviar `comprovante_path` em JSON não vincula arquivo nenhum. `API`
+
+**Validação do arquivo**
+- [ ] **Conteúdo falso**: arquivo com conteúdo de executável, declarado como `application/pdf`, retorna 400. `API`
+- [ ] **Tipo não permitido**: HTML, TXT, GIF, SVG e ZIP retornam 400 (variar tipo e extensão). `API` / `E2E`
+- [ ] **Arquivo recusado não cria lançamento**: após o 400, a listagem não contém o lançamento. `API`
+- [ ] **Limite de tamanho (valor-limite)**: 5 MB exatos passa (201); 5 MB + 1 byte retorna 413 com mensagem
+  citando o limite. `API`
+- [ ] **Arquivo vazio** (0 bytes) e **mais de um arquivo** no mesmo envio: comportamento definido e sem erro 500.
+  `API` *(ainda sem teste)*
+- [ ] **Campos obrigatórios com arquivo**: enviar o arquivo sem descrição ou valor retorna 400. `API`
+- [ ] **Conflito de taxa duplicada com arquivo**: lançar de novo a taxa do mesmo apartamento e mês retorna 409 e
+  não deixa arquivo órfão no disco. `API` / `DB/Integridade` *(ainda sem teste)*
+
+**Autorização**
+- [ ] **Visualizar exige login**: `GET /financeiro/comprovantes/:arquivo` sem token retorna 401. `API`
+- [ ] **Os dois perfis veem**: proprietário e inquilino abrem o comprovante (200). `API` / `E2E`
+- [ ] **Só o admin anexa**: proprietário e inquilino recebem 403 ao enviar comprovante em receita, despesa e taxa. `API`
+- [ ] **Isolamento**: o morador não vê a lista de taxas por apartamento na tela de Financeiro, só receitas e
+  despesas do condomínio. `E2E`
+
+**Acesso ao arquivo (segurança)**
+- [ ] **Path traversal**: `..%2Fcondominio.sqlite`, `%2E%2E%2F...`, `.env` e `condominio.sqlite` retornam 404 e nunca
+  o conteúdo. `API`
+- [ ] **Cabeçalhos**: a resposta traz `X-Content-Type-Options: nosniff` e o `Content-Type` da extensão. `API`
+- [ ] **Arquivo inexistente** retorna 404 com mensagem, não 500. `API`
+
+**Interface**
+- [ ] **Campo nos três formulários**: Taxa, Outras Receitas e Despesas têm "Comprovante (opcional)"; selecionar um
+  arquivo e salvar limpa o campo. `E2E`
+- [ ] **Validação no cliente**: arquivo de tipo inválido ou acima de 5 MB mostra o erro sem chamar a API. `E2E`
+- [ ] **Link "Ver comprovante"**: abre uma nova aba com o PDF ou a imagem; lançamento sem comprovante mostra "—".
+  `E2E`
+- [ ] **Link em todas as telas**: tabela de taxas (admin) e listas de receitas/despesas nas telas de Financeiro dos
+  dois perfis. `E2E`
+- [ ] **Sessão expirada** ao abrir o comprovante redireciona para o login e não deixa aba em branco aberta. `E2E`
+
+**Dados de demonstração**
+- [ ] **Exemplos gerados**: após `db:seed:financeiro` existem os 12 arquivos `exemplo-*` e todos abrem (200). `API`
+- [ ] **Distribuição**: taxas em aberto não têm comprovante; parte das taxas pagas, receitas e despesas têm. `API`
+- [ ] **Reset**: `db:reset` apaga a pasta de comprovantes, e os lançamentos novos voltam a funcionar. `DB/Integridade`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

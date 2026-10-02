@@ -54,17 +54,17 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.1 Receitas — Taxa de Condomínio
 - Lançada por apartamento, por mês/ano de referência.
-- Campos: valor da taxa, juros (se em atraso), data de pagamento, situação (Adimplente/Inadimplente), comprovante (upload de nota fiscal/recibo/foto).
+- Campos: valor da taxa, juros (se em atraso), data de pagamento, situação (Adimplente/Inadimplente), comprovante opcional (upload de PDF, JPEG ou PNG — ver seção 6).
 - **Situação é derivada**: se não houver `data_pagamento` registrada até o vencimento, o apartamento passa a `Inadimplente` no mês de referência.
 - **Meses em atraso**: contagem cumulativa de meses consecutivos em que o apartamento está sem pagamento — exibido no cadastro (ex.: "3 meses").
 
 ### 4.2 Receitas — Outras Receitas
 - Não vinculadas a apartamento (nível condomínio): ex. bingo, propaganda, aluguel de espaço, eventos.
-- Campos: tipo/descrição, data, valor, comprovante.
+- Campos: tipo/descrição, data, valor, comprovante opcional (ver seção 6).
 
 ### 4.3 Despesas
 - Nível condomínio (não vinculadas a apartamento).
-- Campos: tipo/descrição, data, valor, comprovante.
+- Campos: tipo/descrição, data, valor, comprovante opcional (ver seção 6).
 - Exemplos observados no protótipo: produtos de limpeza, manutenção (cerca, muro, quadra, pintura de blocos).
 
 ### 4.4 Cálculos
@@ -88,9 +88,18 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ## 6. Comprovantes (Upload de Arquivo)
 
-- Aplicável a: taxa de condomínio, outras receitas, despesas.
-- Formatos esperados: imagem (foto/câmera) ou documento (nota fiscal/recibo).
-- Ação "Clique para visualizar a nota" abre o comprovante em modal.
+> Regras implementadas em 02/10/2026 (item 3.4 de [`melhorias-e-ideias.md`](./melhorias-e-ideias.md)).
+
+- **Aplicável a:** taxa de condomínio, outras receitas e despesas. O campo é **opcional** nos três cadastros: o lançamento é válido sem comprovante.
+- **Quem anexa:** só o Admin, no momento do cadastro (e no registro de pagamento da taxa). Proprietário e inquilino não enviam arquivos.
+- **Quem visualiza:** qualquer usuário autenticado, Admin ou morador. O arquivo nunca é público: o acesso exige token.
+- **Formatos aceitos:** PDF, JPEG e PNG, com até **5 MB** por arquivo e **um arquivo por lançamento**.
+- **Validação do arquivo:** o servidor confere o tipo declarado **e** o conteúdo real do arquivo (um executável renomeado para `.pdf` é recusado). Arquivo recusado não cria o lançamento.
+- **Armazenamento:** o arquivo vai para o disco do servidor (`app/server/data/comprovantes/`) com nome gerado pelo sistema (UUID + extensão). O nome enviado pelo usuário é descartado. O banco guarda só esse nome em `comprovante_path`.
+- **Taxa de condomínio:** o comprovante pode ser anexado ao lançar a taxa e ao registrar o pagamento. Registrar o pagamento com um novo arquivo **substitui** o anterior; registrar sem arquivo **mantém** o que já existia.
+- **`comprovante_path` no corpo da requisição é ignorado**: o único caminho para anexar um comprovante é o upload.
+- **Visualização:** o link "Ver comprovante" abre o arquivo em uma nova aba. Está na tabela de taxas (Admin) e nas listas de outras receitas e despesas do mês, nas telas de Financeiro dos dois perfis. Lançamento sem comprovante mostra "—".
+- **Limitações conhecidas:** o arquivo antigo não é apagado do disco quando é substituído, e não há como remover um comprovante já anexado. O protótipo original abria o comprovante em modal; a implementação atual abre em nova aba.
 
 ## 7. Pontos de Ambiguidade a Validar (para futura clarificação)
 

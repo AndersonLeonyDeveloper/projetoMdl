@@ -5,11 +5,11 @@ Suítes de teste do sistema em [`../app`](../app), uma pasta por ferramenta. Cad
 | Pasta | Ferramenta | Tipo | Status |
 |---|---|---|---|
 | [`playwright/`](./playwright) | Playwright (TypeScript) | E2E (interface) | [ ] a criar |
-| [`restassured/`](./restassured) | RestAssured (Java/Maven) | API | [ ] a criar |
+| [`restassured/`](./restassured) | RestAssured (Java/Maven) | API | [~] comprovantes escritos, ainda não executados |
 
 ## Pré-requisitos para qualquer suíte
 1. Subir a aplicação (`cd app && npm run dev`).
-2. Popular o banco: `npm run db:reset && npm run db:seed:moradores && npm run db:seed:financeiro`.
+2. Popular o banco: `npm run db:reset && npm run db:seed:moradores && npm run db:seed:financeiro`. A suíte de comprovantes precisa dos usuários de teste, então use `npm run db:seed && npm run db:seed:financeiro`.
 3. Usuário administrador: `admin@condominio.com` (senha padrão no README da raiz).
 
 ## De onde vêm os casos de teste
