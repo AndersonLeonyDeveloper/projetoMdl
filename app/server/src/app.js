@@ -3,6 +3,7 @@ import cors from 'cors';
 import { authRouter } from './routes/auth.routes.js';
 import { cadastroRouter } from './routes/cadastro.routes.js';
 import { financeiroRouter } from './routes/financeiro.routes.js';
+import { acordosRouter } from './routes/acordos.routes.js';
 
 export function createApp() {
   const app = express();
@@ -13,6 +14,7 @@ export function createApp() {
 
   app.use('/api/auth', authRouter);
   app.use('/api', cadastroRouter);
+  app.use('/api/financeiro/acordos', acordosRouter);
   app.use('/api/financeiro', financeiroRouter);
 
   app.use((err, _req, res, _next) => {

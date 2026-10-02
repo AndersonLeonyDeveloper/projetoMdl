@@ -46,7 +46,8 @@ interface Taxa {
   valor: number;
   juros: number;
   situacao: 'adimplente' | 'inadimplente';
-  status: 'adimplente' | 'a_vencer' | 'em_atraso' | 'cancelada';
+  status: 'adimplente' | 'a_vencer' | 'em_atraso' | 'cancelada' | 'em_acordo' | 'quitada_acordo';
+  acordo_id: number | null;
   cancelado_em: string | null;
   motivo_cancelamento: string | null;
   juros_calculado: number | null; // cálculo atual para taxa paga
@@ -313,6 +314,8 @@ const VISUAL_STATUS = {
   a_vencer: { cor: 'processing', texto: 'A vencer' },
   em_atraso: { cor: 'error', texto: 'Em atraso' },
   cancelada: { cor: 'default', texto: 'Cancelada' },
+  em_acordo: { cor: 'purple', texto: 'Em acordo' },
+  quitada_acordo: { cor: 'cyan', texto: 'Quitada por acordo' },
 } as const;
 
 const soma = (taxas: Taxa[]) => taxas.reduce((s, t) => s + t.valor + t.juros, 0);
@@ -356,6 +359,8 @@ export function TaxasDoMes() {
       adimplentes: por('adimplente'),
       aVencer: por('a_vencer'),
       emAtraso: por('em_atraso'),
+      emAcordo: por('em_acordo'),
+      quitadasPorAcordo: por('quitada_acordo'),
       canceladas: todas.length - ativas.length,
     };
   }, [todas]);
@@ -426,14 +431,20 @@ export function TaxasDoMes() {
       key: 'acoes',
       render: (_: unknown, taxa: Taxa) => (
         <Space size={0}>
-          <Button type="link" size="small" disabled={!!taxa.cancelado_em} onClick={() => setEditando(taxa)} data-testid="botao-editar-taxa">
+          <Button type="link" size="small" disabled={!!taxa.cancelado_em || taxa.acordo_id !== null} onClick={() => setEditando(taxa)} data-testid="botao-editar-taxa">
             {taxa.situacao === 'inadimplente' ? 'Registrar pagamento' : 'Editar'}
           </Button>
           <CancelarRestaurar
             rota="taxas"
             id={taxa.id}
             cancelado={!!taxa.cancelado_em}
-            bloqueio={taxa.data_pagamento ? 'Taxa paga não pode ser cancelada. Remova o pagamento antes (Editar).' : null}
+            bloqueio={
+              taxa.acordo_id !== null
+                ? 'Taxa em acordo: o pagamento é feito pelas parcelas (tela Acordos).'
+                : taxa.data_pagamento
+                  ? 'Taxa paga não pode ser cancelada. Remova o pagamento antes (Editar).'
+                  : null
+            }
             rotulo="taxa"
             onAlterado={recarregarLista}
           />
@@ -482,6 +493,18 @@ export function TaxasDoMes() {
             <Statistic title="Em atraso" value={resumo.emAtraso.length} suffix={<small>{formatarMoeda(soma(resumo.emAtraso))}</small>} valueStyle={{ color: '#cf1322' }} />
           </Card>
         </Col>
+        {(resumo.emAcordo.length > 0 || resumo.quitadasPorAcordo.length > 0) && (
+          <Col xs={12} md={6} xl={5}>
+            <Card>
+              <Statistic
+                title="Em acordo"
+                value={resumo.emAcordo.length}
+                suffix={<small>{formatarMoeda(soma(resumo.emAcordo))}{resumo.quitadasPorAcordo.length > 0 ? ` · ${resumo.quitadasPorAcordo.length} quitada(s)` : ''}</small>}
+                data-testid="resumo-em-acordo"
+              />
+            </Card>
+          </Col>
+        )}
         {resumo.canceladas > 0 && (
           <Col xs={12} md={6} xl={4}>
             <Card><Statistic title="Canceladas" value={resumo.canceladas} /></Card>

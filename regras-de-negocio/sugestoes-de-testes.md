@@ -705,6 +705,53 @@
 - [ ] **Configurações**: a tabela de valor por ano tem a coluna "Fundo de reserva (%)", o saldo inicial fica no formulário de parâmetros e
   salvar uma linha só habilita quando valor ou percentual mudam. `E2E`
 
+### 7.21 Acordos e parcelamentos de dívida
+
+> Cenários levantados em 02/10/2026 (item 2.7 do backlog). Regras na seção 4.14 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`AcordosApiTest`, compilado e ainda não executado; ele cria as próprias taxas em atraso em anos
+> antigos). O descumprimento automático **não tem teste de API**, porque exigiria avançar a data do servidor ou editar o banco.
+
+- [ ] **Taxas elegíveis**: só entram taxas em atraso, não pagas, não canceladas e fora de outro acordo; a vencer, paga ou cancelada não
+  aparece. Cada uma traz o juros e os dias de atraso até hoje (`total = valor + juros`). `API`
+- [ ] **Elegíveis: validação**: apartamento inexistente 404; sem o parâmetro 400; morador 403. `API`
+- [ ] **Simulação**: devolve valor das taxas, juros, desconto, total, entrada e as parcelas; a soma das parcelas é exatamente o total
+  (a última absorve o arredondamento); vencimentos mensais a partir do primeiro; **não grava nada**. `API`
+- [ ] **Entrada e desconto**: a entrada vira a parcela 0 (vence hoje, não entra na divisão das demais); o desconto reduz o total. `API`
+- [ ] **Validações**: sem taxas 400; parcelas 0, 61, negativa ou texto 400 (1 e 60 aceitos); primeiro vencimento no passado ou inválido
+  400 (hoje aceito); desconto ≥ total 400; entrada ≥ total 400; observação com mais de 300 caracteres 400; taxa de outro apartamento,
+  inexistente, paga, a vencer ou já em acordo 409; apartamento inexistente 404. `API`
+- [ ] **Mês sem dia 31**: um primeiro vencimento no dia 31 gera parcelas no último dia dos meses mais curtos (28, 29 ou 30). `API`
+- [ ] **Criar**: 201, detalhe com taxas, parcelas (entrada + N), observação e situação "ativo"; aparece na lista e nos filtros por situação e
+  apartamento; as mesmas taxas não entram em outro acordo (409) e deixam de ser elegíveis. `API`
+- [ ] **Taxa em acordo**: status `em_acordo` e `acordo_id` em `GET /financeiro/taxas`, situação gravada ainda `inadimplente`; pagar,
+  editar e cancelar a taxa diretamente retornam 409. `API`
+- [ ] **Resumos**: ao criar o acordo, o valor da taxa sai de "inadimplente" no resumo por bloco, na inadimplência anual e na evolução
+  e entra em "em_acordo"; sai da lista de atraso de Dados dos Moradores, que passa a contar "N em acordo". `API`
+- [ ] **Parcela paga é receita do mês do pagamento**: sobe `receitas_acordos` e as receitas do resumo mensal, nos dois regimes, e
+  `recebido_acordos` do bloco; a soma dos saldos dos blocos continua igual ao saldo mensal. `API`
+- [ ] **Pagamento de parcela**: data inválida 400; parcela inexistente 404; parcela já paga 409; morador 403. `API`
+- [ ] **Quitar**: pagar a última parcela quita o acordo (`encerrado_em` preenchido, total recebido = valor total) e a taxa vira
+  `quitada_acordo`; depois disso, pagar ou cancelar o acordo retorna 409. `API`
+- [ ] **Cancelar**: motivo obrigatório (3 a 200 caracteres); as taxas voltam a `em_atraso` e a ser elegíveis; a parcela já paga continua
+  como receita; cancelar de novo ou pagar parcela de acordo cancelado retorna 409; morador 403. `API`
+- [ ] **Descumprimento automático**: com a parcela vencida há 5 dias o acordo segue ativo; com 6 dias passa a descumprido, as taxas voltam a
+  `em_atraso` e o histórico registra a ação sem usuário. `DB/Integridade` / manual (precisa mudar a data)
+- [ ] **Retomar**: pagar a parcela atrasada de um acordo descumprido o devolve a ativo (quando não resta parcela vencida além da
+  carência) e registra "retomar". `DB/Integridade` / manual
+- [ ] **Acesso**: tudo restrito ao admin (403 para morador, 401 sem token); acordo inexistente 404. `API`
+- [ ] **Histórico**: criar, pagar parcela, quitar, retomar, descumprir e cancelar aparecem na auditoria, com antes e depois. `API`
+- [ ] **Seed**: nenhum acordo; os totais do seed e as 89 taxas em atraso continuam como antes. `API` / `DB/Integridade`
+- [ ] **Tela de acordos**: lista com situação, total, recebido, parcelas pagas e próximo vencimento; filtro por situação; o botão "Novo acordo"
+  abre o diálogo. `E2E`
+- [ ] **Novo acordo**: escolher bloco e apartamento carrega as taxas elegíveis (todas marcadas); mudar a seleção, as parcelas, o vencimento, a
+  entrada ou o desconto atualiza a simulação (total e parcelas); erros do servidor aparecem na tela e desabilitam "Criar acordo". `E2E`
+- [ ] **Detalhe do acordo**: mostra valores, taxas e parcelas; "Registrar pagamento" por parcela (com data); "Cancelar acordo" pede o motivo; em
+  acordo descumprido aparece o aviso. `E2E`
+- [ ] **Taxas do mês**: taxas em acordo mostram "Em acordo" ou "Quitada por acordo", têm Editar desabilitado e Cancelar com a explicação; o
+  resumo mostra o cartão "Em acordo". `E2E`
+- [ ] **Dados dos Moradores**: etiqueta roxa "N em acordo" ao lado da situação; a taxa do acordo não aparece em "N em atraso". `E2E`
+- [ ] **Resumos**: coluna "Em acordo" no resumo por bloco (admin e morador) e na inadimplência anual, e o total "Em acordo" na inadimplência. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

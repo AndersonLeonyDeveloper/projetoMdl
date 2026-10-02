@@ -13,6 +13,7 @@ import {
   HistoryOutlined,
   CalendarOutlined,
   BankOutlined,
+  FileProtectOutlined,
 } from '@ant-design/icons';
 import './App.css';
 import { AjudaProvider } from './ajuda/AjudaContext';
@@ -26,6 +27,7 @@ import { Home } from './pages/Home';
 const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
 const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
 const HistoricoAlteracoes = lazy(() => import('./pages/admin/HistoricoAlteracoes').then((m) => ({ default: m.HistoricoAlteracoes })));
+const Acordos = lazy(() => import('./pages/admin/Acordos').then((m) => ({ default: m.Acordos })));
 const FundoDeReserva = lazy(() => import('./pages/FundoDeReserva').then((m) => ({ default: m.FundoDeReserva })));
 const TaxasDoMes = lazy(() => import('./pages/admin/TaxasDoMes').then((m) => ({ default: m.TaxasDoMes })));
 const ConfiguracoesFinanceiras = lazy(() => import('./pages/admin/ConfiguracoesFinanceiras').then((m) => ({ default: m.ConfiguracoesFinanceiras })));
@@ -39,6 +41,7 @@ const FinanceiroCondominio = lazy(() => import('./pages/morador/FinanceiroCondom
 
 const ADMIN_MENU: MenuProps['items'] = [
   { key: '/admin/taxas', label: 'Taxas do mês', icon: <CalendarOutlined /> },
+  { key: '/admin/acordos', label: 'Acordos', icon: <FileProtectOutlined /> },
   {
     key: 'cadastro',
     label: 'Cadastro',
@@ -96,6 +99,7 @@ function App() {
         <Route index element={<Navigate to="cadastro/moradores" replace />} />
         <Route path="cadastro/moradores" element={<CadastroMoradores />} />
         <Route path="taxas" element={<TaxasDoMes />} />
+        <Route path="acordos" element={<Acordos />} />
         <Route path="cadastro/taxas" element={<RedirecionarParaTaxasDoMes />} />
         <Route path="cadastro/financeiro" element={<CadastroFinanceiro />} />
         <Route path="cadastro/configuracoes" element={<ConfiguracoesFinanceiras />} />

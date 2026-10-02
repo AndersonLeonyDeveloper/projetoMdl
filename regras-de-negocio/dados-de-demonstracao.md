@@ -138,6 +138,8 @@ Eventos de obra e emergência, que criam as variações mais visíveis:
 
 As obras (instalação de CFTV, pintura dos 12 blocos, bombas do bloco 05, impermeabilização dos blocos 03 e 07 e reforma da quadra) são **pagas pelo fundo de reserva**, que começa com **R$ 50.000** de saldo inicial e recebe **10%** de cada taxa paga (de 2020 a 2026). Com isso o fundo termina set/2026 com cerca de R$ 177 mil e nunca fica negativo.
 
+O seed **não cria acordos**: os "acordos tardios" dos devedores crônicos continuam simulados como vários meses pagos na mesma data. Para demonstrar a tela Acordos, crie um pelo menu Acordos escolhendo um apartamento com taxas em atraso (por exemplo, os devedores crônicos).
+
 Todas as despesas do seed são **gerais** (divididas por igual entre os blocos), exceto estas três, que são de um bloco só: as bombas do bloco 05 e a impermeabilização dos blocos 03 e 07 (uma despesa para cada). Assim a demonstração do rateio por bloco tem o que mostrar sem mudar os totais do condomínio.
 
 ### 4.4 Outras receitas

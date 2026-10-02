@@ -10,6 +10,7 @@ import {
 } from '../utils/comprovantes.js';
 import { calcularJuros, ehDataValida, hojeISO, sqlVencida, statusDaTaxa } from '../utils/juros.js';
 import { calcularFundo } from '../utils/fundo.js';
+import { atualizarStatusDosAcordos, sqlEmAcordo } from '../utils/acordos.js';
 import {
   CAMPOS_CONFIGURACAO,
   CAMPOS_LANCAMENTO,
@@ -22,6 +23,16 @@ import {
 } from '../utils/auditoria.js';
 
 const taxaPorId = (id) => db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(id);
+
+// Acordo ativo ou quitado que cobre a taxa (ou undefined). Uma taxa em acordo é paga pelas parcelas, não diretamente.
+const acordoDaTaxa = (taxaId) =>
+  db
+    .prepare(
+      `SELECT ac.id, ac.status FROM acordo_taxas at JOIN acordos ac ON ac.id = at.acordo_id
+       WHERE at.taxa_id = ? AND ac.status IN ('ativo', 'quitado') LIMIT 1`
+    )
+    .get(taxaId);
+const MENSAGEM_EM_ACORDO = 'Esta taxa está em um acordo: o pagamento é feito pelas parcelas. Cancele o acordo para mexer nela.';
 
 // Cancelamento (exclusão lógica): o registro fica no banco, sai das listas e dos totais e pode ser restaurado.
 const MENSAGEM_CANCELADO = (rotulo) => `${rotulo} cancelada. Restaure antes de alterar.`;
@@ -69,11 +80,17 @@ function restaurarRegistro(req, res, { tabela, entidade, campos, rotulo, descrev
 
 const REGRAS_DA_TAXA = {
   tabela: 'taxas_condominio', entidade: 'taxa', campos: CAMPOS_TAXA, rotulo: 'Taxa', descrever: rotuloDaTaxa,
-  impedimento: (t) => (t.data_pagamento ? 'Taxa paga não pode ser cancelada. Remova o pagamento antes.' : null),
+  impedimento: (t) =>
+    t.data_pagamento ? 'Taxa paga não pode ser cancelada. Remova o pagamento antes.' : acordoDaTaxa(t.id) ? MENSAGEM_EM_ACORDO : null,
 };
 
 export const financeiroRouter = Router();
 financeiroRouter.use(requireAuth);
+// Acordo com parcela vencida há mais de 5 dias passa a descumprido antes de qualquer consulta ou alteração financeira.
+financeiroRouter.use((_req, _res, next) => {
+  atualizarStatusDosAcordos();
+  next();
+});
 
 // ---------- Helpers de leitura do corpo (multipart envia tudo como texto) ----------
 
@@ -136,13 +153,27 @@ financeiroRouter.get('/taxas', (req, res) => {
   const configuracao = lerConfiguracao();
   const dia = configuracao.dia_vencimento;
   const hoje = hojeISO();
+  const acordos = new Map(
+    db
+      .prepare(
+        `SELECT at.taxa_id, ac.id AS acordo_id, ac.status AS acordo_status
+         FROM acordo_taxas at JOIN acordos ac ON ac.id = at.acordo_id WHERE ac.status IN ('ativo', 'quitado')`
+      )
+      .all()
+      .map((a) => [a.taxa_id, a])
+  );
   res.json(
     taxas.map((t) => {
       // Para taxa paga, compara o juros gravado com o cálculo atual (mesma fórmula do pagamento).
       const calculado = t.data_pagamento ? calcularJuros(t, configuracao).juros : null;
       return {
         ...t,
-        status: t.cancelado_em ? 'cancelada' : statusDaTaxa(t, dia, hoje),
+        status: t.cancelado_em
+          ? 'cancelada'
+          : acordos.has(t.id)
+            ? acordos.get(t.id).acordo_status === 'quitado' ? 'quitada_acordo' : 'em_acordo'
+            : statusDaTaxa(t, dia, hoje),
+        acordo_id: acordos.get(t.id)?.acordo_id ?? null,
         juros_calculado: t.cancelado_em ? null : calculado,
         juros_diverge: !t.cancelado_em && calculado !== null && Math.abs(calculado - t.juros) >= 0.005,
       };
@@ -268,6 +299,7 @@ financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprov
   const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
   if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
   if (taxa.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO('Taxa') });
+  if (acordoDaTaxa(taxa.id)) return res.status(409).json({ error: MENSAGEM_EM_ACORDO });
 
   let juros;
   if (vazio(req.body.juros)) {
@@ -322,6 +354,7 @@ financeiroRouter.put('/taxas/:id', requireRole('admin'), uploadComprovante, (req
   const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
   if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
   if (taxa.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO('Taxa') });
+  if (acordoDaTaxa(taxa.id)) return res.status(409).json({ error: MENSAGEM_EM_ACORDO });
   const corpo = req.body ?? {};
 
   let valor = taxa.valor;
@@ -623,8 +656,16 @@ financeiroRouter.get('/resumo/mensal', (req, res) => {
     )
     .get(String(ano), String(mes).padStart(2, '0')).total;
 
-  const receitas = receitasTaxas + receitasOutras;
-  res.json({ regime, receitas, despesas, saldo: receitas - despesas });
+  // Parcelas de acordos pagas no mês entram como receita nos dois regimes (o dinheiro entrou nesse mês).
+  const receitasAcordos = db
+    .prepare(
+      `SELECT COALESCE(SUM(valor), 0) AS total FROM acordo_parcelas
+       WHERE data_pagamento IS NOT NULL AND strftime('%Y', data_pagamento) = ? AND strftime('%m', data_pagamento) = ?`
+    )
+    .get(String(ano), String(mes).padStart(2, '0')).total;
+
+  const receitas = receitasTaxas + receitasOutras + receitasAcordos;
+  res.json({ regime, receitas, receitas_acordos: receitasAcordos, despesas, saldo: receitas - despesas });
 });
 
 // Divide um valor em n partes iguais em centavos, sem perder nem criar centavos: os primeiros blocos recebem o resto.
@@ -650,8 +691,9 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
          b.id AS bloco_id,
          b.numero AS bloco_numero,
          COALESCE(SUM(CASE WHEN t.situacao = 'adimplente' THEN t.valor + t.juros ELSE 0 END), 0) AS adimplente,
-         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND ${sqlVencida('t.')} THEN t.valor + t.juros ELSE 0 END), 0) AS inadimplente,
-         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND NOT (${sqlVencida('t.')}) THEN t.valor + t.juros ELSE 0 END), 0) AS a_vencer
+         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND ${sqlVencida('t.')} AND NOT ${sqlEmAcordo('t.')} THEN t.valor + t.juros ELSE 0 END), 0) AS inadimplente,
+         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND NOT (${sqlVencida('t.')}) AND NOT ${sqlEmAcordo('t.')} THEN t.valor + t.juros ELSE 0 END), 0) AS a_vencer,
+         COALESCE(SUM(CASE WHEN t.situacao = 'inadimplente' AND ${sqlEmAcordo('t.')} THEN t.valor + t.juros ELSE 0 END), 0) AS em_acordo
        FROM blocos b
        LEFT JOIN apartamentos a ON a.bloco_id = b.id
        LEFT JOIN taxas_condominio t
@@ -681,17 +723,31 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
       .all(periodo)
       .map((l) => [l.bloco_id, l.total])
   );
+  // Parcelas de acordos pagas no mês, por bloco do apartamento do acordo.
+  const recebidoDeAcordos = new Map(
+    db
+      .prepare(
+        `SELECT a.bloco_id, SUM(p.valor) AS total
+         FROM acordo_parcelas p JOIN acordos ac ON ac.id = p.acordo_id JOIN apartamentos a ON a.id = ac.apartamento_id
+         WHERE p.data_pagamento IS NOT NULL AND strftime('%Y', p.data_pagamento) = @ano AND strftime('%m', p.data_pagamento) = @mes
+         GROUP BY a.bloco_id`
+      )
+      .all(periodo)
+      .map((l) => [l.bloco_id, l.total])
+  );
   const partesDasDespesas = ratear(despesasGerais, linhas.length);
   const partesDasReceitas = ratear(outrasReceitas, linhas.length);
 
   res.json(
     linhas.map(({ bloco_id, ...linha }, i) => {
       const despesasEspecificas = especificas.get(bloco_id) ?? 0;
-      const receitas = linha.adimplente + partesDasReceitas[i];
+      const recebidoAcordos = recebidoDeAcordos.get(bloco_id) ?? 0;
+      const receitas = linha.adimplente + partesDasReceitas[i] + recebidoAcordos;
       const despesas = despesasEspecificas + partesDasDespesas[i];
       return {
         ...linha,
         outras_receitas_rateadas: partesDasReceitas[i],
+        recebido_acordos: recebidoAcordos,
         despesas_especificas: despesasEspecificas,
         despesas_rateadas: partesDasDespesas[i],
         receitas,
@@ -712,9 +768,10 @@ financeiroRouter.get('/resumo/inadimplencia', requireRole('admin'), (req, res) =
       `SELECT
          mes_referencia,
          COALESCE(SUM(CASE WHEN situacao = 'adimplente' THEN valor + juros ELSE 0 END), 0) AS adimplente,
-         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} THEN valor + juros ELSE 0 END), 0) AS inadimplente,
-         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) THEN valor + juros ELSE 0 END), 0) AS a_vencer
-       FROM taxas_condominio
+         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} AND NOT ${sqlEmAcordo('t.')} THEN valor + juros ELSE 0 END), 0) AS inadimplente,
+         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) AND NOT ${sqlEmAcordo('t.')} THEN valor + juros ELSE 0 END), 0) AS a_vencer,
+         COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlEmAcordo('t.')} THEN valor + juros ELSE 0 END), 0) AS em_acordo
+       FROM taxas_condominio t
        WHERE ano_referencia = @ano AND cancelado_em IS NULL
        GROUP BY mes_referencia
        ORDER BY mes_referencia`
@@ -747,13 +804,14 @@ function evolucaoMensal({ anoInicio, anoFim }) {
          COUNT(*) AS unidades,
          COALESCE(SUM(valor), 0) AS faturamento,
          COALESCE(SUM(CASE WHEN situacao = 'adimplente' THEN valor + juros ELSE 0 END), 0) AS receitas_taxas,
-         SUM(CASE WHEN (data_pagamento IS NULL AND ${sqlVencida()})
+         SUM(CASE WHEN (data_pagamento IS NULL AND ${sqlVencida()} AND NOT ${sqlEmAcordo('t.')})
                     OR data_pagamento > printf('%04d-%02d-%02d', ano_referencia, mes_referencia, @dia)
                   THEN 1 ELSE 0 END) AS atrasadas,
-         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} THEN 1 ELSE 0 END) AS em_aberto,
-         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} AND meses_atraso >= 3 THEN 1 ELSE 0 END) AS em_aberto_3_meses,
-         SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) THEN 1 ELSE 0 END) AS a_vencer
-       FROM taxas_condominio
+         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} AND NOT ${sqlEmAcordo('t.')} THEN 1 ELSE 0 END) AS em_aberto,
+         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} AND NOT ${sqlEmAcordo('t.')} AND meses_atraso >= 3 THEN 1 ELSE 0 END) AS em_aberto_3_meses,
+         SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) AND NOT ${sqlEmAcordo('t.')} THEN 1 ELSE 0 END) AS a_vencer,
+         SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlEmAcordo('t.')} THEN 1 ELSE 0 END) AS em_acordo
+       FROM taxas_condominio t
        WHERE ano_referencia BETWEEN @anoInicio AND @anoFim AND cancelado_em IS NULL
        GROUP BY ano_referencia, mes_referencia`
     )
@@ -772,6 +830,18 @@ function evolucaoMensal({ anoInicio, anoFim }) {
         .map((l) => [`${Number(l.ano)}-${Number(l.mes)}`, l.total])
     );
   const outrasReceitas = somaPorMes('outras_receitas');
+  // Parcelas de acordos pagas entram como receita do mês do pagamento (junto das outras receitas).
+  for (const l of db
+    .prepare(
+      `SELECT strftime('%Y', data_pagamento) AS ano, strftime('%m', data_pagamento) AS mes, SUM(valor) AS total
+       FROM acordo_parcelas
+       WHERE data_pagamento IS NOT NULL AND CAST(strftime('%Y', data_pagamento) AS INTEGER) BETWEEN ? AND ?
+       GROUP BY ano, mes`
+    )
+    .all(anoInicio, anoFim)) {
+    const chave = `${Number(l.ano)}-${Number(l.mes)}`;
+    outrasReceitas.set(chave, (outrasReceitas.get(chave) ?? 0) + l.total);
+  }
   const despesas = somaPorMes('despesas');
 
   return taxas

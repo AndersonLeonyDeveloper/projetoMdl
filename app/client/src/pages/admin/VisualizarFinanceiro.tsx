@@ -13,6 +13,7 @@ interface ResumoBloco {
   adimplente: number;
   inadimplente: number; // em atraso (vencidas)
   a_vencer: number; // em aberto, ainda no prazo
+  em_acordo: number; // em aberto, coberto por acordo
   despesas: number; // específicas do bloco + parte das gerais
   saldo: number;
 }
@@ -47,6 +48,7 @@ export function VisualizarFinanceiro() {
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Inadimplente', dataIndex: 'inadimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'A vencer', dataIndex: 'a_vencer', render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { title: 'Em acordo', dataIndex: 'em_acordo', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Despesas (rateio)', dataIndex: 'despesas', render: (v: number) => `R$ ${v.toFixed(2)}` },
     {
       title: 'Saldo',

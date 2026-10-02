@@ -45,6 +45,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Resumo do mês', descricao: 'Quantas taxas foram geradas e quantas estão adimplentes, a vencer ou em atraso, com o valor de cada grupo.', alvo: 'resumo-taxas-do-mes' },
       { titulo: 'Gerar taxas', descricao: 'Cria a taxa de todos os apartamentos que ainda não têm uma no mês. O valor vem do padrão do ano; se mudar, ele passa a ser o novo padrão. O sistema mostra quantas serão criadas e pede confirmação.', alvo: 'gerar-taxas-mes' },
       { titulo: 'Taxas do mês', descricao: 'Cada linha é um apartamento. Em "Registrar pagamento", informe a data: o sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Nas pagas, o botão é Editar. Se você chegou por um mês em atraso de Dados dos Moradores, a tabela mostra só aquele apartamento.', alvo: 'tabela-taxas' },
+      { titulo: 'Taxas em acordo', descricao: 'Uma taxa incluída em um acordo aparece como "Em acordo" (ou "Quitada por acordo") e é paga pelas parcelas, na tela Acordos. Não dá para pagar, editar nem cancelar a taxa direto enquanto o acordo vale.', alvo: 'tabela-taxas' },
       { titulo: 'Cancelar uma taxa', descricao: 'Para uma taxa gerada por engano use Cancelar, com o motivo. Ela sai dos totais, mas pode ser restaurada com "Mostrar canceladas". Taxa paga só cancela depois de remover o pagamento.', alvo: 'switch-mostrar-canceladas' },
       { titulo: 'Lançar taxa avulsa', descricao: 'Para uma taxa fora da geração em lote (por exemplo, com valor diferente), abra esta seção e informe bloco, apartamento, mês, ano e valor.', alvo: 'lancar-taxa-individual' },
     ],
@@ -96,7 +97,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     passos: [
       { titulo: 'Lista de moradores', descricao: 'Use os filtros e a paginação da tabela para localizar uma pessoa.', alvo: 'tabela-visualizar-moradores' },
       { titulo: 'Apartamentos sem proprietário', descricao: 'Quando existe algum apartamento vazio ou só com inquilinos, um aviso amarelo aparece no topo, com o botão "Mostrar apenas esses". Nesses apartamentos, a coluna Mensalidades mostra "Sem proprietário" (e o atraso, se houver).', alvo: 'tabela-visualizar-moradores' },
-      { titulo: 'Mensalidades', descricao: 'Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver cada mensalidade vencida com valor, juros até hoje e total, mais o total devido. Clique em um mês para abrir a taxa em Taxas do mês. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
+      { titulo: 'Mensalidades', descricao: 'Taxas incluídas em um acordo ativo aparecem como "N em acordo" e não contam como atraso. Só o proprietário tem esta coluna: "Em dia" ou "N em atraso". Clique em "N em atraso" para ver cada mensalidade vencida com valor, juros até hoje e total, mais o total devido. Clique em um mês para abrir a taxa em Taxas do mês. Dá para filtrar por Em atraso e Em dia.', alvo: 'tabela-visualizar-moradores' },
     ],
   },
   '/admin/visualizar/inadimplencia': {
@@ -107,6 +108,15 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
     ],
   },
 
+  '/admin/acordos': {
+    resumo:
+      'Renegocia taxas em atraso de um apartamento em parcelas. Enquanto o acordo está ativo ou quitado, as taxas deixam de contar como atraso, e o dinheiro entra como receita quando cada parcela é paga.',
+    passos: [
+      { titulo: 'Novo acordo', descricao: 'Escolha o apartamento, marque as taxas em atraso que entram, informe o número de parcelas, o primeiro vencimento, a entrada e um desconto (opcional). O sistema mostra o total e as parcelas antes de criar.', alvo: 'botao-novo-acordo' },
+      { titulo: 'Lista de acordos', descricao: 'Mostra a situação (Ativo, Quitado, Descumprido ou Cancelado), o total, o que já foi recebido e o próximo vencimento. Clique em "Ver detalhes" para registrar pagamentos de parcelas ou cancelar.', alvo: 'tabela-acordos' },
+      { titulo: 'Descumprimento', descricao: 'Uma parcela vencida há mais de 5 dias sem pagamento torna o acordo descumprido, e as taxas voltam a contar como atraso. Registrar o pagamento da parcela atrasada retoma o acordo.', alvo: 'filtro-status-acordo' },
+    ],
+  },
   '/admin/visualizar/fundo': {
     resumo:
       'Mostra o saldo do fundo de reserva: o que entrou (uma parte de cada taxa paga) e o que saiu (obras e despesas marcadas como pagas pelo fundo).',
@@ -217,6 +227,18 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
         { texto: 'Em "Multa, juros e vencimento", ajuste os percentuais (multa até 2%) e o dia de vencimento, e clique em Salvar parâmetros.' },
         { texto: 'Em "Valor da taxa por ano", edite o valor do ano e clique em Salvar na linha, ou adicione um ano novo.' },
         { texto: 'Lembre: taxas e pagamentos já lançados não mudam.' },
+      ],
+    },
+    {
+      id: 'acordo-de-divida',
+      titulo: 'Fazer um acordo de dívida (parcelamento)',
+      descricao: 'Para renegociar taxas em atraso de um apartamento em parcelas.',
+      passos: [
+        { texto: 'Abra Acordos e clique em "Novo acordo".', rota: '/admin/acordos' },
+        { texto: 'Escolha o bloco e o apartamento, marque as taxas em atraso que entram no acordo e confira os valores (multa e juros até hoje).' },
+        { texto: 'Informe o número de parcelas, o primeiro vencimento e, se houver, a entrada e o desconto. O total e as parcelas aparecem antes de confirmar.' },
+        { texto: 'Clique em "Criar acordo". As taxas passam a "Em acordo" e saem do atraso.' },
+        { texto: 'Conforme o morador paga, abra o acordo em "Ver detalhes" e use "Registrar pagamento" em cada parcela. Pagando a última, o acordo fica quitado.' },
       ],
     },
     {

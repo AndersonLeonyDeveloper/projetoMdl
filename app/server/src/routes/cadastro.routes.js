@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db, withTransaction, isUniqueConstraintError, lerConfiguracao } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { calcularJuros, hojeISO, sqlVencida } from '../utils/juros.js';
+import { atualizarStatusDosAcordos, sqlEmAcordo } from '../utils/acordos.js';
 import { instantaneo, registrarAuditoria, rotuloDoApartamento } from '../utils/auditoria.js';
 
 export const cadastroRouter = Router();
@@ -264,6 +265,7 @@ cadastroRouter.put('/pessoas/me', (req, res) => {
 // a lista de atraso do apartamento, já que não há proprietário a quem atribuir a dívida. Nas demais linhas de
 // inquilino, `taxas_em_atraso` é null.
 cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
+  atualizarStatusDosAcordos();
   const linhas = db
     .prepare(
       `SELECT a.id AS apartamento_id, b.numero AS bloco, a.numero AS apartamento, m.tipo, p.nome, p.telefone, p.email
@@ -280,11 +282,11 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
   const emAtraso = new Map();
   const vencidas = db
     .prepare(
-      `SELECT id, apartamento_id, mes_referencia, ano_referencia, valor
-       FROM taxas_condominio
-       WHERE situacao = 'inadimplente' AND cancelado_em IS NULL
-         AND ${sqlVencida()}
-       ORDER BY ano_referencia, mes_referencia`
+      `SELECT t.id, t.apartamento_id, t.mes_referencia, t.ano_referencia, t.valor
+       FROM taxas_condominio t
+       WHERE t.situacao = 'inadimplente' AND t.cancelado_em IS NULL
+         AND ${sqlVencida('t.')} AND NOT ${sqlEmAcordo('t.')}
+       ORDER BY t.ano_referencia, t.mes_referencia`
     )
     .all({ dia: configuracao.dia_vencimento, hoje });
   for (const taxa of vencidas) {
@@ -301,6 +303,17 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
     });
   }
 
+  // Taxas cobertas por acordo ativo, por apartamento (não contam como atraso; a tela as mostra à parte).
+  const emAcordo = new Map(
+    db
+      .prepare(
+        `SELECT t.apartamento_id, COUNT(*) AS total
+         FROM acordo_taxas at JOIN acordos ac ON ac.id = at.acordo_id JOIN taxas_condominio t ON t.id = at.taxa_id
+         WHERE ac.status = 'ativo' GROUP BY t.apartamento_id`
+      )
+      .all()
+      .map((l) => [l.apartamento_id, l.total])
+  );
   const comProprietario = new Set(linhas.filter((l) => l.tipo === 'proprietario').map((l) => l.apartamento_id));
   res.json(
     linhas.map((linha) => {
@@ -310,6 +323,8 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
         sem_proprietario: semProprietario,
         taxas_em_atraso:
           linha.tipo === 'proprietario' || semProprietario ? (emAtraso.get(linha.apartamento_id) ?? []) : null,
+        taxas_em_acordo:
+          linha.tipo === 'proprietario' || semProprietario ? (emAcordo.get(linha.apartamento_id) ?? 0) : null,
       };
     })
   );

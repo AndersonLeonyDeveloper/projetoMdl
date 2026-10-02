@@ -2,7 +2,7 @@
 
 Suíte de testes de API em Java/Maven (JUnit 5 + RestAssured). A API roda em `http://localhost:3001/api` e usa autenticação por token Bearer (`POST /auth/login`).
 
-> **Status:** as dezesseis classes estão escritas e **compilam** (conferido com `javac` e os jars do `~/.m2`), mas **ainda não foram executadas**: o ambiente em que foram criadas não tinha Maven, acesso ao Maven Central nem permissão para abrir a porta da API. O comportamento esperado foi conferido contra a API por outro meio (requisições injetadas no app), mas rode a suíte e corrija o que precisar.
+> **Status:** as dezessete classes estão escritas e **compilam** (conferido com `javac` e os jars do `~/.m2`), mas **ainda não foram executadas**: o ambiente em que foram criadas não tinha Maven, acesso ao Maven Central nem permissão para abrir a porta da API. O comportamento esperado foi conferido contra a API por outro meio (requisições injetadas no app), mas rode a suíte e corrija o que precisar.
 
 ## Como rodar
 1. Subir a aplicação (`cd app && npm run dev`).
@@ -18,6 +18,7 @@ Requisitos: Java 17+ e Maven 3.9+.
 | `EdicaoDeLancamentosApiTest` | Editar despesas, outras receitas e taxas: validação, 404, RBAC, resumo refletindo a edição e comprovante mantido, trocado ou removido (seção 7.5) |
 | `ConfiguracoesFinanceirasApiTest` | Multa, juros, vencimento e valor da taxa por ano: leitura, RBAC, validações e valores-limite (seção 7.5) |
 | `GerarTaxasDoMesApiTest` | Geração das taxas do mês em lote: 192 taxas, idempotência, mês parcial, ano sem valor, RBAC e a prévia da geração (seção 7.5) |
+| `AcordosApiTest` | Acordos e parcelamentos: elegíveis, simulação, validações, taxa em acordo, pagamento de parcelas, quitação, cancelamento, resumos e histórico (seção 7.21) |
 | `FundoDeReservaApiTest` | Fundo de reserva: aporte por pagamento, percentual por ano, saldo inicial, despesas pagas pelo fundo, cancelamento e histórico (seção 7.20) |
 | `RateioPorBlocoApiTest` | Rateio de despesas e outras receitas entre os blocos: geral, de um bloco, resto de centavos, soma dos saldos e edição (seção 7.19) |
 | `FatorDaTaxaApiTest` | Fator da taxa por apartamento e por bloco: limites, arredondamento, geração em lote com fator, taxas já geradas e histórico (seção 7.18) |

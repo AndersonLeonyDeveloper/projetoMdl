@@ -141,6 +141,42 @@ CREATE TABLE IF NOT EXISTS auditoria (
 CREATE INDEX IF NOT EXISTS idx_auditoria_entidade ON auditoria(entidade, entidade_id);
 CREATE INDEX IF NOT EXISTS idx_auditoria_criado_em ON auditoria(criado_em);
 
+-- Acordos de dívida: renegociam taxas em atraso de um apartamento em parcelas (regras-de-negocio.md, seção 4.14).
+CREATE TABLE IF NOT EXISTS acordos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  apartamento_id INTEGER NOT NULL REFERENCES apartamentos(id),
+  status TEXT NOT NULL CHECK (status IN ('ativo', 'quitado', 'descumprido', 'cancelado')),
+  valor_taxas REAL NOT NULL,   -- soma do valor das taxas incluídas
+  juros REAL NOT NULL,         -- multa + juros calculados até a data do acordo
+  desconto REAL NOT NULL DEFAULT 0 CHECK (desconto >= 0),
+  valor_total REAL NOT NULL,   -- valor_taxas + juros - desconto
+  entrada REAL NOT NULL DEFAULT 0 CHECK (entrada >= 0),
+  observacao TEXT,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+  criado_por INTEGER,
+  encerrado_em TEXT,
+  motivo_cancelamento TEXT
+);
+
+CREATE TABLE IF NOT EXISTS acordo_taxas (
+  acordo_id INTEGER NOT NULL REFERENCES acordos(id),
+  taxa_id INTEGER NOT NULL REFERENCES taxas_condominio(id),
+  juros_calculado REAL NOT NULL, -- juros da taxa na data do acordo
+  PRIMARY KEY (acordo_id, taxa_id)
+);
+
+CREATE TABLE IF NOT EXISTS acordo_parcelas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  acordo_id INTEGER NOT NULL REFERENCES acordos(id),
+  numero INTEGER NOT NULL,     -- 0 = entrada; 1..N = parcelas
+  vencimento TEXT NOT NULL,
+  valor REAL NOT NULL,
+  data_pagamento TEXT,
+  UNIQUE (acordo_id, numero)
+);
+CREATE INDEX IF NOT EXISTS idx_acordo_taxas_taxa ON acordo_taxas(taxa_id);
+CREATE INDEX IF NOT EXISTS idx_acordo_parcelas_acordo ON acordo_parcelas(acordo_id);
+
 CREATE INDEX IF NOT EXISTS idx_apartamentos_bloco ON apartamentos(bloco_id);
 CREATE INDEX IF NOT EXISTS idx_moradores_pessoa ON moradores(pessoa_id);
 CREATE INDEX IF NOT EXISTS idx_moradores_apartamento ON moradores(apartamento_id);
