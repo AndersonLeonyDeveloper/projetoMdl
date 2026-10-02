@@ -228,6 +228,9 @@
 
 > Cenários levantados em 02/10/2026. Regras em [`regras-de-negocio.md`](./regras-de-negocio.md), seções 4.1.1 e 4.6 a 4.8
 > (itens 2.8 a 2.11 do backlog). Pré-requisito: `npm run db:seed && npm run db:seed:financeiro`.
+> Os cenários `API` têm teste em `test/restassured` (`EdicaoDeLancamentosApiTest`, `ConfiguracoesFinanceirasApiTest`,
+> `GerarTaxasDoMesApiTest` e `JurosNoPagamentoApiTest`), compilados mas ainda não executados. Os `E2E` ainda não têm teste,
+> e as telas novas ainda não foram abertas em navegador.
 
 **Edição de despesas e outras receitas**
 - [ ] **Corrigir valor, descrição e data**: `PUT` altera o lançamento, a listagem mostra o novo valor e o resumo mensal
@@ -287,8 +290,8 @@
 - [ ] **Fórmula**: taxa de R$ 325,00 paga com 10 dias de atraso resulta em juros de R$ 7,58 e total de R$ 332,58. `API`
 - [ ] **Arredondamento**: casos que caem em meio centavo (ex.: R$ 8,125) arredondam como na regra definida e o valor
   salvo é igual ao exibido. `API`
-- [ ] **Pagamento em outro mês**: o vencimento é o do **mês de referência** da taxa (pagar em março a taxa de janeiro
-  resulta em 49 dias de atraso, não em atraso do mês corrente). `API`
+- [ ] **Pagamento em outro mês**: o vencimento é o do **mês de referência** da taxa (pagar a taxa de janeiro/2027 em
+  01/03/2027 resulta em 50 dias de atraso, não em atraso do mês corrente). `API`
 - [ ] **Vencimento configurável**: mudar o dia de vencimento altera o cálculo dos pagamentos seguintes, mas não o dos
   já registrados. `API`
 - [ ] **Ajuste manual**: informar o juros no pagamento (incluindo 0 em um acordo) prevalece sobre o cálculo. `API`

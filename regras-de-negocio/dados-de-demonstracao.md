@@ -64,6 +64,8 @@ Arquivo: `app/server/src/db/seed-financeiro.js`.
 
 O objetivo é que o histórico seja **crível para quem conhece condomínio**. Por isso ele não é uma sequência de valores aleatórios. Ele simula as situações que um síndico enfrenta ao longo de anos. Os parâmetros ficam no topo do arquivo e podem ser ajustados.
 
+O script também **regrava o valor da taxa por ano** (tabela `taxa_padrao`, de 2020 a 2026), que aparece em Cadastro → Configurações financeiras e pré-preenche o lançamento de taxa. Multa (2%), juros (1% ao mês) e vencimento (dia 10) ficam no padrão da tabela `configuracao_financeira`, que o seed não altera.
+
 O script apaga as taxas, receitas e despesas existentes e gera **81 meses (jan/2020 a set/2026)** para as 192 unidades: cerca de **15,5 mil taxas**, **650 receitas** e **785 despesas**.
 
 ### 4.1 Taxa de condomínio

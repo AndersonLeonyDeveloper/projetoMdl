@@ -50,17 +50,17 @@ O sistema permite apartamento sem proprietário. Um relatório ou aviso de "unid
 ### [ ] 2.7 Acordos e parcelamentos de dívida — esforço G
 Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro de acordo, parcelas ou cobrança judicial.
 
-### [ ] 2.8 Edição de lançamentos (despesas, receitas e taxas) — esforço M
-*Identificada em 02/10/2026, ao notar que um valor digitado errado não podia ser corrigido.* Hoje só existe criação: a API tem `POST` para despesas e outras receitas, e a taxa só tem o registro de pagamento (`PUT /taxas/:id/pagamento`, sem tela). A edição inclui trocar ou remover o comprovante (apagando o arquivo antigo do disco) e uma tela para registrar o pagamento da taxa. Regras em `regras-de-negocio.md`, seção 4.8.
+### [x] 2.8 Edição de lançamentos (despesas, receitas e taxas) — esforço M
+*Identificada em 02/10/2026, ao notar que um valor digitado errado não podia ser corrigido.* Hoje só existe criação: a API tem `POST` para despesas e outras receitas, e a taxa só tem o registro de pagamento (`PUT /taxas/:id/pagamento`, sem tela). A edição inclui trocar ou remover o comprovante (apagando o arquivo antigo do disco) e uma tela para registrar o pagamento da taxa. Regras em `regras-de-negocio.md`, seção 4.8. *Implementado em 02/10/2026:* `PUT /financeiro/despesas/:id`, `/outras-receitas/:id` e `/taxas/:id`, modal "Editar" nas listas (despesas e receitas nas telas dos dois perfis, só o admin vê o botão) e "Registrar pagamento / Editar" na tabela de taxas.
 
-### [ ] 2.9 Configurações financeiras (valor da taxa por ano, multa, juros e vencimento) — esforço M
-*Identificada em 02/10/2026.* Tela do admin para definir o valor da taxa por ano, a multa (padrão 2%), o juros ao mês (padrão 1%) e o dia de vencimento (padrão 10). O valor da taxa pré-preenche o lançamento. Regras na seção 4.6. Prepara o item 2.4 (taxa por fração ideal).
+### [x] 2.9 Configurações financeiras (valor da taxa por ano, multa, juros e vencimento) — esforço M
+*Identificada em 02/10/2026.* Tela do admin para definir o valor da taxa por ano, a multa (padrão 2%), o juros ao mês (padrão 1%) e o dia de vencimento (padrão 10). O valor da taxa pré-preenche o lançamento. Regras na seção 4.6. Prepara o item 2.4 (taxa por fração ideal). *Implementado em 02/10/2026:* tela Cadastro → Configurações financeiras (`GET`/`PUT /financeiro/configuracoes`), com os valores de 2020 a 2026 vindos do seed.
 
-### [ ] 2.10 Gerar taxas do mês em lote — esforço M
-*Identificada em 02/10/2026.* Hoje o admin lança uma taxa por apartamento (192 por mês). Um botão "Gerar taxas do mês" cria todas com o valor configurado, ignorando as que já existem. Depende do item 2.9. Regras na seção 4.7.
+### [x] 2.10 Gerar taxas do mês em lote — esforço M
+*Identificada em 02/10/2026.* Hoje o admin lança uma taxa por apartamento (192 por mês). Um botão "Gerar taxas do mês" cria todas com o valor configurado, ignorando as que já existem. Depende do item 2.9. Regras na seção 4.7. *Implementado em 02/10/2026:* `POST /financeiro/taxas/gerar-mes` e o bloco "Gerar taxas do mês" na aba Taxa de Condomínio.
 
-### [ ] 2.11 Juros e multa calculados no pagamento — esforço M
-*Identificada em 02/10/2026.* Hoje o registro de pagamento não calcula nem grava juros (só o seed preenche). O servidor passa a calcular multa mais juros simples pro rata a partir da data de pagamento, com prévia na tela e ajuste manual. Depende do item 2.9. Fecha a ambiguidade de juros da seção 7 de `regras-de-negocio.md`. Fórmula na seção 4.1.1.
+### [x] 2.11 Juros e multa calculados no pagamento — esforço M
+*Identificada em 02/10/2026.* Hoje o registro de pagamento não calcula nem grava juros (só o seed preenche). O servidor passa a calcular multa mais juros simples pro rata a partir da data de pagamento, com prévia na tela e ajuste manual. Depende do item 2.9. Fecha a ambiguidade de juros da seção 7 de `regras-de-negocio.md`. Fórmula na seção 4.1.1. *Implementado em 02/10/2026:* `calcularJuros` em `app/server/src/utils/juros.js`, usado no registro de pagamento e na edição, e prévia em `GET /financeiro/taxas/:id/calculo-juros`.
 
 ### [ ] 2.12 Excluir lançamentos — esforço M
 *Identificada em 02/10/2026, deixada de fora do item 2.8 de propósito.* Excluir altera saldos e histórico. Precisa de decisão sobre confirmação, exclusão lógica (marcar como cancelado) ou física, e o que fazer com o comprovante.

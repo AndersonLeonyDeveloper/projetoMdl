@@ -110,11 +110,12 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ### 4.8 Edição de Lançamentos (Admin)
 - O admin pode editar **despesas**, **outras receitas** e **taxas de condomínio** já cadastradas, para corrigir erros de digitação.
-- **Despesas e outras receitas:** descrição, valor e data. Mesmas validações do cadastro (campos obrigatórios).
+- **Despesas e outras receitas:** descrição, valor e data. As mesmas validações valem no cadastro e na edição: descrição não vazia, valor numérico **maior ou igual a zero** e data válida (AAAA-MM-DD); caso contrário, 400 e nada é alterado.
 - **Taxas:** valor, juros, data de pagamento e comprovante. **Apartamento e mês/ano de referência não podem ser alterados** (identificam a taxa; para corrigir, é preciso outro lançamento).
-  - Informar a data de pagamento torna a taxa `Adimplente` (e zera os meses em atraso); remover a data a torna `Inadimplente` de novo.
-  - Se o juros não for informado ao editar com data de pagamento, o sistema calcula (4.1.1). Se for informado, prevalece.
-  - Corrigir o valor de uma taxa **não recalcula o juros automaticamente**: o admin vê o cálculo atualizado na tela e decide.
+  - Informar a data de pagamento torna a taxa `Adimplente` (e zera os meses em atraso). Remover a data a torna `Inadimplente` de novo, **zera o juros** (taxa em aberto não tem juros) e mantém os meses em atraso como estavam (regra de contagem ainda em aberto, seção 7).
+  - **Juros ao editar:** o valor informado prevalece. Se não for informado e a data de pagamento estiver sendo definida ou alterada, o sistema calcula (4.1.1). Se a data não mudou, mantém o juros já gravado. A tela preenche o campo com o valor calculado ao escolher uma nova data, e o admin pode ajustá-lo.
+  - Corrigir o valor de uma taxa **não recalcula o juros automaticamente**: a tela mostra o cálculo atualizado, avisa quando o juros informado difere dele e oferece "Usar valor calculado"; o admin decide (ver item 2.14 do backlog).
+  - A data de pagamento deve ser uma data válida (AAAA-MM-DD). **Datas futuras são aceitas.**
 - **Comprovante na edição:** sem arquivo novo, mantém o atual; com arquivo novo, substitui o anterior (o arquivo antigo é apagado do disco); há uma opção para remover o comprovante.
 - Os resumos (mensal, por bloco, inadimplência e evolução) refletem o valor editado imediatamente, pois são calculados na consulta.
 - **Fora do escopo desta versão:** excluir lançamentos e histórico/auditoria de quem alterou o quê (ver `melhorias-e-ideias.md`, itens 2.12 e 2.13). Hoje a edição **sobrescreve** o valor anterior sem deixar rastro.
@@ -148,3 +149,4 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - ~~Regra exata de cálculo de juros por atraso~~ — definida em 4.1.1: multa única de 2% mais juros simples de 1% ao mês, proporcional aos dias. Segue em aberto se a convenção de cada condomínio pode prever outra regra (juros compostos, multa por mês) e como tratar acordos parcelados (item 2.7 do backlog).
 - ~~Se um apartamento pode ter mais de um inquilino~~ — definido: sim, vários inquilinos ativos. Segue em aberto se pode haver mais de um proprietário (hoje: no máximo 1 ativo).
 - Regra de expiração/validade da "nova senha" enviada por e-mail.
+- Contagem de `meses_atraso` ao remover um pagamento ou ao pagar uma taxa antiga com outras em aberto: hoje o registro de pagamento zera o contador da própria taxa, e a remoção do pagamento mantém o valor anterior.

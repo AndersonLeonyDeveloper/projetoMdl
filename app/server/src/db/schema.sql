@@ -91,6 +91,21 @@ CREATE TABLE IF NOT EXISTS despesas (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Parâmetros financeiros (uma única linha, id = 1): multa, juros e vencimento.
+CREATE TABLE IF NOT EXISTS configuracao_financeira (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  multa_percentual REAL NOT NULL DEFAULT 2 CHECK (multa_percentual >= 0 AND multa_percentual <= 2),
+  juros_mensal_percentual REAL NOT NULL DEFAULT 1 CHECK (juros_mensal_percentual >= 0),
+  dia_vencimento INTEGER NOT NULL DEFAULT 10 CHECK (dia_vencimento BETWEEN 1 AND 28)
+);
+INSERT OR IGNORE INTO configuracao_financeira (id) VALUES (1);
+
+-- Valor da taxa de condomínio por ano (pré-preenche o lançamento e alimenta a geração em lote).
+CREATE TABLE IF NOT EXISTS taxa_padrao (
+  ano INTEGER PRIMARY KEY,
+  valor REAL NOT NULL CHECK (valor >= 0)
+);
+
 CREATE INDEX IF NOT EXISTS idx_apartamentos_bloco ON apartamentos(bloco_id);
 CREATE INDEX IF NOT EXISTS idx_moradores_pessoa ON moradores(pessoa_id);
 CREATE INDEX IF NOT EXISTS idx_moradores_apartamento ON moradores(apartamento_id);

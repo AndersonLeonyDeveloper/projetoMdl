@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
+import { Button, Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../../api/client';
 import { ComprovanteLink } from '../../components/ComprovanteLink';
 import { LancamentosDoMes } from '../../components/LancamentosDoMes';
+import { EditarTaxaModal } from '../../components/EditarTaxaModal';
 
 const { Title } = Typography;
 
@@ -42,6 +43,8 @@ export function VisualizarFinanceiro() {
   const [resumoMensal, setResumoMensal] = useState<ResumoMensal | null>(null);
   const [resumoBlocos, setResumoBlocos] = useState<ResumoBloco[]>([]);
   const [taxas, setTaxas] = useState<Taxa[]>([]);
+  const [editando, setEditando] = useState<Taxa | null>(null);
+  const [recarregar, setRecarregar] = useState(0);
 
   useEffect(() => {
     api.get<ResumoMensal>('/financeiro/resumo/mensal', { params: { ano, mes } }).then((res) =>
@@ -51,7 +54,7 @@ export function VisualizarFinanceiro() {
       setResumoBlocos(res.data)
     );
     api.get<Taxa[]>('/financeiro/taxas', { params: { ano, mes } }).then((res) => setTaxas(res.data));
-  }, [ano, mes]);
+  }, [ano, mes, recarregar]);
 
   const colunasBlocos: ColumnsType<ResumoBloco> = [
     { title: 'Bloco', dataIndex: 'bloco_numero' },
@@ -94,6 +97,15 @@ export function VisualizarFinanceiro() {
       title: 'Comprovante',
       dataIndex: 'comprovante_path',
       render: (arquivo: string | null) => <ComprovanteLink arquivo={arquivo} />,
+    },
+    {
+      title: 'Ações',
+      key: 'acoes',
+      render: (_: unknown, taxa: Taxa) => (
+        <Button type="link" size="small" onClick={() => setEditando(taxa)} data-testid="botao-editar-taxa">
+          {taxa.situacao === 'inadimplente' ? 'Registrar pagamento' : 'Editar'}
+        </Button>
+      ),
     },
   ];
 
@@ -160,6 +172,12 @@ export function VisualizarFinanceiro() {
           pagination={{ pageSize: 5, showSizeChanger: true, pageSizeOptions: [5, 10, 20] }}
         />
       </Card>
+
+      <EditarTaxaModal
+        taxa={editando}
+        onFechar={() => setEditando(null)}
+        onSalvo={() => setRecarregar((n) => n + 1)}
+      />
 
       <LancamentosDoMes ano={ano} mes={mes} />
     </Space>

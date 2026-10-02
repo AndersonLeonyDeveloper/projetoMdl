@@ -35,4 +35,25 @@ public abstract class ApiBase {
     protected static RequestSpecification semLogin() {
         return given().baseUri(API_URL);
     }
+
+    // ---------- Configurações financeiras (estado global: sempre restaurar ao final) ----------
+
+    protected static Map<String, Object> lerConfiguracao(String token) {
+        return como(token).when().get("/financeiro/configuracoes")
+            .then().statusCode(200).extract().jsonPath().getMap("$");
+    }
+
+    protected static void salvarConfiguracao(String token, double multa, double jurosMensal, int diaVencimento) {
+        como(token).contentType(ContentType.JSON)
+            .body(Map.of("multa_percentual", multa, "juros_mensal_percentual", jurosMensal, "dia_vencimento", diaVencimento))
+            .when().put("/financeiro/configuracoes")
+            .then().statusCode(200);
+    }
+
+    protected static void definirTaxaDoAno(String token, int ano, double valor) {
+        como(token).contentType(ContentType.JSON)
+            .body(Map.of("taxas_padrao", java.util.List.of(Map.of("ano", ano, "valor", valor))))
+            .when().put("/financeiro/configuracoes")
+            .then().statusCode(200);
+    }
 }

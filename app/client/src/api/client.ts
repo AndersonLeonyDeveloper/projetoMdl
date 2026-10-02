@@ -25,3 +25,10 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export function mensagemDeErro(err: unknown, padrao: string) {
+  return (err as { response?: { data?: { error?: string } } }).response?.data?.error ?? padrao;
+}
+
+export const formatarMoeda = (v: number) =>
+  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

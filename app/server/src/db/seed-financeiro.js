@@ -307,6 +307,12 @@ const comprovanteDe = (tipo, indice, percentual) =>
     : null;
 
 withTransaction(() => {
+  db.exec('DELETE FROM taxa_padrao');
+  // Valor da taxa por ano (Configurações financeiras). Multa 2%, juros 1% a.m. e vencimento dia 10 são o padrão da tabela.
+  for (const [ano, valor] of Object.entries(TAXA_POR_ANO)) {
+    db.prepare('INSERT INTO taxa_padrao (ano, valor) VALUES (?, ?) ON CONFLICT(ano) DO UPDATE SET valor = excluded.valor')
+      .run(Number(ano), valor);
+  }
   db.exec('DELETE FROM taxas_condominio');
   db.exec('DELETE FROM outras_receitas');
   db.exec('DELETE FROM despesas');

@@ -43,3 +43,10 @@ export function salvarComprovante(file) {
   fs.writeFileSync(path.join(COMPROVANTES_DIR, nome), file.buffer);
   return { nome };
 }
+
+// Apaga o arquivo de um comprovante substituído ou removido. Os modelos "exemplo-*" do seed são
+// compartilhados entre vários lançamentos e nunca são apagados.
+export function apagarComprovante(nome) {
+  if (!nome || nome.startsWith('exemplo-') || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(nome)) return;
+  fs.rmSync(path.join(COMPROVANTES_DIR, nome), { force: true });
+}

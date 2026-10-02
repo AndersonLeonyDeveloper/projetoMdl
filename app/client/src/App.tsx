@@ -18,6 +18,7 @@ import { EsqueciSenha } from './pages/EsqueciSenha';
 import { Home } from './pages/Home';
 import { CadastroMoradores } from './pages/admin/CadastroMoradores';
 import { CadastroFinanceiro } from './pages/admin/CadastroFinanceiro';
+import { ConfiguracoesFinanceiras } from './pages/admin/ConfiguracoesFinanceiras';
 import { VisualizarFinanceiro } from './pages/admin/VisualizarFinanceiro';
 import { VisualizarMoradores } from './pages/admin/VisualizarMoradores';
 import { VisualizarInadimplencia } from './pages/admin/VisualizarInadimplencia';
@@ -34,6 +35,7 @@ const ADMIN_MENU: MenuProps['items'] = [
     children: [
       { key: '/admin/cadastro/moradores', label: 'Moradores' },
       { key: '/admin/cadastro/financeiro', label: 'Receitas / Despesas' },
+      { key: '/admin/cadastro/configuracoes', label: 'Configurações financeiras' },
     ],
   },
   {
@@ -73,6 +75,7 @@ function App() {
         <Route index element={<Navigate to="cadastro/moradores" replace />} />
         <Route path="cadastro/moradores" element={<CadastroMoradores />} />
         <Route path="cadastro/financeiro" element={<CadastroFinanceiro />} />
+        <Route path="cadastro/configuracoes" element={<ConfiguracoesFinanceiras />} />
         <Route path="visualizar/financeiro" element={<VisualizarFinanceiro />} />
         <Route path="visualizar/evolucao" element={<VisualizarEvolucao />} />
         <Route path="visualizar/moradores" element={<VisualizarMoradores />} />

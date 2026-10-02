@@ -1,12 +1,37 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { Router } from 'express';
-import { db, isUniqueConstraintError } from '../db/index.js';
+import { db, isUniqueConstraintError, withTransaction } from '../db/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { COMPROVANTES_DIR, MIME_POR_EXTENSAO, salvarComprovante, uploadComprovante } from '../utils/comprovantes.js';
+import {
+  COMPROVANTES_DIR,
+  MIME_POR_EXTENSAO,
+  apagarComprovante,
+  salvarComprovante,
+  uploadComprovante,
+} from '../utils/comprovantes.js';
+import { calcularJuros, ehDataValida } from '../utils/juros.js';
 
 export const financeiroRouter = Router();
 financeiroRouter.use(requireAuth);
+
+// ---------- Helpers de leitura do corpo (multipart envia tudo como texto) ----------
+
+const vazio = (v) => v === undefined || v === null || v === '';
+const ehVerdadeiro = (v) => v === true || v === 'true' || v === '1' || v === 'on';
+const lerInteiro = (v) => (vazio(v) || !Number.isInteger(Number(v)) ? null : Number(v));
+const lerNumeroNaoNegativo = (v) => (vazio(v) || !Number.isFinite(Number(v)) || Number(v) < 0 ? null : Number(v));
+const lerConfiguracao = () => db.prepare('SELECT * FROM configuracao_financeira WHERE id = 1').get();
+
+// Campos de despesa e outra receita: descrição, valor (>= 0) e data válida.
+function lerLancamento(corpo = {}) {
+  const descricao = typeof corpo.descricao === 'string' ? corpo.descricao.trim() : '';
+  if (!descricao || vazio(corpo.valor) || vazio(corpo.data)) {
+    return { erro: 'descricao, valor e data são obrigatórios.' };
+  }
+  const valor = lerNumeroNaoNegativo(corpo.valor);
+  if (valor === null) return { erro: 'valor deve ser um número maior ou igual a zero.' };
+  if (!ehDataValida(corpo.data)) return { erro: 'data deve ser uma data válida (AAAA-MM-DD).' };
+  return { descricao, valor, data: corpo.data };
+}
 
 // ---------- Comprovantes ----------
 // Qualquer usuário autenticado pode ver. O nome do arquivo é validado antes de tocar no disco.
@@ -68,7 +93,7 @@ financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, r
       .run(apartamento_id, mes_referencia, ano_referencia, valor, juros, comprovante.nome);
     res.status(201).json({ id: info.lastInsertRowid });
   } catch (err) {
-    if (comprovante.nome) fs.rmSync(path.join(COMPROVANTES_DIR, comprovante.nome), { force: true });
+    apagarComprovante(comprovante.nome);
     if (isUniqueConstraintError(err)) {
       return res
         .status(409)
@@ -78,79 +103,234 @@ financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, r
   }
 });
 
+// Gera, de uma vez, a taxa do mês para todos os apartamentos que ainda não têm uma.
+// Usa o valor configurado para o ano; não altera taxas já existentes (idempotente).
+financeiroRouter.post('/taxas/gerar-mes', requireRole('admin'), (req, res) => {
+  const mes = lerInteiro(req.body?.mes_referencia);
+  const ano = lerInteiro(req.body?.ano_referencia);
+  if (!mes || mes < 1 || mes > 12 || !ano || ano < 1900 || ano > 2999) {
+    return res.status(400).json({ error: 'mes_referencia (1–12) e ano_referencia são obrigatórios.' });
+  }
+  const padrao = db.prepare('SELECT valor FROM taxa_padrao WHERE ano = ?').get(ano);
+  if (!padrao) {
+    return res.status(400).json({
+      error: `Não há valor de taxa configurado para ${ano}. Defina-o em Configurações financeiras.`,
+    });
+  }
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO taxas_condominio
+       (apartamento_id, mes_referencia, ano_referencia, valor, juros, situacao, meses_atraso)
+     SELECT id, ?, ?, ?, 0, 'inadimplente', 0 FROM apartamentos`
+  );
+  const totalApartamentos = db.prepare('SELECT COUNT(*) AS total FROM apartamentos').get().total;
+  const criadas = Number(withTransaction(() => insert.run(mes, ano, padrao.valor)).changes);
+  res.status(201).json({ criadas, ignoradas: totalApartamentos - criadas, valor: padrao.valor });
+});
+
+// Prévia do juros para uma data de pagamento (a tela mostra antes de confirmar).
+financeiroRouter.get('/taxas/:id/calculo-juros', requireRole('admin'), (req, res) => {
+  const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
+  if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+  const { data_pagamento } = req.query;
+  if (!ehDataValida(data_pagamento)) {
+    return res.status(400).json({ error: 'data_pagamento deve ser uma data válida (AAAA-MM-DD).' });
+  }
+  const valor = req.query.valor === undefined ? taxa.valor : lerNumeroNaoNegativo(req.query.valor);
+  if (valor === null) return res.status(400).json({ error: 'valor deve ser um número maior ou igual a zero.' });
+  res.json(calcularJuros({ ...taxa, valor, data_pagamento }, lerConfiguracao()));
+});
+
 // Registrar pagamento: muda situação para adimplente e zera meses em atraso.
+// Sem "juros" no corpo, o sistema calcula multa + juros pelo atraso; com "juros", o valor informado prevalece.
 financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprovante, (req, res) => {
   const { data_pagamento } = req.body ?? {};
   if (!data_pagamento) {
     return res.status(400).json({ error: 'data_pagamento é obrigatória.' });
   }
+  if (!ehDataValida(data_pagamento)) {
+    return res.status(400).json({ error: 'data_pagamento deve ser uma data válida (AAAA-MM-DD).' });
+  }
+  const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
+  if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+
+  let juros;
+  if (vazio(req.body.juros)) {
+    juros = calcularJuros({ ...taxa, data_pagamento }, lerConfiguracao()).juros;
+  } else {
+    juros = lerNumeroNaoNegativo(req.body.juros);
+    if (juros === null) return res.status(400).json({ error: 'juros deve ser um número maior ou igual a zero.' });
+  }
+
   const comprovante = salvarComprovante(req.file);
   if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
-  const info = db
-    .prepare(
-      `UPDATE taxas_condominio
-       SET data_pagamento = ?, situacao = 'adimplente', meses_atraso = 0, comprovante_path = COALESCE(?, comprovante_path)
-       WHERE id = ?`
-    )
-    .run(data_pagamento, comprovante.nome, req.params.id);
-  if (info.changes === 0) return res.status(404).json({ error: 'Taxa não encontrada.' });
-  res.json({ message: 'Pagamento registrado.' });
+  db.prepare(
+    `UPDATE taxas_condominio
+     SET data_pagamento = ?, juros = ?, situacao = 'adimplente', meses_atraso = 0,
+         comprovante_path = COALESCE(?, comprovante_path)
+     WHERE id = ?`
+  ).run(data_pagamento, juros, comprovante.nome, req.params.id);
+  if (comprovante.nome) apagarComprovante(taxa.comprovante_path);
+  res.json({ message: 'Pagamento registrado.', juros });
 });
 
-// ---------- Outras Receitas ----------
+// Editar taxa: valor, juros, data de pagamento e comprovante. Apartamento e mês/ano não mudam.
+//  - data_pagamento preenchida → adimplente; vazia → volta a inadimplente (juros zerado, sem juros em aberto);
+//    ausente → não muda.
+//  - juros informado prevalece; ausente com data de pagamento nova/alterada → calculado; ausente sem mudança → mantém.
+financeiroRouter.put('/taxas/:id', requireRole('admin'), uploadComprovante, (req, res) => {
+  const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
+  if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+  const corpo = req.body ?? {};
 
-financeiroRouter.get('/outras-receitas', (req, res) => {
-  const { ano, mes } = req.query;
-  const condicoes = [];
-  const params = {};
-  if (ano) { condicoes.push("strftime('%Y', data) = @ano"); params.ano = String(ano); }
-  if (mes) { condicoes.push("strftime('%m', data) = @mes"); params.mes = String(mes).padStart(2, '0'); }
-  const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
-  res.json(
-    db.prepare(`SELECT * FROM outras_receitas ${where} ORDER BY data DESC`).all(params)
+  let valor = taxa.valor;
+  if (!vazio(corpo.valor)) {
+    valor = lerNumeroNaoNegativo(corpo.valor);
+    if (valor === null) return res.status(400).json({ error: 'valor deve ser um número maior ou igual a zero.' });
+  }
+
+  let dataPagamento = taxa.data_pagamento;
+  if ('data_pagamento' in corpo) {
+    dataPagamento = vazio(corpo.data_pagamento) ? null : corpo.data_pagamento;
+    if (dataPagamento !== null && !ehDataValida(dataPagamento)) {
+      return res.status(400).json({ error: 'data_pagamento deve ser uma data válida (AAAA-MM-DD).' });
+    }
+  }
+
+  let juros = taxa.juros;
+  if (dataPagamento === null) {
+    juros = 0;
+  } else if (!vazio(corpo.juros)) {
+    juros = lerNumeroNaoNegativo(corpo.juros);
+    if (juros === null) return res.status(400).json({ error: 'juros deve ser um número maior ou igual a zero.' });
+  } else if (dataPagamento !== taxa.data_pagamento) {
+    juros = calcularJuros({ ...taxa, valor, data_pagamento: dataPagamento }, lerConfiguracao()).juros;
+  }
+
+  const comprovante = salvarComprovante(req.file);
+  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
+  const remover = !comprovante.nome && ehVerdadeiro(corpo.remover_comprovante);
+  const novoComprovante = comprovante.nome ?? (remover ? null : taxa.comprovante_path);
+
+  db.prepare(
+    `UPDATE taxas_condominio
+     SET valor = ?, juros = ?, data_pagamento = ?, situacao = ?, meses_atraso = ?, comprovante_path = ?
+     WHERE id = ?`
+  ).run(
+    valor,
+    juros,
+    dataPagamento,
+    dataPagamento ? 'adimplente' : 'inadimplente',
+    dataPagamento ? 0 : taxa.meses_atraso,
+    novoComprovante,
+    taxa.id
   );
+  if (novoComprovante !== taxa.comprovante_path) apagarComprovante(taxa.comprovante_path);
+  res.json({ message: 'Taxa atualizada.', juros, situacao: dataPagamento ? 'adimplente' : 'inadimplente' });
 });
 
-financeiroRouter.post('/outras-receitas', requireRole('admin'), uploadComprovante, (req, res) => {
-  const { descricao, valor, data } = req.body ?? {};
-  if (!descricao || valor == null || !data) {
-    return res.status(400).json({ error: 'descricao, valor e data são obrigatórios.' });
+// ---------- Outras Receitas e Despesas (mesmos campos e regras) ----------
+
+function lancamentosRouter(tabela, rotulo) {
+  const lerPeriodo = (query) => {
+    const condicoes = [];
+    const params = {};
+    if (query.ano) { condicoes.push("strftime('%Y', data) = @ano"); params.ano = String(query.ano); }
+    if (query.mes) { condicoes.push("strftime('%m', data) = @mes"); params.mes = String(query.mes).padStart(2, '0'); }
+    return { where: condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '', params };
+  };
+
+  financeiroRouter.get(`/${tabela.rota}`, (req, res) => {
+    const { where, params } = lerPeriodo(req.query);
+    res.json(db.prepare(`SELECT * FROM ${tabela.nome} ${where} ORDER BY data DESC`).all(params));
+  });
+
+  financeiroRouter.post(`/${tabela.rota}`, requireRole('admin'), uploadComprovante, (req, res) => {
+    const campos = lerLancamento(req.body);
+    if (campos.erro) return res.status(400).json({ error: campos.erro });
+    const comprovante = salvarComprovante(req.file);
+    if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
+    const info = db
+      .prepare(`INSERT INTO ${tabela.nome} (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)`)
+      .run(campos.descricao, campos.valor, campos.data, comprovante.nome);
+    res.status(201).json({ id: info.lastInsertRowid });
+  });
+
+  // Editar: descrição, valor, data e comprovante (manter, substituir ou remover).
+  financeiroRouter.put(`/${tabela.rota}/:id`, requireRole('admin'), uploadComprovante, (req, res) => {
+    const atual = db.prepare(`SELECT * FROM ${tabela.nome} WHERE id = ?`).get(req.params.id);
+    if (!atual) return res.status(404).json({ error: `${rotulo} não encontrada.` });
+    const campos = lerLancamento(req.body);
+    if (campos.erro) return res.status(400).json({ error: campos.erro });
+    const comprovante = salvarComprovante(req.file);
+    if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
+
+    const remover = !comprovante.nome && ehVerdadeiro(req.body?.remover_comprovante);
+    const novoComprovante = comprovante.nome ?? (remover ? null : atual.comprovante_path);
+    db.prepare(`UPDATE ${tabela.nome} SET descricao = ?, valor = ?, data = ?, comprovante_path = ? WHERE id = ?`)
+      .run(campos.descricao, campos.valor, campos.data, novoComprovante, atual.id);
+    if (novoComprovante !== atual.comprovante_path) apagarComprovante(atual.comprovante_path);
+    res.json({ message: `${rotulo} atualizada.` });
+  });
+}
+
+lancamentosRouter({ rota: 'outras-receitas', nome: 'outras_receitas' }, 'Receita');
+lancamentosRouter({ rota: 'despesas', nome: 'despesas' }, 'Despesa');
+
+// ---------- Configurações financeiras ----------
+
+financeiroRouter.get('/configuracoes', (_req, res) => {
+  res.json({
+    ...lerConfiguracao(),
+    taxas_padrao: db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all(),
+  });
+});
+
+// Altera multa, juros, vencimento e/ou o valor da taxa de um ou mais anos. Não mexe em lançamentos existentes.
+financeiroRouter.put('/configuracoes', requireRole('admin'), (req, res) => {
+  const corpo = req.body ?? {};
+  const atual = lerConfiguracao();
+  const novo = { ...atual };
+
+  const parametros = [
+    ['multa_percentual', 'multa_percentual deve estar entre 0 e 2.', (v) => v >= 0 && v <= 2],
+    ['juros_mensal_percentual', 'juros_mensal_percentual deve ser maior ou igual a zero.', (v) => v >= 0],
+    ['dia_vencimento', 'dia_vencimento deve ser um inteiro entre 1 e 28.', (v) => Number.isInteger(v) && v >= 1 && v <= 28],
+  ];
+  for (const [campo, mensagem, valido] of parametros) {
+    if (vazio(corpo[campo])) continue;
+    const numero = Number(corpo[campo]);
+    if (!Number.isFinite(numero) || !valido(numero)) return res.status(400).json({ error: mensagem });
+    novo[campo] = numero;
   }
-  const comprovante = salvarComprovante(req.file);
-  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
-  const info = db
-    .prepare(
-      'INSERT INTO outras_receitas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)'
-    )
-    .run(descricao, valor, data, comprovante.nome);
-  res.status(201).json({ id: info.lastInsertRowid });
-});
 
-// ---------- Despesas ----------
-
-financeiroRouter.get('/despesas', (req, res) => {
-  const { ano, mes } = req.query;
-  const condicoes = [];
-  const params = {};
-  if (ano) { condicoes.push("strftime('%Y', data) = @ano"); params.ano = String(ano); }
-  if (mes) { condicoes.push("strftime('%m', data) = @mes"); params.mes = String(mes).padStart(2, '0'); }
-  const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
-  res.json(db.prepare(`SELECT * FROM despesas ${where} ORDER BY data DESC`).all(params));
-});
-
-financeiroRouter.post('/despesas', requireRole('admin'), uploadComprovante, (req, res) => {
-  const { descricao, valor, data } = req.body ?? {};
-  if (!descricao || valor == null || !data) {
-    return res.status(400).json({ error: 'descricao, valor e data são obrigatórios.' });
+  const taxasPadrao = [];
+  if (corpo.taxas_padrao !== undefined) {
+    if (!Array.isArray(corpo.taxas_padrao)) {
+      return res.status(400).json({ error: 'taxas_padrao deve ser uma lista de { ano, valor }.' });
+    }
+    for (const item of corpo.taxas_padrao) {
+      const ano = lerInteiro(item?.ano);
+      const valor = vazio(item?.valor) ? null : lerNumeroNaoNegativo(item.valor);
+      if (!ano || ano < 1900 || ano > 2999 || valor === null) {
+        return res.status(400).json({ error: 'Cada item de taxas_padrao precisa de ano válido e valor maior ou igual a zero.' });
+      }
+      taxasPadrao.push({ ano, valor });
+    }
   }
-  const comprovante = salvarComprovante(req.file);
-  if (comprovante.erro) return res.status(400).json({ error: comprovante.erro });
-  const info = db
-    .prepare(
-      'INSERT INTO despesas (descricao, valor, data, comprovante_path) VALUES (?, ?, ?, ?)'
-    )
-    .run(descricao, valor, data, comprovante.nome);
-  res.status(201).json({ id: info.lastInsertRowid });
+
+  withTransaction(() => {
+    db.prepare(
+      'UPDATE configuracao_financeira SET multa_percentual = ?, juros_mensal_percentual = ?, dia_vencimento = ? WHERE id = 1'
+    ).run(novo.multa_percentual, novo.juros_mensal_percentual, novo.dia_vencimento);
+    const upsert = db.prepare(
+      'INSERT INTO taxa_padrao (ano, valor) VALUES (?, ?) ON CONFLICT(ano) DO UPDATE SET valor = excluded.valor'
+    );
+    for (const { ano, valor } of taxasPadrao) upsert.run(ano, valor);
+  });
+  res.json({
+    ...lerConfiguracao(),
+    taxas_padrao: db.prepare('SELECT ano, valor FROM taxa_padrao ORDER BY ano').all(),
+  });
 });
 
 // ---------- Resumos ----------

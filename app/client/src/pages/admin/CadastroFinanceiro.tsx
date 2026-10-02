@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { UploadFile } from 'antd';
-import { Card, Form, Input, Select, InputNumber, DatePicker, Button, Alert, Tabs, Space } from 'antd';
+import { Card, Form, Input, Select, InputNumber, DatePicker, Button, Alert, Tabs, Space, Divider, Typography } from 'antd';
 import dayjs from 'dayjs';
-import { api } from '../../api/client';
-import { CampoComprovante, montarFormData, validarComprovante } from '../../components/CampoComprovante';
+import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
+import { CampoComprovante } from '../../components/CampoComprovante';
+import { montarFormData, validarComprovante } from '../../utils/comprovante';
 
 interface Bloco {
   id: number;
@@ -19,7 +20,84 @@ const MESES = [
   'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
 ];
 
-function LancarTaxa() {
+interface TaxaPadrao {
+  ano: number;
+  valor: number;
+}
+
+// Valores de taxa por ano, configurados em "Configurações financeiras".
+function useTaxasPadrao() {
+  const [taxasPadrao, setTaxasPadrao] = useState<TaxaPadrao[]>([]);
+  useEffect(() => {
+    api
+      .get<{ taxas_padrao: TaxaPadrao[] }>('/financeiro/configuracoes')
+      .then((res) => setTaxasPadrao(res.data.taxas_padrao));
+  }, []);
+  return taxasPadrao;
+}
+
+// Gera de uma vez a taxa do mês para todos os apartamentos que ainda não têm uma.
+function GerarTaxasDoMes({ taxasPadrao }: { taxasPadrao: TaxaPadrao[] }) {
+  const [mes, setMes] = useState(new Date().getMonth() + 1);
+  const [ano, setAno] = useState(new Date().getFullYear());
+  const [gerando, setGerando] = useState(false);
+  const [mensagem, setMensagem] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  const padrao = taxasPadrao.find((t) => t.ano === ano);
+
+  async function gerar() {
+    setMensagem(null);
+    setGerando(true);
+    try {
+      const { data } = await api.post<{ criadas: number; ignoradas: number }>('/financeiro/taxas/gerar-mes', {
+        mes_referencia: mes,
+        ano_referencia: ano,
+      });
+      setMensagem({
+        tipo: 'success',
+        texto: `${data.criadas} taxa(s) criada(s) e ${data.ignoradas} ignorada(s) (já existiam).`,
+      });
+    } catch (err) {
+      setMensagem({ tipo: 'error', texto: mensagemDeErro(err, 'Erro ao gerar as taxas do mês.') });
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  return (
+    <div data-testid="gerar-taxas-mes">
+      <Typography.Title level={5}>Gerar taxas do mês</Typography.Title>
+      <Typography.Paragraph type="secondary">
+        Cria a taxa de todos os apartamentos que ainda não têm uma no mês, com o valor configurado para o ano
+        {padrao ? ` (${formatarMoeda(padrao.valor)} em ${ano})` : ' (sem valor configurado para este ano)'}.
+        Taxas já lançadas não são alteradas.
+      </Typography.Paragraph>
+      <Space wrap align="end">
+        <div>
+          <div>Mês</div>
+          <Select
+            value={mes}
+            onChange={setMes}
+            style={{ width: 100 }}
+            data-testid="select-gerar-mes"
+            options={MESES.map((m, idx) => ({ value: idx + 1, label: m }))}
+          />
+        </div>
+        <div>
+          <div>Ano</div>
+          <InputNumber value={ano} onChange={(v) => setAno(Number(v))} style={{ width: 100 }} data-testid="input-gerar-ano" />
+        </div>
+        <Button type="primary" loading={gerando} disabled={!padrao} onClick={gerar} data-testid="botao-gerar-taxas">
+          Gerar taxas
+        </Button>
+      </Space>
+      {mensagem && (
+        <Alert type={mensagem.tipo} message={mensagem.texto} showIcon style={{ marginTop: 16 }} data-testid="mensagem-gerar-taxas" />
+      )}
+    </div>
+  );
+}
+
+function LancarTaxa({ taxasPadrao }: { taxasPadrao: TaxaPadrao[] }) {
   const [form] = Form.useForm();
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   const [apartamentos, setApartamentos] = useState<Apartamento[]>([]);
@@ -27,10 +105,17 @@ function LancarTaxa() {
     null
   );
   const [salvando, setSalvando] = useState(false);
+  const anoReferencia = Form.useWatch('ano_referencia', form);
+  const valorPadrao = taxasPadrao.find((t) => t.ano === anoReferencia)?.valor;
 
   useEffect(() => {
     api.get<Bloco[]>('/blocos').then((res) => setBlocos(res.data));
   }, []);
+
+  // O valor da taxa vem preenchido com o configurado para o ano; continua editável.
+  useEffect(() => {
+    form.setFieldValue('valor', valorPadrao);
+  }, [form, valorPadrao]);
 
   async function handleBlocoChange(blocoId: number) {
     form.setFieldValue('apartamento_id', undefined);
@@ -57,11 +142,9 @@ function LancarTaxa() {
       );
       setMensagem({ tipo: 'success', texto: 'Taxa lançada com sucesso.' });
       form.resetFields(['valor', 'comprovante']);
+      form.setFieldValue('valor', valorPadrao);
     } catch (err) {
-      const texto =
-        (err as { response?: { data?: { error?: string } } }).response?.data?.error ??
-        'Erro ao lançar taxa.';
-      setMensagem({ tipo: 'error', texto });
+      setMensagem({ tipo: 'error', texto: mensagemDeErro(err, 'Erro ao lançar taxa.') });
     } finally {
       setSalvando(false);
     }
@@ -102,7 +185,16 @@ function LancarTaxa() {
         <Form.Item label="Ano" name="ano_referencia" rules={[{ required: true }]}>
           <InputNumber style={{ width: 100 }} />
         </Form.Item>
-        <Form.Item label="Valor" name="valor" rules={[{ required: true }]}>
+        <Form.Item
+          label="Valor"
+          name="valor"
+          rules={[{ required: true }]}
+          extra={
+            valorPadrao !== undefined
+              ? `Valor padrão de ${anoReferencia}: ${formatarMoeda(valorPadrao)}`
+              : 'Sem valor padrão para este ano (Configurações financeiras).'
+          }
+        >
           <InputNumber
             style={{ width: 140 }}
             min={0}
@@ -120,6 +212,17 @@ function LancarTaxa() {
         Lançar
       </Button>
     </Form>
+  );
+}
+
+function TaxaDeCondominio() {
+  const taxasPadrao = useTaxasPadrao();
+  return (
+    <>
+      <LancarTaxa taxasPadrao={taxasPadrao} />
+      <Divider />
+      <GerarTaxasDoMes taxasPadrao={taxasPadrao} />
+    </>
   );
 }
 
@@ -245,7 +348,7 @@ export function CadastroFinanceiro() {
       <Tabs
         data-testid="tabs-cadastro-financeiro"
         items={[
-          { key: 'taxa', label: 'Taxa de Condomínio', children: <LancarTaxa /> },
+          { key: 'taxa', label: 'Taxa de Condomínio', children: <TaxaDeCondominio /> },
           { key: 'outras-receitas', label: 'Outras Receitas', children: <LancarOutraReceita /> },
           { key: 'despesas', label: 'Despesas', children: <LancarDespesa /> },
         ]}
