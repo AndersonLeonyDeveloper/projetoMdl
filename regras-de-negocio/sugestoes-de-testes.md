@@ -131,10 +131,11 @@
   proprietário ativo retorna 409 ("Já existe um proprietário ativo para este apartamento."). `API`
 - [ ] **Migração do índice**: em banco criado com o índice antigo (`idx_morador_ativo_unico`), subir o
   servidor remove o índice antigo e cria `idx_proprietario_ativo_unico` sem erro. `DB/Integridade`
-- [ ] **Carga de moradores**: `db:seed:moradores` gera 768 vínculos (192 × 1 proprietário + 3 inquilinos),
-  768 nomes e 768 e-mails distintos, todo apartamento com proprietário, CPF só nos proprietários, e roda
-  duas vezes com o mesmo resultado. Mantém admin, blocos, apartamentos e financeiro. `DB/Integridade`
-- [ ] **Tela "Dados dos Moradores" com volume**: 192 apartamentos × 4 moradores (768 linhas) carregam,
+- [ ] **Carga de moradores**: `db:seed:moradores` gera 768 pessoas distintas (192 × 1 proprietário + 3 inquilinos), de
+  nomes e e-mails distintos, CPF só nos proprietários, e roda duas vezes com o mesmo resultado. Depois dos cenários de
+  borda ficam 763 vínculos ativos (Bl.08/301 vazio e Bl.07/301 sem proprietário) e 1 inativo. Mantém admin, blocos,
+  apartamentos e financeiro. `DB/Integridade`
+- [ ] **Tela "Dados dos Moradores" com volume**: 192 apartamentos × 4 moradores (cerca de 765 linhas) carregam,
   filtram e paginam sem travar. `E2E` / performance
 
 ### 7.2 Carga financeira
