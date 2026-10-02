@@ -465,6 +465,27 @@
 - [ ] **Gerar taxas do mês corrente**: depois de gerar, todas aparecem como "A vencer" e nenhuma como "Em atraso" até o dia
   seguinte ao vencimento. `E2E`
 
+### 7.11 Aviso de juros diferente do cálculo e recalcular
+
+> Cenários levantados em 02/10/2026 (item 2.14 do backlog). Regras na seção 4.1.1 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`RecalcularJurosApiTest`, compilado e ainda não executado).
+
+- [ ] **Sem divergência**: taxa paga com o cálculo normal traz `juros_diverge = false` e `juros_calculado` igual ao gravado; taxa em
+  aberto traz `juros_calculado = null` e `juros_diverge = false`. `API`
+- [ ] **Ajuste manual diverge**: juros informado à mão (ex.: R$ 1,50 em vez de R$ 7,58) marca `juros_diverge = true`. `API`
+- [ ] **Recalcular regrava**: `POST /financeiro/taxas/:id/recalcular-juros` devolve `juros_anterior`, `juros` e `total`, grava o
+  cálculo atual e a taxa deixa de divergir. `API`
+- [ ] **Corrigir o valor não recalcula**: depois de editar o valor de uma taxa paga, o juros gravado fica e a taxa passa a
+  divergir; recalcular acompanha o novo valor (ex.: 425 × (2% + 1% × 10/30) = R$ 9,92). `API`
+- [ ] **Percentuais mudam o resultado**: mudar o juros ao mês marca como divergentes as taxas pagas com atraso, e recalcular usa os
+  percentuais de hoje (ex.: 5% ao mês, 10 dias = R$ 11,92). `API`
+- [ ] **Erros**: taxa em aberto 400, inexistente 404, morador 403, sem token 401. `API`
+- [ ] **Seed**: só 2 taxas pagas divergem (1 centavo de arredondamento) e nenhuma em aberto. `API` / `DB/Integridade`
+- [ ] **Etiqueta**: a tabela de taxas mostra "Difere do cálculo" ao lado do juros divergente; clicar abre a confirmação com o valor
+  gravado e o calculado; confirmar atualiza a linha e a etiqueta some. `E2E`
+- [ ] **Botão do modal**: "Recalcular juros" preenche o campo com o cálculo, não grava até clicar em Salvar, e some quando o
+  campo já é igual ao cálculo. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

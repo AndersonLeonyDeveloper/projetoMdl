@@ -18,6 +18,8 @@ Requisitos: Java 17+ e Maven 3.9+.
 | `EdicaoDeLancamentosApiTest` | Editar despesas, outras receitas e taxas: validação, 404, RBAC, resumo refletindo a edição e comprovante mantido, trocado ou removido (seção 7.5) |
 | `ConfiguracoesFinanceirasApiTest` | Multa, juros, vencimento e valor da taxa por ano: leitura, RBAC, validações e valores-limite (seção 7.5) |
 | `GerarTaxasDoMesApiTest` | Geração das taxas do mês em lote: 192 taxas, idempotência, mês parcial, ano sem valor, RBAC e a prévia da geração (seção 7.5) |
+| `RecalcularJurosApiTest` | Aviso de juros diferente do cálculo e recálculo de juros de taxa paga (seção 7.11) |
+| `StatusDaTaxaApiTest` | Status derivado da taxa (adimplente, a vencer, em atraso) e seu efeito nos resumos (seção 7.10) |
 | `DadosMoradoresApiTest` | Coluna Mensalidades de Dados dos Moradores: RBAC, formato por tipo de linha, taxa vencida × futura, ordem, pagar tira da lista, valor-limite do dia de vencimento, valor devido com juros até hoje e filtro por apartamento (seção 7.7) |
 | `JurosNoPagamentoApiTest` | Fórmula de multa e juros, valores-limite do vencimento, arredondamento, ajuste manual e histórico preservado (seção 7.5) |
 

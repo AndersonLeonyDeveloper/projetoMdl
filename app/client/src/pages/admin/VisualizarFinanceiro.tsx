@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col, Tag } from 'antd';
+import { Alert, Button, Card, Select, InputNumber, Popconfirm, Table, Typography, Space, Statistic, Row, Col, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../../api/client';
+import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
 import { ComprovanteLink } from '../../components/ComprovanteLink';
 import { LancamentosDoMes } from '../../components/LancamentosDoMes';
 import { EditarTaxaModal } from '../../components/EditarTaxaModal';
@@ -31,6 +31,8 @@ interface Taxa {
   juros: number;
   situacao: 'adimplente' | 'inadimplente';
   status: 'adimplente' | 'a_vencer' | 'em_atraso';
+  juros_calculado: number | null; // cálculo atual para taxa paga
+  juros_diverge: boolean; // juros gravado difere do cálculo atual
   meses_atraso: number;
   data_pagamento: string | null;
   comprovante_path: string | null;
@@ -63,6 +65,16 @@ export function VisualizarFinanceiro() {
       .get<Taxa[]>('/financeiro/taxas', { params: { ano, mes, apartamento_id: apartamentoId ?? undefined } })
       .then((res) => setTaxas(res.data));
   }, [ano, mes, apartamentoId, recarregar]);
+
+  async function recalcularJuros(id: number) {
+    try {
+      await api.post(`/financeiro/taxas/${id}/recalcular-juros`);
+      message.success('Juros recalculado.');
+      setRecarregar((n) => n + 1);
+    } catch (err) {
+      message.error(mensagemDeErro(err, 'Não foi possível recalcular o juros.'));
+    }
+  }
 
   const colunasBlocos: ColumnsType<ResumoBloco> = [
     { title: 'Bloco', dataIndex: 'bloco_numero' },
@@ -109,7 +121,28 @@ export function VisualizarFinanceiro() {
       },
     },
     { title: 'Valor', dataIndex: 'valor', render: (v: number) => `R$ ${v.toFixed(2)}` },
-    { title: 'Juros', dataIndex: 'juros', render: (v: number) => `R$ ${v.toFixed(2)}` },
+    {
+      title: 'Juros',
+      dataIndex: 'juros',
+      render: (v: number, taxa: Taxa) => (
+        <Space size={4} wrap>
+          {`R$ ${v.toFixed(2)}`}
+          {taxa.juros_diverge && (
+            <Popconfirm
+              title="Regravar o juros com o cálculo atual?"
+              description={`Gravado ${formatarMoeda(v)}; cálculo atual ${formatarMoeda(taxa.juros_calculado ?? 0)}.`}
+              okText="Recalcular juros"
+              cancelText="Cancelar"
+              onConfirm={() => recalcularJuros(taxa.id)}
+            >
+              <Tag color="warning" style={{ cursor: 'pointer' }} data-testid="tag-juros-diverge">
+                Difere do cálculo
+              </Tag>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
     { title: 'Meses em atraso', dataIndex: 'meses_atraso' },
     { title: 'Data pagamento', dataIndex: 'data_pagamento', render: (v: string | null) => v ?? '—' },
     {

@@ -74,6 +74,8 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **O valor calculado fica gravado na taxa.** Alterar os percentuais depois **não recalcula** pagamentos já registrados.
 - **Ajuste manual:** o admin pode informar o juros manualmente (ex.: acordo ou negociação), e o valor informado prevalece sobre o cálculo. Antes de confirmar o pagamento, a tela mostra os dias de atraso, a multa, o juros e o total calculados.
 - Taxa em aberto não acumula juros no banco: o juros só é calculado e gravado no momento do pagamento.
+- **Aviso de juros diferente do cálculo:** para taxa paga, a API compara o juros gravado com o cálculo atual (`juros_calculado`, `juros_diverge`; diferença de meio centavo ou mais). Isso acontece quando o valor ou a data foram corrigidos, os percentuais ou o vencimento mudaram, ou o admin informou o juros à mão (acordo). Na tabela de taxas aparece a etiqueta "Difere do cálculo".
+- **Recalcular juros:** o admin pode regravar o juros de uma taxa **já paga** com o cálculo atual (valor e data de pagamento gravados, percentuais e vencimento de hoje): pela etiqueta "Difere do cálculo" (pede confirmação e grava na hora) ou pelo botão "Recalcular juros" do modal de edição (só preenche o campo; vale ao salvar). Não existe recálculo em massa, e taxa em aberto não tem o que recalcular. Corrigir o valor ou a data **nunca** recalcula o juros sozinho. No seed, só 2 de 15.464 taxas pagas divergem (1 centavo de arredondamento).
 
 ### 4.2 Receitas — Outras Receitas
 - Não vinculadas a apartamento (nível condomínio): ex. bingo, propaganda, aluguel de espaço, eventos.

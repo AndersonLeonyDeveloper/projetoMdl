@@ -70,9 +70,21 @@ financeiroRouter.get('/taxas', (req, res) => {
        ORDER BY t.ano_referencia, t.mes_referencia, b.numero, a.numero`
     )
     .all(params);
-  const dia = lerConfiguracao().dia_vencimento;
+  const configuracao = lerConfiguracao();
+  const dia = configuracao.dia_vencimento;
   const hoje = hojeISO();
-  res.json(taxas.map((t) => ({ ...t, status: statusDaTaxa(t, dia, hoje) })));
+  res.json(
+    taxas.map((t) => {
+      // Para taxa paga, compara o juros gravado com o cálculo atual (mesma fórmula do pagamento).
+      const calculado = t.data_pagamento ? calcularJuros(t, configuracao).juros : null;
+      return {
+        ...t,
+        status: statusDaTaxa(t, dia, hoje),
+        juros_calculado: calculado,
+        juros_diverge: calculado !== null && Math.abs(calculado - t.juros) >= 0.005,
+      };
+    })
+  );
 });
 
 financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, res) => {
@@ -192,6 +204,18 @@ financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprov
   ).run(data_pagamento, juros, comprovante.nome, req.params.id);
   if (comprovante.nome) apagarComprovante(taxa.comprovante_path);
   res.json({ message: 'Pagamento registrado.', juros });
+});
+
+// Regrava o juros de uma taxa já paga com o cálculo atual (percentuais e vencimento de hoje, valor e data gravados).
+financeiroRouter.post('/taxas/:id/recalcular-juros', requireRole('admin'), (req, res) => {
+  const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
+  if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+  if (!taxa.data_pagamento) {
+    return res.status(400).json({ error: 'Só é possível recalcular o juros de uma taxa já paga.' });
+  }
+  const { juros, total } = calcularJuros(taxa, lerConfiguracao());
+  db.prepare('UPDATE taxas_condominio SET juros = ? WHERE id = ?').run(juros, taxa.id);
+  res.json({ message: 'Juros recalculado.', juros_anterior: taxa.juros, juros, total });
 });
 
 // Editar taxa: valor, juros, data de pagamento e comprovante. Apartamento e mês/ano não mudam.

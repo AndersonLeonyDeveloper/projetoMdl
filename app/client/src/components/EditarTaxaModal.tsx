@@ -186,8 +186,8 @@ export function EditarTaxaModal({ taxa, onFechar, onSalvo }: {
             description={divergente ? `O juros informado (${formatarMoeda(juros ?? 0)}) difere do calculado.` : undefined}
             action={
               divergente ? (
-                <Button size="small" onClick={() => form.setFieldValue('juros', previa.juros)} data-testid="botao-usar-calculo">
-                  Usar valor calculado
+                <Button size="small" onClick={() => form.setFieldValue('juros', previa.juros)} data-testid="botao-recalcular-juros">
+                  Recalcular juros
                 </Button>
               ) : undefined
             }
