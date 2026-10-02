@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, Select, InputNumber, Popconfirm, Table, Typography, Space, Statistic, Row, Col, Tag, message } from 'antd';
+import { Alert, Button, Card, Select, InputNumber, Popconfirm, Switch, Table, Tooltip, Typography, Space, Statistic, Row, Col, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
 import { ComprovanteLink } from '../../components/ComprovanteLink';
 import { LancamentosDoMes } from '../../components/LancamentosDoMes';
+import { CancelarRestaurar } from '../../components/CancelarRestaurar';
 import { EditarTaxaModal } from '../../components/EditarTaxaModal';
 
 const { Title } = Typography;
@@ -30,7 +31,9 @@ interface Taxa {
   valor: number;
   juros: number;
   situacao: 'adimplente' | 'inadimplente';
-  status: 'adimplente' | 'a_vencer' | 'em_atraso';
+  status: 'adimplente' | 'a_vencer' | 'em_atraso' | 'cancelada';
+  cancelado_em: string | null;
+  motivo_cancelamento: string | null;
   juros_calculado: number | null; // cálculo atual para taxa paga
   juros_diverge: boolean; // juros gravado difere do cálculo atual
   meses_atraso: number;
@@ -52,6 +55,7 @@ export function VisualizarFinanceiro() {
   const [resumoBlocos, setResumoBlocos] = useState<ResumoBloco[]>([]);
   const [taxas, setTaxas] = useState<Taxa[]>([]);
   const [editando, setEditando] = useState<Taxa | null>(null);
+  const [mostrarCanceladas, setMostrarCanceladas] = useState(false);
   const [recarregar, setRecarregar] = useState(0);
 
   useEffect(() => {
@@ -62,9 +66,11 @@ export function VisualizarFinanceiro() {
       setResumoBlocos(res.data)
     );
     api
-      .get<Taxa[]>('/financeiro/taxas', { params: { ano, mes, apartamento_id: apartamentoId ?? undefined } })
+      .get<Taxa[]>('/financeiro/taxas', {
+        params: { ano, mes, apartamento_id: apartamentoId ?? undefined, incluir_cancelados: mostrarCanceladas ? 'true' : undefined },
+      })
       .then((res) => setTaxas(res.data));
-  }, [ano, mes, apartamentoId, recarregar]);
+  }, [ano, mes, apartamentoId, mostrarCanceladas, recarregar]);
 
   async function recalcularJuros(id: number) {
     try {
@@ -105,18 +111,22 @@ export function VisualizarFinanceiro() {
         { text: 'Adimplente', value: 'adimplente' },
         { text: 'A vencer', value: 'a_vencer' },
         { text: 'Em atraso', value: 'em_atraso' },
+        { text: 'Cancelada', value: 'cancelada' },
       ],
       onFilter: (value, record) => record.status === value,
-      render: (status: Taxa['status']) => {
+      render: (status: Taxa['status'], taxa: Taxa) => {
         const visual = {
           adimplente: { cor: 'success', texto: 'Adimplente' },
           a_vencer: { cor: 'processing', texto: 'A vencer' },
           em_atraso: { cor: 'error', texto: 'Em atraso' },
+          cancelada: { cor: 'default', texto: 'Cancelada' },
         }[status];
         return (
-          <Tag color={visual.cor} data-testid={`status-${status}`}>
-            {visual.texto}
-          </Tag>
+          <Tooltip title={status === 'cancelada' ? `Motivo: ${taxa.motivo_cancelamento ?? '—'}` : undefined}>
+            <Tag color={visual.cor} data-testid={`status-${status}`}>
+              {visual.texto}
+            </Tag>
+          </Tooltip>
         );
       },
     },
@@ -154,9 +164,19 @@ export function VisualizarFinanceiro() {
       title: 'Ações',
       key: 'acoes',
       render: (_: unknown, taxa: Taxa) => (
-        <Button type="link" size="small" onClick={() => setEditando(taxa)} data-testid="botao-editar-taxa">
-          {taxa.situacao === 'inadimplente' ? 'Registrar pagamento' : 'Editar'}
-        </Button>
+        <Space size={0}>
+          <Button type="link" size="small" disabled={!!taxa.cancelado_em} onClick={() => setEditando(taxa)} data-testid="botao-editar-taxa">
+            {taxa.situacao === 'inadimplente' ? 'Registrar pagamento' : 'Editar'}
+          </Button>
+          <CancelarRestaurar
+            rota="taxas"
+            id={taxa.id}
+            cancelado={!!taxa.cancelado_em}
+            bloqueio={taxa.data_pagamento ? 'Taxa paga não pode ser cancelada. Remova o pagamento antes (Editar).' : null}
+            rotulo="taxa"
+            onAlterado={() => setRecarregar((n) => n + 1)}
+          />
+        </Space>
       ),
     },
   ];
@@ -216,6 +236,10 @@ export function VisualizarFinanceiro() {
 
       <Card>
         <Title level={4}>Lançamentos de taxa de condomínio</Title>
+        <Space style={{ marginBottom: 12 }}>
+          <Switch size="small" checked={mostrarCanceladas} onChange={setMostrarCanceladas} data-testid="switch-mostrar-canceladas" />
+          Mostrar canceladas
+        </Space>
         {apartamentoId && (
           <Alert
             type="info"

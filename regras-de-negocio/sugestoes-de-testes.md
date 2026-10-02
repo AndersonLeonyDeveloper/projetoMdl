@@ -550,6 +550,33 @@
   aparece "Nenhuma alteração registrada para esse filtro". `E2E`
 - [ ] **Visualizar → Histórico** só existe no menu do admin, e `/admin/visualizar/historico` redireciona o morador. `E2E`
 
+### 7.15 Cancelar e restaurar lançamentos
+
+> Cenários levantados em 02/10/2026 (item 2.12 do backlog). Regras na seção 4.11 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`CancelamentoApiTest`, compilado e ainda não executado).
+
+- [ ] **Ciclo (despesa e outra receita)**: cancelar tira da lista padrão e do resumo mensal; com `incluir_cancelados` o admin vê o
+  registro com motivo e data; restaurar devolve à lista e ao resumo. `API`
+- [ ] **Motivo**: ausente, com 2 caracteres, só espaços ou com 201 retorna 400; com 200 caracteres passa. `API`
+- [ ] **Estados inválidos**: cancelar de novo, restaurar quem não está cancelado e editar um cancelado retornam 409. `API`
+- [ ] **Acesso**: morador 403 ao cancelar e restaurar, sem token 401, inexistente 404; o morador não vê cancelados nem com
+  `incluir_cancelados`. `API`
+- [ ] **Taxa cancelada**: some de `GET /taxas`, do resumo por bloco e de "N em atraso"; com o filtro aparece com status
+  `cancelada`. `API`
+- [ ] **Totais**: resumo mensal (competência e caixa), por bloco, inadimplência anual, evolução (admin e pública) e Dados dos
+  Moradores ignoram cancelados e voltam ao normal ao restaurar. `API`
+- [ ] **Taxa cancelada não muda**: registrar pagamento, editar e recalcular juros retornam 409. `API`
+- [ ] **Taxa paga não cancela**: retorna 409 orientando a remover o pagamento; depois de limpar a data de pagamento, cancela. `API`
+- [ ] **Taxa cancelada ocupa o mês**: lançar outra para o mesmo apartamento e mês retorna 409 citando a cancelada; gerar o mês a
+  conta como existente (0 criadas para ela) e a prévia a inclui em `existentes`. `API`
+- [ ] **Comprovante preservado**: o arquivo de um lançamento cancelado continua acessível e volta a aparecer ao restaurar. `API`
+- [ ] **Histórico**: cancelar e restaurar geram linhas na auditoria, com o motivo no depois. `API`
+- [ ] **Migração**: abrir um banco criado antes do cancelamento acrescenta as colunas sem perder dados, e abrir de novo não falha. `DB/Integridade`
+- [ ] **Interface**: "Cancelar" abre um diálogo que só habilita com 3 caracteres no motivo; depois de cancelar a linha some, e com
+  "Mostrar cancelados" ela volta riscada, com etiqueta, motivo ao passar o mouse e "Restaurar". `E2E`
+- [ ] **Botão bloqueado**: em taxa paga o botão "Cancelar" fica desabilitado e explica por quê. `E2E`
+- [ ] **Perfil morador**: não há "Mostrar cancelados" nem botões de ação nas listas. `E2E`
+
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
 - Gerar variações automáticas dos casos de "Validação de Formulários" e "Estados Vazios" via prompt

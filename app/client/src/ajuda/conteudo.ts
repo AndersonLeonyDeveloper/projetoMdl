@@ -72,7 +72,7 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Resumo do mês', descricao: 'Receitas, despesas e saldo do mês escolhido.', alvo: 'resumo-mensal' },
       { titulo: 'Taxas do mês', descricao: 'A situação mostra Adimplente, A vencer (em aberto, ainda no prazo) ou Em atraso (vencida). Em "Registrar pagamento", informe a data. O sistema calcula multa e juros se houve atraso, e você pode ajustar o valor. Se você chegou por um mês em atraso de Dados dos Moradores, a lista mostra só aquele apartamento; use "Ver todos os apartamentos" para voltar.', alvo: 'tabela-taxas' },
       { titulo: 'Corrigir uma taxa', descricao: 'Nas taxas já pagas o botão é Editar: corrija o valor, a data ou o comprovante.', alvo: 'botao-editar-taxa' },
-      { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento e o link para ver o comprovante.', alvo: 'tabela-despesas' },
+      { titulo: 'Outras receitas e despesas', descricao: 'Estas listas têm o botão Editar para corrigir um lançamento, o Cancelar (com motivo; some dos totais e pode ser restaurado com "Mostrar cancelados") e o link para ver o comprovante.', alvo: 'tabela-despesas' },
     ],
   },
   '/admin/visualizar/evolucao': {
@@ -180,6 +180,7 @@ export const GUIAS: Record<'admin' | 'morador', Guia[]> = {
         { texto: 'Taxa: clique em Editar (ou Registrar pagamento) na linha. Despesa ou receita: clique em Editar na lista, mais abaixo na página.' },
         { texto: 'Corrija os campos. Para o comprovante, você pode manter, substituir ou remover.' },
         { texto: 'Clique em Salvar. Os resumos do mês já mostram o novo valor.' },
+        { texto: 'Se o lançamento nem deveria existir (duplicado, apartamento errado), use Cancelar e informe o motivo: ele sai dos totais, mas pode ser restaurado. Taxa já paga só cancela depois de remover o pagamento.' },
       ],
     },
     {

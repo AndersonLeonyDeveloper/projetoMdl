@@ -18,7 +18,24 @@ db.exec('PRAGMA foreign_keys = ON');
 export function runMigrations() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
+  garantirColunasDeCancelamento();
   garantirEstrutura();
+}
+
+// Bancos criados antes do cancelamento de lançamentos não têm estas colunas (o schema só cria tabelas que não existem).
+// Idempotente: só acrescenta o que falta e nunca mexe nos dados.
+function garantirColunasDeCancelamento() {
+  const colunas = [
+    ['cancelado_em', 'TEXT'],
+    ['cancelado_por', 'INTEGER'],
+    ['motivo_cancelamento', 'TEXT'],
+  ];
+  for (const tabela of ['taxas_condominio', 'outras_receitas', 'despesas']) {
+    const existentes = new Set(db.prepare(`PRAGMA table_info(${tabela})`).all().map((c) => c.name));
+    for (const [nome, tipo] of colunas) {
+      if (!existentes.has(nome)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${nome} ${tipo}`);
+    }
+  }
 }
 
 // Estrutura fixa do condomínio: blocos 01..12, cada um com os mesmos 16 apartamentos.

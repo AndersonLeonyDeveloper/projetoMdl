@@ -13,6 +13,8 @@ export interface Lancamento {
   valor: number;
   data: string;
   comprovante_path: string | null;
+  cancelado_em?: string | null;
+  motivo_cancelamento?: string | null;
 }
 
 interface Valores {

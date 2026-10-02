@@ -22,6 +22,55 @@ import {
 
 const taxaPorId = (id) => db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(id);
 
+// Cancelamento (exclusão lógica): o registro fica no banco, sai das listas e dos totais e pode ser restaurado.
+const MENSAGEM_CANCELADO = (rotulo) => `${rotulo} cancelada. Restaure antes de alterar.`;
+const querCancelados = (req) => req.user?.role === 'admin' && ehVerdadeiro(req.query.incluir_cancelados);
+
+function lerMotivo(corpo) {
+  const motivo = typeof corpo?.motivo === 'string' ? corpo.motivo.trim() : '';
+  return motivo.length >= 3 && motivo.length <= 200 ? motivo : null;
+}
+
+// Cancela um registro (taxa, despesa ou outra receita). `impedimento` devolve um texto quando não pode cancelar.
+function cancelarRegistro(req, res, { tabela, entidade, campos, rotulo, descrever, impedimento = () => null }) {
+  const registro = db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(req.params.id);
+  if (!registro) return res.status(404).json({ error: `${rotulo} não encontrada.` });
+  if (registro.cancelado_em) return res.status(409).json({ error: `${rotulo} já está cancelada.` });
+  const bloqueio = impedimento(registro);
+  if (bloqueio) return res.status(409).json({ error: bloqueio });
+  const motivo = lerMotivo(req.body);
+  if (!motivo) return res.status(400).json({ error: 'Informe o motivo do cancelamento (de 3 a 200 caracteres).' });
+  db.prepare(
+    `UPDATE ${tabela} SET cancelado_em = datetime('now'), cancelado_por = ?, motivo_cancelamento = ? WHERE id = ?`
+  ).run(req.user?.sub ?? null, motivo, registro.id);
+  registrarAuditoria(req, {
+    entidade, entidadeId: registro.id, acao: 'cancelar',
+    antes: instantaneo(registro, campos),
+    depois: instantaneo(db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(registro.id), campos),
+    detalhe: descrever(registro),
+  });
+  res.json({ message: `${rotulo} cancelada.` });
+}
+
+function restaurarRegistro(req, res, { tabela, entidade, campos, rotulo, descrever }) {
+  const registro = db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(req.params.id);
+  if (!registro) return res.status(404).json({ error: `${rotulo} não encontrada.` });
+  if (!registro.cancelado_em) return res.status(409).json({ error: `${rotulo} não está cancelada.` });
+  db.prepare(`UPDATE ${tabela} SET cancelado_em = NULL, cancelado_por = NULL, motivo_cancelamento = NULL WHERE id = ?`).run(registro.id);
+  registrarAuditoria(req, {
+    entidade, entidadeId: registro.id, acao: 'restaurar',
+    antes: instantaneo(registro, campos),
+    depois: instantaneo(db.prepare(`SELECT * FROM ${tabela} WHERE id = ?`).get(registro.id), campos),
+    detalhe: descrever(registro),
+  });
+  res.json({ message: `${rotulo} restaurada.` });
+}
+
+const REGRAS_DA_TAXA = {
+  tabela: 'taxas_condominio', entidade: 'taxa', campos: CAMPOS_TAXA, rotulo: 'Taxa', descrever: rotuloDaTaxa,
+  impedimento: (t) => (t.data_pagamento ? 'Taxa paga não pode ser cancelada. Remova o pagamento antes.' : null),
+};
+
 export const financeiroRouter = Router();
 financeiroRouter.use(requireAuth);
 
@@ -66,6 +115,7 @@ financeiroRouter.get('/taxas', (req, res) => {
   const { ano, mes, bloco_id, apartamento_id } = req.query;
   const condicoes = [];
   const params = {};
+  if (!querCancelados(req)) condicoes.push('t.cancelado_em IS NULL');
   if (ano) { condicoes.push('t.ano_referencia = @ano'); params.ano = Number(ano); }
   if (mes) { condicoes.push('t.mes_referencia = @mes'); params.mes = Number(mes); }
   if (bloco_id) { condicoes.push('b.id = @bloco_id'); params.bloco_id = Number(bloco_id); }
@@ -91,9 +141,9 @@ financeiroRouter.get('/taxas', (req, res) => {
       const calculado = t.data_pagamento ? calcularJuros(t, configuracao).juros : null;
       return {
         ...t,
-        status: statusDaTaxa(t, dia, hoje),
-        juros_calculado: calculado,
-        juros_diverge: calculado !== null && Math.abs(calculado - t.juros) >= 0.005,
+        status: t.cancelado_em ? 'cancelada' : statusDaTaxa(t, dia, hoje),
+        juros_calculado: t.cancelado_em ? null : calculado,
+        juros_diverge: !t.cancelado_em && calculado !== null && Math.abs(calculado - t.juros) >= 0.005,
       };
     })
   );
@@ -125,9 +175,14 @@ financeiroRouter.post('/taxas', requireRole('admin'), uploadComprovante, (req, r
   } catch (err) {
     apagarComprovante(comprovante.nome);
     if (isUniqueConstraintError(err)) {
-      return res
-        .status(409)
-        .json({ error: 'Já existe uma taxa lançada para este apartamento neste mês/ano.' });
+      const existente = db
+        .prepare('SELECT cancelado_em FROM taxas_condominio WHERE apartamento_id = ? AND mes_referencia = ? AND ano_referencia = ?')
+        .get(apartamento_id, mes_referencia, ano_referencia);
+      return res.status(409).json({
+        error: existente?.cancelado_em
+          ? 'Existe uma taxa cancelada para este apartamento neste mês/ano. Restaure-a em vez de lançar outra.'
+          : 'Já existe uma taxa lançada para este apartamento neste mês/ano.',
+      });
     }
     throw err;
   }
@@ -209,6 +264,7 @@ financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprov
   }
   const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
   if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+  if (taxa.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO('Taxa') });
 
   let juros;
   if (vazio(req.body.juros)) {
@@ -238,6 +294,7 @@ financeiroRouter.put('/taxas/:id/pagamento', requireRole('admin'), uploadComprov
 financeiroRouter.post('/taxas/:id/recalcular-juros', requireRole('admin'), (req, res) => {
   const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
   if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+  if (taxa.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO('Taxa') });
   if (!taxa.data_pagamento) {
     return res.status(400).json({ error: 'Só é possível recalcular o juros de uma taxa já paga.' });
   }
@@ -250,6 +307,10 @@ financeiroRouter.post('/taxas/:id/recalcular-juros', requireRole('admin'), (req,
   res.json({ message: 'Juros recalculado.', juros_anterior: taxa.juros, juros, total });
 });
 
+// Cancelar e restaurar uma taxa (exclusão lógica). Taxa paga só pode ser cancelada depois de remover o pagamento.
+financeiroRouter.post('/taxas/:id/cancelar', requireRole('admin'), (req, res) => cancelarRegistro(req, res, REGRAS_DA_TAXA));
+financeiroRouter.post('/taxas/:id/restaurar', requireRole('admin'), (req, res) => restaurarRegistro(req, res, REGRAS_DA_TAXA));
+
 // Editar taxa: valor, juros, data de pagamento e comprovante. Apartamento e mês/ano não mudam.
 //  - data_pagamento preenchida → adimplente; vazia → volta a inadimplente (juros zerado, sem juros em aberto);
 //    ausente → não muda.
@@ -257,6 +318,7 @@ financeiroRouter.post('/taxas/:id/recalcular-juros', requireRole('admin'), (req,
 financeiroRouter.put('/taxas/:id', requireRole('admin'), uploadComprovante, (req, res) => {
   const taxa = db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(req.params.id);
   if (!taxa) return res.status(404).json({ error: 'Taxa não encontrada.' });
+  if (taxa.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO('Taxa') });
   const corpo = req.body ?? {};
 
   let valor = taxa.valor;
@@ -315,8 +377,8 @@ financeiroRouter.put('/taxas/:id', requireRole('admin'), uploadComprovante, (req
 // ---------- Outras Receitas e Despesas (mesmos campos e regras) ----------
 
 function lancamentosRouter(tabela, rotulo) {
-  const lerPeriodo = (query) => {
-    const condicoes = [];
+  const lerPeriodo = (query, incluirCancelados) => {
+    const condicoes = incluirCancelados ? [] : ['cancelado_em IS NULL'];
     const params = {};
     if (query.ano) { condicoes.push("strftime('%Y', data) = @ano"); params.ano = String(query.ano); }
     if (query.mes) { condicoes.push("strftime('%m', data) = @mes"); params.mes = String(query.mes).padStart(2, '0'); }
@@ -324,7 +386,7 @@ function lancamentosRouter(tabela, rotulo) {
   };
 
   financeiroRouter.get(`/${tabela.rota}`, (req, res) => {
-    const { where, params } = lerPeriodo(req.query);
+    const { where, params } = lerPeriodo(req.query, querCancelados(req));
     res.json(db.prepare(`SELECT * FROM ${tabela.nome} ${where} ORDER BY data DESC`).all(params));
   });
 
@@ -348,6 +410,7 @@ function lancamentosRouter(tabela, rotulo) {
   financeiroRouter.put(`/${tabela.rota}/:id`, requireRole('admin'), uploadComprovante, (req, res) => {
     const atual = db.prepare(`SELECT * FROM ${tabela.nome} WHERE id = ?`).get(req.params.id);
     if (!atual) return res.status(404).json({ error: `${rotulo} não encontrada.` });
+    if (atual.cancelado_em) return res.status(409).json({ error: MENSAGEM_CANCELADO(rotulo) });
     const campos = lerLancamento(req.body);
     if (campos.erro) return res.status(400).json({ error: campos.erro });
     const comprovante = salvarComprovante(req.file);
@@ -365,6 +428,12 @@ function lancamentosRouter(tabela, rotulo) {
     }
     res.json({ message: `${rotulo} atualizada.` });
   });
+
+  const regras = {
+    tabela: tabela.nome, entidade: tabela.entidade, campos: CAMPOS_LANCAMENTO, rotulo, descrever: (r) => r.descricao,
+  };
+  financeiroRouter.post(`/${tabela.rota}/:id/cancelar`, requireRole('admin'), (req, res) => cancelarRegistro(req, res, regras));
+  financeiroRouter.post(`/${tabela.rota}/:id/restaurar`, requireRole('admin'), (req, res) => restaurarRegistro(req, res, regras));
 }
 
 lancamentosRouter({ rota: 'outras-receitas', nome: 'outras_receitas', entidade: 'outra_receita' }, 'Receita');
@@ -461,21 +530,21 @@ financeiroRouter.get('/resumo/mensal', (req, res) => {
   const receitasTaxas = db
     .prepare(
       `SELECT COALESCE(SUM(valor + juros), 0) AS total FROM taxas_condominio
-       WHERE ano_referencia = ? AND mes_referencia = ? AND situacao = 'adimplente'`
+       WHERE ano_referencia = ? AND mes_referencia = ? AND situacao = 'adimplente' AND cancelado_em IS NULL`
     )
     .get(ano, mes).total;
 
   const receitasOutras = db
     .prepare(
       `SELECT COALESCE(SUM(valor), 0) AS total FROM outras_receitas
-       WHERE strftime('%Y', data) = ? AND strftime('%m', data) = ?`
+       WHERE strftime('%Y', data) = ? AND strftime('%m', data) = ? AND cancelado_em IS NULL`
     )
     .get(String(ano), String(mes).padStart(2, '0')).total;
 
   const despesas = db
     .prepare(
       `SELECT COALESCE(SUM(valor), 0) AS total FROM despesas
-       WHERE strftime('%Y', data) = ? AND strftime('%m', data) = ?`
+       WHERE strftime('%Y', data) = ? AND strftime('%m', data) = ? AND cancelado_em IS NULL`
     )
     .get(String(ano), String(mes).padStart(2, '0')).total;
 
@@ -501,7 +570,7 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
        FROM blocos b
        LEFT JOIN apartamentos a ON a.bloco_id = b.id
        LEFT JOIN taxas_condominio t
-         ON t.apartamento_id = a.id AND t.ano_referencia = @ano AND t.mes_referencia = @mes
+         ON t.apartamento_id = a.id AND t.ano_referencia = @ano AND t.mes_referencia = @mes AND t.cancelado_em IS NULL
        GROUP BY b.id
        ORDER BY b.numero`
     )
@@ -528,7 +597,7 @@ financeiroRouter.get('/resumo/inadimplencia', requireRole('admin'), (req, res) =
          COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} THEN valor + juros ELSE 0 END), 0) AS inadimplente,
          COALESCE(SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) THEN valor + juros ELSE 0 END), 0) AS a_vencer
        FROM taxas_condominio
-       WHERE ano_referencia = @ano
+       WHERE ano_referencia = @ano AND cancelado_em IS NULL
        GROUP BY mes_referencia
        ORDER BY mes_referencia`
     )
@@ -567,7 +636,7 @@ function evolucaoMensal({ anoInicio, anoFim }) {
          SUM(CASE WHEN situacao = 'inadimplente' AND ${sqlVencida()} AND meses_atraso >= 3 THEN 1 ELSE 0 END) AS em_aberto_3_meses,
          SUM(CASE WHEN situacao = 'inadimplente' AND NOT (${sqlVencida()}) THEN 1 ELSE 0 END) AS a_vencer
        FROM taxas_condominio
-       WHERE ano_referencia BETWEEN @anoInicio AND @anoFim
+       WHERE ano_referencia BETWEEN @anoInicio AND @anoFim AND cancelado_em IS NULL
        GROUP BY ano_referencia, mes_referencia`
     )
     .all({ anoInicio, anoFim, dia: lerConfiguracao().dia_vencimento, hoje: hojeISO() });
@@ -578,7 +647,7 @@ function evolucaoMensal({ anoInicio, anoFim }) {
         .prepare(
           `SELECT strftime('%Y', data) AS ano, strftime('%m', data) AS mes, SUM(valor) AS total
            FROM ${tabela}
-           WHERE CAST(strftime('%Y', data) AS INTEGER) BETWEEN ? AND ?
+           WHERE CAST(strftime('%Y', data) AS INTEGER) BETWEEN ? AND ? AND cancelado_em IS NULL
            GROUP BY ano, mes`
         )
         .all(anoInicio, anoFim)

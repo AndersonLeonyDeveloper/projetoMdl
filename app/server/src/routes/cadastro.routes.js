@@ -238,7 +238,7 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
     .prepare(
       `SELECT id, apartamento_id, mes_referencia, ano_referencia, valor
        FROM taxas_condominio
-       WHERE situacao = 'inadimplente'
+       WHERE situacao = 'inadimplente' AND cancelado_em IS NULL
          AND ${sqlVencida()}
        ORDER BY ano_referencia, mes_referencia`
     )

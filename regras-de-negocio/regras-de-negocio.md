@@ -69,6 +69,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - **Geração em lote:** o admin pode gerar de uma vez as taxas de um mês para todos os apartamentos (seção 4.7), em vez de lançar uma a uma.
 - **Situação é derivada**: se não houver `data_pagamento` registrada até o vencimento, o apartamento passa a `Inadimplente` no mês de referência. Uma taxa recém-lançada ou gerada nasce `Inadimplente` e sem juros. Registrar a data de pagamento a torna `Adimplente`.
 - **Status exibido (derivado):** além da situação gravada (Adimplente/Inadimplente), a taxa tem um status calculado na consulta: **Adimplente**; **A vencer** (em aberto, mas o vencimento ainda não passou, no próprio dia do vencimento inclusive); **Em atraso** (em aberto e vencida, ou seja, o dia de vencimento do mês de referência já passou). Isso evita tratar como inadimplente a taxa do mês corrente que ainda está no prazo. A situação gravada não muda; o status acompanha o calendário e o dia de vencimento configurado.
+- **Cancelada:** uma taxa cancelada (seção 4.11) não tem status de pagamento: aparece só para o Admin, como "Cancelada", e não entra em nenhum total.
 - **Meses em atraso**: contagem cumulativa de meses consecutivos em que o apartamento está sem pagamento — exibido no cadastro (ex.: "3 meses"). Registrar o pagamento zera o contador da taxa.
 - **Juros por atraso (calculados pelo sistema):** ao registrar o pagamento, o servidor calcula o juros e grava o valor na taxa (ver 4.1.1).
 - **Total pago pelo morador** = valor + juros.
@@ -138,7 +139,7 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
   - A data de pagamento deve ser uma data válida (AAAA-MM-DD). **Datas futuras são aceitas.**
 - **Comprovante na edição:** sem arquivo novo, mantém o atual; com arquivo novo, substitui o anterior (o arquivo antigo é apagado do disco); há uma opção para remover o comprovante.
 - Os resumos (mensal, por bloco, inadimplência e evolução) refletem o valor editado imediatamente, pois são calculados na consulta.
-- **Fora do escopo desta versão:** excluir lançamentos e histórico/auditoria de quem alterou o quê (ver `melhorias-e-ideias.md`, itens 2.12 e 2.13). Hoje a edição **sobrescreve** o valor anterior sem deixar rastro.
+- **Excluir e histórico:** não há exclusão definitiva; para tirar um lançamento errado usa-se o **cancelamento** (seção 4.11). Toda edição fica registrada no **histórico de alterações** (seção 4.10), com o valor de antes e o de depois.
 
 ### 4.9 Situação de pagamento na tela Dados dos Moradores (Admin)
 - Em Visualizar → Dados dos Moradores, a coluna **Mensalidades** mostra a situação de pagamento **somente nas linhas de proprietário**. A taxa pertence ao apartamento, e o proprietário é o responsável por ela. Linhas de inquilino em apartamento com proprietário mostram "—". **Exceção:** em apartamento **sem proprietário** (vazio ou só com inquilinos), não há a quem atribuir a dívida, então todas as linhas dele mostram a etiqueta **"Sem proprietário"** (laranja) e, se o apartamento tiver mensalidades em atraso, "N em atraso · sem proprietário", com o mesmo detalhe de valores ao clicar.
@@ -153,12 +154,24 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 - Muda quando: uma taxa é paga (sai da lista), o dia de vencimento é alterado em Configurações financeiras (altera quais meses já venceram) ou passa o dia de vencimento de uma taxa em aberto.
 
 ### 4.10 Histórico de alterações (Admin)
-- Toda alteração de dado financeiro feita pelo sistema é registrada: **criar, editar, pagar, recalcular juros e gerar taxas do mês** (taxas), **criar e editar** (despesas e outras receitas) e **alterar configurações financeiras**. (Cancelar e restaurar entram nesse registro quando existirem; seção 4.11.)
+- Toda alteração de dado financeiro feita pelo sistema é registrada: **criar, editar, pagar, recalcular juros e gerar taxas do mês** (taxas), **criar e editar** (despesas e outras receitas) e **alterar configurações financeiras**. **Cancelar e restaurar** (seção 4.11) também são registrados, com o motivo.
 - Cada registro guarda: **quem** (usuário e e-mail), **quando** (data e hora), **o quê** (tipo e id do lançamento), a **ação**, os **valores de antes e de depois** (só os campos relevantes, como valor, juros, data de pagamento, situação, descrição, data e nome do comprovante) e um **resumo** legível (ex.: "Bl.08/Ap.203 · 03/2026" ou a descrição da despesa).
 - **Só se grava quando algo mudou:** salvar uma edição idêntica ao que já existia, ou gerar um mês em que nenhuma taxa foi criada, não gera registro. A geração do mês é **uma linha só**, com a quantidade de taxas criadas e ignoradas (não uma por apartamento).
 - **O histórico não pode ser editado nem apagado** pela aplicação: não há rota para isso. Só o `db:reset` e o `db:seed:financeiro` o limpam, porque recriam os dados aos quais ele se refere.
 - **Consulta:** Visualizar → Histórico de alterações (só Admin; Proprietário e Inquilino recebem 403). Lista da alteração mais recente para a mais antiga, 20 por página (a API aceita até 200), com filtros por tipo, ação, período (data) e usuário (parte do e-mail). Ao expandir uma linha aparece o que mudou, campo a campo (antes → depois); criações mostram os valores iniciais. O horário aparece no fuso do navegador.
 - **Limitações:** o registro é gravado logo depois da alteração, na mesma requisição, mas **não** na mesma transação do banco (uma falha entre as duas gravações deixaria a alteração sem registro). Alterações feitas direto no banco, fora da aplicação, não são registradas.
+
+### 4.11 Cancelar e restaurar lançamentos (Admin)
+- Um lançamento lançado por engano (taxa, despesa ou outra receita) é **cancelado**, não excluído: o registro e o comprovante **continuam guardados**, mas ele sai das listas e de todos os totais, e pode ser **restaurado** a qualquer momento. Não existe exclusão definitiva.
+- **Motivo obrigatório:** de 3 a 200 caracteres, guardado junto com a data e o usuário que cancelou. Cancelar e restaurar entram no histórico de alterações (seção 4.10).
+- **O que um cancelado deixa de contar:** resumo mensal (receitas, despesas e saldo, pelas duas visões), resumo por bloco, inadimplência anual, evolução (completa e pública), as mensalidades em atraso de Dados dos Moradores e as listas de lançamentos. Quem **não é Admin nunca vê** cancelados.
+- **Ver cancelados:** o Admin liga "Mostrar cancelados" (ou "Mostrar canceladas") nas listas. Eles aparecem com a etiqueta "Cancelado" (taxas: status "Cancelada"), a descrição riscada e o motivo ao passar o mouse, e com o botão "Restaurar".
+- **Regras por tipo:**
+  - **Taxa paga não pode ser cancelada**: é preciso remover o pagamento antes (Editar, limpando a data de pagamento). Isso evita sumir com dinheiro recebido.
+  - **Cancelado não se altera:** editar, registrar pagamento e recalcular juros retornam 409 até restaurar. Cancelar um já cancelado, ou restaurar um que não está cancelado, também retorna 409.
+  - **Taxa cancelada continua ocupando o mês:** lançar outra taxa do mesmo apartamento e mês retorna 409 e orienta a restaurar a cancelada; "Gerar taxas do mês" conta a cancelada como já existente (não cria outra). Para refazer, restaure.
+- **Só o Admin** cancela e restaura (403 para os demais). O cancelamento **não apaga o comprovante** do disco.
+- Não há cancelamento em massa nem cancelamento de moradores, blocos ou apartamentos.
 
 ## 5. Autenticação
 

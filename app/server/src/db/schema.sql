@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS taxas_condominio (
   situacao TEXT NOT NULL CHECK (situacao IN ('adimplente', 'inadimplente')),
   meses_atraso INTEGER NOT NULL DEFAULT 0,
   comprovante_path TEXT,
+  cancelado_em TEXT,
+  cancelado_por INTEGER,
+  motivo_cancelamento TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (apartamento_id, mes_referencia, ano_referencia)
 );
@@ -79,6 +82,9 @@ CREATE TABLE IF NOT EXISTS outras_receitas (
   valor REAL NOT NULL,
   data TEXT NOT NULL,
   comprovante_path TEXT,
+  cancelado_em TEXT,
+  cancelado_por INTEGER,
+  motivo_cancelamento TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -88,6 +94,9 @@ CREATE TABLE IF NOT EXISTS despesas (
   valor REAL NOT NULL,
   data TEXT NOT NULL,
   comprovante_path TEXT,
+  cancelado_em TEXT,
+  cancelado_por INTEGER,
+  motivo_cancelamento TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
