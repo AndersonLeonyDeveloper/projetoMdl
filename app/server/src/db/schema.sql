@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
   senha_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'proprietario', 'inquilino')),
   pessoa_id INTEGER REFERENCES pessoas(id) ON DELETE SET NULL,
+  -- 0 = conta desativada: não entra e os tokens já emitidos deixam de valer.
+  ativo INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

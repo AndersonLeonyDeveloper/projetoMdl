@@ -253,10 +253,19 @@ O sistema gerencia moradores e o financeiro de um condomínio, organizado em **b
 
 ## 5. Autenticação
 
-- Login por e-mail e senha.
-- Fluxo de recuperação de senha: usuário informa e-mail → sistema envia nova senha por e-mail (fluxo "Solicitar" → confirmação).
-- Alteração de senha disponível dentro da área logada ("Nova Senha"), tanto para Proprietário quanto Inquilino.
+- Login por e-mail e senha. Conta **desativada** não entra (mesma mensagem genérica de credenciais inválidas).
+- **O token não basta:** a cada requisição o servidor confere no banco se a conta existe e está ativa e usa o **perfil atual do banco**. Desativar uma conta derruba o acesso **na hora**, mesmo com token ainda válido (401 "Conta desativada.").
+- **Tamanho mínimo da senha: 6 caracteres**, em todos os fluxos (criar administrador, redefinir, trocar, recuperar e assistente de primeiro acesso).
+- **Recuperação de senha:** `POST /auth/forgot-password` gera um token de uso único com validade de 30 minutos e, sem serviço de e-mail configurado, só o registra no log do servidor (uso de desenvolvimento). `POST /auth/reset-password` troca a senha e marca o token como usado, numa única transação; token inexistente, usado ou expirado retorna 400, e senha curta também (sem consumir o token).
+- **Trocar a própria senha** (`POST /auth/trocar-senha`, qualquer perfil logado): exige a **senha atual**, uma nova **diferente** da atual e com 6+ caracteres. Na tela, está em Cadastro → Administradores → "Minha senha" (a tela para proprietário e inquilino é o item 2.28 do backlog).
 - Cadastro de novo usuário (self-service) redireciona para vínculo com um morador já cadastrado pelo Admin (não permite criar morador "solto").
+
+### 5.1 Administradores (Admin)
+- **Cadastro → Administradores** (só Admin; os demais perfis recebem 403) lista as contas de administrador (e-mail, situação, data de criação, e quem é "você") e permite **criar** (e-mail válido e único; senha inicial de 6+ caracteres; o e-mail é guardado em minúsculas), **desativar/reativar** e **redefinir a senha de outro administrador**. Não existe perfil acima do administrador: quem usa a tela já é administrador.
+- **Proteções:** (1) ninguém **desativa a própria conta**; (2) o **último administrador ativo nunca é desativado**; (3) toda ação entra no **Histórico de alterações** (entidade "usuário"; ações `criar_admin`, `desativar`, `reativar`, `redefinir_senha`, `trocar_senha`) e **nenhuma senha, nem o hash, é gravada ou devolvida** em lugar nenhum.
+- A própria senha não se redefine na linha da lista (400): usa-se "Minha senha", que confere a senha atual. Contas desativadas **continuam registradas** (não há exclusão), para preservar o histórico.
+- **Para o desenvolvedor**, sem perfil especial no sistema: `npm run admin -- listar | criar <email> [senha] | senha <email> [nova] | desativar <email> | ativar <email>` (dentro de `app/`). Sem senha informada, gera uma aleatória e a mostra **uma vez**. Vale o banco de `DATABASE_PATH`, as mesmas regras (último administrador, 6+ caracteres) e o histórico registra o autor "script".
+- **Fora do escopo:** um perfil de desenvolvedor/super-admin só faria sentido num sistema **multi-condomínio** (vários condomínios na mesma instalação), que não é o modelo atual (item 3.19 do backlog).
 
 ## 6. Comprovantes (Upload de Arquivo)
 

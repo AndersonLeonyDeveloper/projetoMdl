@@ -41,6 +41,7 @@ const COLUNAS_ADICIONAIS = [
   ['despesas', 'fundo_reserva', 'INTEGER NOT NULL DEFAULT 0'],
   ['configuracao_financeira', 'fundo_saldo_inicial', 'REAL NOT NULL DEFAULT 0'],
   ['taxa_padrao', 'fundo_percentual', 'REAL NOT NULL DEFAULT 10'],
+  ['usuarios', 'ativo', 'INTEGER NOT NULL DEFAULT 1'],
   ['blocos', 'ordem', 'INTEGER NOT NULL DEFAULT 0'],
   ['apartamentos', 'ordem', 'INTEGER NOT NULL DEFAULT 0'],
   ['apartamentos', 'andar', 'INTEGER'],

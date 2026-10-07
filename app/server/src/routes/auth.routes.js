@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
-import { db } from '../db/index.js';
+import { db, withTransaction } from '../db/index.js';
 import { signToken } from '../utils/token.js';
+import { requireAuth } from '../middleware/auth.js';
+import { registrarAuditoria } from '../utils/auditoria.js';
+import { TAMANHO_MINIMO_DA_SENHA } from '../utils/administradores.js';
 
 export const authRouter = Router();
 
@@ -20,7 +23,7 @@ authRouter.post('/login', (req, res) => {
   const credenciaisInvalidas = () =>
     res.status(401).json({ error: 'E-mail ou senha inválidos.' });
 
-  if (!usuario) return credenciaisInvalidas();
+  if (!usuario || !usuario.ativo) return credenciaisInvalidas();
 
   const senhaConfere = bcrypt.compareSync(senha, usuario.senha_hash);
   if (!senhaConfere) return credenciaisInvalidas();
@@ -41,6 +44,27 @@ authRouter.post('/login', (req, res) => {
       pessoa_id: usuario.pessoa_id,
     },
   });
+});
+
+// Troca da própria senha (qualquer perfil logado): exige a senha atual e uma nova diferente, de pelo menos 6 caracteres.
+authRouter.post('/trocar-senha', requireAuth, (req, res) => {
+  const { senha_atual, nova_senha } = req.body ?? {};
+  if (!senha_atual || !nova_senha) {
+    return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias.' });
+  }
+  const usuario = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(req.user.sub);
+  if (!bcrypt.compareSync(String(senha_atual), usuario.senha_hash)) {
+    return res.status(400).json({ error: 'A senha atual não confere.' });
+  }
+  if (String(nova_senha).length < TAMANHO_MINIMO_DA_SENHA) {
+    return res.status(400).json({ error: `A nova senha deve ter ao menos ${TAMANHO_MINIMO_DA_SENHA} caracteres.` });
+  }
+  if (nova_senha === senha_atual) {
+    return res.status(400).json({ error: 'A nova senha deve ser diferente da atual.' });
+  }
+  db.prepare('UPDATE usuarios SET senha_hash = ? WHERE id = ?').run(bcrypt.hashSync(String(nova_senha), 10), usuario.id);
+  registrarAuditoria(req, { entidade: 'usuario', entidadeId: usuario.id, acao: 'trocar_senha', detalhe: usuario.email });
+  res.json({ message: 'Senha alterada com sucesso.' });
 });
 
 authRouter.post('/forgot-password', (req, res) => {
@@ -81,16 +105,19 @@ authRouter.post('/reset-password', (req, res) => {
   if (!registro || registro.used || new Date(registro.expires_at) < new Date()) {
     return res.status(400).json({ error: 'Token inválido, já utilizado ou expirado.' });
   }
+  if (String(novaSenha).length < TAMANHO_MINIMO_DA_SENHA) {
+    return res.status(400).json({ error: `A nova senha deve ter ao menos ${TAMANHO_MINIMO_DA_SENHA} caracteres.` });
+  }
 
-  const senhaHash = bcrypt.hashSync(novaSenha, 10);
-  const atualizar = db.transaction(() => {
+  const senhaHash = bcrypt.hashSync(String(novaSenha), 10);
+  // node:sqlite não tem db.transaction(): a senha e o uso do token têm de valer juntos ou nenhum dos dois.
+  withTransaction(() => {
     db.prepare('UPDATE usuarios SET senha_hash = ? WHERE id = ?').run(
       senhaHash,
       registro.usuario_id
     );
     db.prepare('UPDATE password_reset_tokens SET used = 1 WHERE id = ?').run(registro.id);
   });
-  atualizar();
 
   res.json({ message: 'Senha atualizada com sucesso.' });
 });

@@ -10,7 +10,7 @@ const { RangePicker } = DatePicker;
 
 interface Registro {
   id: number;
-  entidade: 'taxa' | 'despesa' | 'outra_receita' | 'configuracao' | 'apartamento' | 'acordo';
+  entidade: 'taxa' | 'despesa' | 'outra_receita' | 'configuracao' | 'apartamento' | 'acordo' | 'usuario';
   entidade_id: number | null;
   acao: string;
   usuario_email: string | null;
@@ -31,6 +31,7 @@ const entidadesDe = (unidade: Termo): Record<Registro['entidade'], string> => ({
   configuracao: 'Configuração',
   apartamento: unidade.S,
   acordo: 'Acordo',
+  usuario: 'Usuário',
 });
 const acoesDe = (agrupador: Termo): Record<string, { texto: string; cor: string }> => ({
   criar: { texto: 'Criado', cor: 'green' },
@@ -47,6 +48,11 @@ const acoesDe = (agrupador: Termo): Record<string, { texto: string; cor: string 
   restaurar: { texto: 'Restaurado', cor: 'orange' },
   configurar_estrutura: { texto: 'Estrutura configurada', cor: 'purple' },
   editar_rotulos: { texto: 'Nomes alterados', cor: 'blue' },
+  criar_admin: { texto: 'Administrador criado', cor: 'green' },
+  desativar: { texto: 'Conta desativada', cor: 'red' },
+  reativar: { texto: 'Conta reativada', cor: 'orange' },
+  redefinir_senha: { texto: 'Senha redefinida', cor: 'purple' },
+  trocar_senha: { texto: 'Senha trocada', cor: 'cyan' },
 });
 const camposDe = (agrupador: Termo, unidade: Termo): Record<string, string> => ({
   apartamento_id: `${unidade.S} (id)`,
@@ -81,6 +87,8 @@ const camposDe = (agrupador: Termo, unidade: Termo): Record<string, string> => (
   bloco: agrupador.S,
   apartamentos_alterados: `${unidade.P} alterad${unidade.o === 'a' ? 'as' : 'os'}`,
   apartamentos_com_fator_diferente: `${unidade.P} com fator diferente de 1`,
+  email: 'E-mail',
+  ativo: 'Conta ativa',
   criadas: 'Taxas criadas',
   ignoradas: 'Ignoradas (já existiam)',
 });

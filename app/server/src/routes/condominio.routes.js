@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { previa, validarConfiguracao, validarRotulos } from '../utils/estrutura.js';
 import { registrarAuditoria } from '../utils/auditoria.js';
 import { rotulos } from '../utils/rotulos.js';
-const TAMANHO_MINIMO_DA_SENHA = 6;
+import { TAMANHO_MINIMO_DA_SENHA } from '../utils/administradores.js';
 
 export const condominioRouter = Router();
 condominioRouter.use(requireAuth);

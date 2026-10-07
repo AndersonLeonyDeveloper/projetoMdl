@@ -208,6 +208,7 @@ CREATE UNIQUE INDEX idx_proprietario_ativo_unico
 | senha_hash | TEXT | NOT NULL |
 | role | TEXT | NOT NULL, CHECK IN ('admin', 'proprietario', 'inquilino') |
 | pessoa_id | INTEGER | NULL, FK → pessoas.id (NULL apenas para role = 'admin') |
+| ativo | INTEGER | NOT NULL DEFAULT 1 (0 = conta desativada: não entra e os tokens já emitidos deixam de valer) |
 | created_at | TEXT | NOT NULL DEFAULT (datetime('now')) |
 
 ```sql
@@ -217,7 +218,12 @@ CREATE TABLE usuarios (
   senha_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'proprietario', 'inquilino')),
   pessoa_id INTEGER REFERENCES pessoas(id) ON DELETE SET NULL,
- de aplicação (não expressável em CHECK entre tabelas no SQLite):**
+  ativo INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+
+> **Invariante de aplicação (não expressável em CHECK entre tabelas no SQLite):**
 > se `usuarios.role IN ('proprietario', 'inquilino')`, deve existir ao menos um registro em
 > `moradores` com `pessoa_id = usuarios.pessoa_id` e `tipo = usuarios.role` e `ativo = 1`.
 > Vale a pena cobrir isso com teste de integridade (ex.: job de auditoria ou teste de API).
@@ -578,6 +584,10 @@ Para exercitar os cenários de teste automatizado, o seed inicial deve cobrir:
 - Despesas de bloco específico (`bloco_id` preenchido) e despesas pagas pelo fundo (`fundo_reserva = 1`), taxas canceladas e acordos em cada situação (ativo, quitado, descumprido, cancelado). O seed atual (`db:populate`) cobre as duas primeiras; taxas canceladas e acordos são criados pela aplicação ou pelos testes de API.
 
 ## 13. Changelog
+
+- **Rev. 6** (07/10/2026): `usuarios.ativo` (conta desativada). Bancos antigos recebem a coluna sozinhos
+  (`garantirColunas`), com todas as contas ativas. A auditoria passa a aceitar a entidade `usuario`
+  (ações `criar_admin`, `desativar`, `reativar`, `redefinir_senha`, `trocar_senha`), sem guardar senha.
 
 - **Rev. 5** (07/10/2026): estrutura do condomínio configurável. Nova tabela `condominio_config` (seção 9.7) e colunas
   `blocos.ordem`, `apartamentos.ordem` e `apartamentos.andar`. A estrutura deixou de ser criada no boot

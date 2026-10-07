@@ -26,6 +26,7 @@ import { useCondominio } from './context/CondominioContext';
 
 // Telas carregadas sob demanda: cada uma vira um arquivo separado (a biblioteca de gráficos só baixa na Evolução).
 const ConfiguracaoInicial = lazy(() => import('./pages/admin/ConfiguracaoInicial').then((m) => ({ default: m.ConfiguracaoInicial })));
+const Administradores = lazy(() => import('./pages/admin/Administradores').then((m) => ({ default: m.Administradores })));
 const NomesDoCondominio = lazy(() => import('./pages/admin/NomesDoCondominio').then((m) => ({ default: m.NomesDoCondominio })));
 const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
 const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
@@ -54,6 +55,7 @@ const ADMIN_MENU: MenuProps['items'] = [
       { key: '/admin/cadastro/financeiro', label: 'Receitas / Despesas' },
       { key: '/admin/cadastro/configuracoes', label: 'Configurações financeiras' },
       { key: '/admin/cadastro/nomes', label: 'Nomes do condomínio' },
+      { key: '/admin/cadastro/administradores', label: 'Administradores' },
     ],
   },
   {
@@ -119,6 +121,7 @@ function App() {
         <Route path="cadastro/financeiro" element={<CadastroFinanceiro />} />
         <Route path="cadastro/configuracoes" element={<ConfiguracoesFinanceiras />} />
         <Route path="cadastro/nomes" element={<NomesDoCondominio />} />
+        <Route path="cadastro/administradores" element={<Administradores />} />
         <Route path="visualizar/financeiro" element={<VisualizarFinanceiro />} />
         <Route path="visualizar/evolucao" element={<VisualizarEvolucao />} />
         <Route path="visualizar/moradores" element={<VisualizarMoradores />} />

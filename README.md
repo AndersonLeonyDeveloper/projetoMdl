@@ -95,6 +95,7 @@ Detalhes das regras em [`regras-de-negocio/regras-de-negocio.md`](regras-de-nego
 - `npm run db:migrate` — aplica o schema (`app/server/src/db/schema.sql`)
 - `npm run db:populate` — monta o banco completo de demonstração: `db:reset` (cria a estrutura de demonstração se o condomínio ainda não estiver configurado) + `db:seed:moradores` (com os logins de teste) + `db:seed:financeiro`. Os seeds só funcionam na estrutura de demonstração; com outra estrutura eles param com uma mensagem (apague o arquivo do banco para voltar)
 - `npm run db:vazio` — cria um banco **vazio** em `app/server/data/primeiro-acesso/` (só o admin, sem estrutura) para testar o primeiro acesso; nunca toca o banco de demonstração. Depois `npm run start:vazio` (API na porta 3002) e `npm run dev:vazio` (tela em `http://localhost:5174`). Roteiro em `test/roteiro-primeiro-acesso.md`
+- `npm run admin -- <comando>` — contas de administrador pela linha de comando: `listar`, `criar <email> [senha]`, `senha <email> [nova]`, `desativar <email>`, `ativar <email>` (sem senha informada, gera uma aleatória e a mostra uma vez; vale o banco de `DATABASE_PATH`). Para o desenvolvedor; a tela do administrador é Cadastro → Administradores
 - `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
 - `npm run db:seed:moradores` — 1 proprietário + 3 inquilinos em cada um dos 192 apartamentos
 - `npm run db:seed:financeiro` — histórico financeiro de jan/2020 a set/2026 (já gera os comprovantes de exemplo)

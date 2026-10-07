@@ -116,6 +116,15 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 ### [ ] 2.25 Condomínio sem agrupador e trocar a senha do administrador no primeiro acesso — esforço P
 *Identificada em 07/10/2026, ao fechar o item 2.22.* Um prédio único hoje é configurado com 1 agrupador, que aparece nas telas; avaliar ocultá-lo quando houver só um. Também: a troca da senha padrão do administrador no assistente é opcional; avaliar torná-la obrigatória.
 
+### [x] 2.26 Gestão de administradores (Cadastro → Administradores) — esforço M
+*Identificada e implementada em 07/10/2026, a pedido do usuário (a ideia inicial era uma tela de desenvolvedor, descartada: ver 3.19).* O administrador lista, cria, desativa/reativa contas de administrador, redefine a senha de outro e troca a própria senha. Coluna `usuarios.ativo`; `requireAuth` passou a conferir no banco que a conta está ativa (desativar derruba o acesso na hora, mesmo com token válido). Proteções: ninguém desativa a si mesmo, o último administrador ativo nunca é desativado, tudo vai ao Histórico de alterações (entidade "usuário") sem senha. `POST /auth/trocar-senha` serve a qualquer perfil. Regras nas seções 5 e 5.1; cenários na 7.23 de `sugestoes-de-testes.md`; teste de API em `AdministradoresApiTest`. **Correção junto:** `POST /auth/reset-password` devolvia 500 (`db.transaction` não existe no `node:sqlite`); agora usa `withTransaction` e exige 6+ caracteres.
+
+### [x] 2.27 Script de administradores para o desenvolvedor — esforço P
+*Implementado em 07/10/2026.* `npm run admin -- listar | criar <email> [senha] | senha <email> [nova] | desativar <email> | ativar <email>` (dentro de `app/`; `app/server/src/db/admin.js`). Sem perfil especial no sistema e sem superfície de ataque; mesmas regras da tela (último administrador, 6+ caracteres); sem senha informada gera uma aleatória e a mostra uma vez; o histórico registra o autor "script" e nenhuma senha.
+
+### [ ] 2.28 Trocar a própria senha para proprietário e inquilino (tela) — esforço P
+*Identificada em 07/10/2026, ao fechar o item 2.26.* A rota `POST /auth/trocar-senha` já atende qualquer perfil logado, mas só existe tela em Cadastro → Administradores. Falta o formulário em Minha Área → Meus Dados.
+
 ## 3. Dados de demonstração e ferramentas
 
 ### [x] 3.1 Comando único `db:populate` — esforço P
@@ -152,7 +161,7 @@ Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra per
 *Identificada em 01/10/2026.* Agentes que leem as regras no Jira e geram ACs, TCs, testes automatizados e bugs rastreáveis, com um teste de regressão por bug. Mora no repositório vizinho `qa-orchestrator` (desenho em `docs/desenho-da-esteira.md`), e este projeto é o primeiro projeto-alvo. Fases: [ ] 0 regras em arquivo, [ ] 1 Jira somente leitura, [ ] 2 escrita controlada, [ ] 3 bugs com rastreabilidade completa.
 
 ### [ ] 3.12 Executar a suíte de API e criar a de interface (Playwright) — esforço G
-*Identificada em 02/10/2026, ao fechar as ondas de melhorias.* As 19 classes de teste de API estão escritas e **compilam, mas nunca foram executadas** (o ambiente de desenvolvimento não tinha Maven nem permitia abrir a porta da API). A suíte de interface (Playwright) não existe, e todos os cenários `E2E` de `sugestoes-de-testes.md` estão sem automação e sem terem sido vistos em navegador. Passos: instalar Maven, rodar `mvn test` com `db:populate` e corrigir o que falhar; criar o projeto Playwright e automatizar os cenários `E2E`; ligar as duas suítes ao pipeline de CI (item 3.7) junto com `npm run verificar:ajuda`.
+*Identificada em 02/10/2026, ao fechar as ondas de melhorias.* As 20 classes de teste de API estão escritas e **compilam, mas nunca foram executadas** (o ambiente de desenvolvimento não tinha Maven nem permitia abrir a porta da API). A suíte de interface (Playwright) não existe, e todos os cenários `E2E` de `sugestoes-de-testes.md` estão sem automação e sem terem sido vistos em navegador. Passos: instalar Maven, rodar `mvn test` com `db:populate` e corrigir o que falhar; criar o projeto Playwright e automatizar os cenários `E2E`; ligar as duas suítes ao pipeline de CI (item 3.7) junto com `npm run verificar:ajuda`.
 
 
 ### [ ] 3.13 Conectar o Jira ao Claude Code (e ao Gemini CLI, escolhendo por uma flag) — esforço M
@@ -171,3 +180,21 @@ Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra per
 - **Atenção de política:** o Gemini CLI não passa pelo gateway nem pelo sandbox da Apple e envia os dados ao Google. Confirmar se o uso com dados de trabalho é permitido antes de incluir o Gemini.
 
 **Decisões em aberto:** qual Jira (Cloud `atlassian.net` do levantamento do `qa-orchestrator` ou um Jira interno); OAuth ou servidor local com token; incluir o Gemini já na primeira versão ou depois. Passos: [ ] decidir as três questões, [ ] liberar os domínios, [ ] teste de leitura (listar projetos), [ ] arquivos de configuração e script com a flag, [ ] documentar em `docs/integracao-jira.md`.
+
+### [ ] 3.14 Backup automático do banco e dos comprovantes (cópia consistente) — esforço M
+*Identificada em 07/10/2026, ao discutir onde hospedar o sistema. O projeto não tem nenhuma rotina de backup.* O banco é um arquivo SQLite e os comprovantes ficam numa pasta ao lado (`app/server/data/`). Copiar o arquivo com o sistema em uso pode gerar uma cópia corrompida: a cópia deve ser feita pelo próprio SQLite (`VACUUM INTO` ou a API de backup do driver), junto com a pasta de comprovantes, num instante coerente. Esboço: script `db:backup` (data e hora no nome, retenção configurável) agendável (cron/launchd) e o complementar `db:restaurar` (item 3.16).
+
+### [ ] 3.15 Cópia do backup fora da máquina — esforço M
+*Identificada em 07/10/2026.* Um backup que fica no mesmo disco não protege contra a perda desse disco. Enviar a cópia para um disco externo, para a nuvem ou para o servidor do desenvolvedor (a decisão depende do item 3.18), com o aviso de que o backup contém dados pessoais (CPF, telefone, e-mail) e precisa de acesso restrito e, de preferência, criptografia.
+
+### [ ] 3.16 Teste de restauração do backup — esforço P
+*Identificada em 07/10/2026.* Um backup que nunca foi restaurado é uma suposição. Script que restaura o último backup num banco temporário, confere contagens (blocos, unidades, moradores, taxas, lançamentos) e a integridade (`PRAGMA integrity_check`), e roteiro periódico de verificação.
+
+### [ ] 3.17 HTTPS e troca obrigatória da senha padrão — esforço M
+*Identificada em 07/10/2026.* Quando o sistema for acessado fora da máquina, servir só por **HTTPS** (proxy reverso com certificado) e restringir o CORS (hoje aberto, `cors()`), e trocar o `JWT_SECRET` de exemplo. Tornar **obrigatória** a troca da senha padrão do administrador (`senha123`) no primeiro acesso: hoje o assistente a oferece como opcional (liga ao item 2.25).
+
+### [ ] 3.18 Decisão de implantação: onde hospedar — esforço P
+*Identificada em 07/10/2026.* Recomendação registrada: **hospedar uma instância por condomínio** num servidor ou nuvem que o desenvolvedor administra (cada condomínio com o seu banco isolado), com backup automático para fora da máquina; o cliente só acessa pelo navegador. A máquina do cliente só se ele exigir, e mesmo assim com backup externo. Decidir antes de implementar os itens 3.14 a 3.17. Contexto: o modelo é "uma instalação, um condomínio" (a estrutura configurável do item 2.22 já permite instalar para outro condomínio sem mexer no código).
+
+### [ ] 3.19 Multi-condomínio e tela de desenvolvedor/super-admin — esforço G
+*Identificada em 07/10/2026; só se o sistema virar serviço para vários condomínios.* **Multi-condomínio** = várias empresas/condomínios na mesma instalação: toda tabela ganha a referência ao condomínio, toda consulta filtra por ele (um filtro esquecido mostra dados de um condomínio a outro), logins ficam ligados a um condomínio e surge um perfil acima do administrador para cadastrar e administrar condomínios. Só então uma tela de desenvolvedor/super-admin faz sentido, e é mudança maior que a do item 2.22. Enquanto o modelo for uma instalação por condomínio, o desenvolvedor usa os scripts (`db:vazio`, `admin`) e não há perfil de desenvolvedor no sistema.

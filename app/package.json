@@ -14,6 +14,7 @@
     "db:populate": "npm run db:populate -w server",
     "db:reset": "npm run db:reset -w server",
     "db:vazio": "npm run db:vazio -w server",
+    "admin": "npm run admin -w server --",
     "start:vazio": "npm run start:vazio -w server",
     "dev:vazio": "npm run dev:vazio -w client",
     "db:seed:moradores": "npm run db:seed:moradores -w server",

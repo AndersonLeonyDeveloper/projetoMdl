@@ -79,6 +79,16 @@ export const AJUDA_POR_ROTA: Record<string, AjudaDaTela> = {
       { titulo: 'Salvar', descricao: 'Clique em Salvar nomes. Um registro é gravado no Histórico de alterações.', alvo: 'botao-salvar-nomes' },
     ],
   },
+  '/admin/cadastro/administradores': {
+    resumo:
+      'Mostra quem administra o condomínio. Dá para criar um administrador, desativar ou reativar uma conta, redefinir a senha de outra pessoa e trocar a sua própria senha.',
+    passos: [
+      { titulo: 'Quem tem acesso', descricao: 'A lista mostra cada administrador, se a conta está ativa e quando foi criada. Você aparece com a etiqueta "você".', alvo: 'tabela-administradores' },
+      { titulo: 'Novo administrador', descricao: 'Informe o e-mail e uma senha inicial de pelo menos 6 caracteres. Combine com a pessoa como ela vai recebê-la e peça que a troque no primeiro acesso.', alvo: 'botao-novo-admin' },
+      { titulo: 'Desativar e reativar', descricao: 'Uma conta desativada perde o acesso na hora e continua no histórico. Você não pode desativar a própria conta, e o último administrador ativo nunca é desativado.', alvo: 'tabela-administradores' },
+      { titulo: 'Minha senha', descricao: 'Troque a sua senha informando a atual. A senha de outro administrador se redefine na linha dele.', alvo: 'botao-minha-senha' },
+    ],
+  },
   '/admin/visualizar/financeiro': {
     resumo:
       'Mostra o financeiro de um mês: resumo, resumo por {a.s}, despesas e outras receitas. A lista de taxas e o registro de pagamentos ficam em Taxas do mês.',

@@ -19,8 +19,10 @@
 - [ ] Login com credenciais inválidas exibe mensagem genérica (sem revelar se o e-mail existe).
   `E2E` / `API`
 - [ ] Fluxo de recuperação de senha: solicitar nova senha gera token com expiração; usar o token
-  após expirado deve falhar; usar o mesmo token duas vezes deve falhar (`used=1`).
-  `API`
+  após expirado deve falhar; usar o mesmo token duas vezes deve falhar (`used=1`). **Bug corrigido em 07/10/2026:**
+  `POST /auth/reset-password` devolvia 500 (`db.transaction is not a function`, que não existe no `node:sqlite`); agora
+  troca a senha e marca o token como usado numa transação, e exige 6+ caracteres (400, sem consumir o token). O token só
+  aparece no log do servidor e no banco, então **não há teste Java**: conferir lendo `password_reset_tokens`. `API` / `DB/Integridade`
 - [ ] Alterar senha dentro da área logada invalida sessões antigas (se aplicável) ou ao menos exige
   a senha atual para confirmar a troca.
   `E2E` / `API`
@@ -786,6 +788,29 @@
 - [ ] **Ordem**: agrupador ou unidade cadastrado depois (`POST /blocos`, `POST /apartamentos`) aparece no **fim** da lista, mesmo que o número seja "menor" que os existentes; a ordem não depende do número como texto. `API`
 - [ ] **Seeds em outra estrutura**: `db:seed:moradores` e `db:seed:financeiro` num banco com estrutura diferente da demonstração param com
   mensagem clara. `DB/Integridade`
+
+### 7.23 Administradores e senhas
+
+> Cenários levantados em 07/10/2026 (itens 2.26 e 2.27 do backlog). Regras na seção 5 e 5.1 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured` (`AdministradoresApiTest`, compilado e ainda não executado). Não há exclusão de contas: o teste
+> cria os próprios administradores (e-mail aleatório) e os desativa no final; o administrador padrão nunca é desativado nem tem a senha alterada.
+
+- [ ] **Lista**: mostra os administradores com situação e quem é "você" (`eu`), sem `senha_hash` nem senha. `API`
+- [ ] **Permissões**: proprietário e inquilino recebem 403 (lista e criação); sem login 401. `API`
+- [ ] **Criar**: 201; o e-mail é guardado em minúsculas e sem espaços; duplicado 409 (inclusive e-mail de morador); e-mail inválido 400;
+  senha com menos de 6 caracteres 400; o novo administrador entra com perfil `admin`. `API`
+- [ ] **Desativar derruba o acesso na hora**: o token que já estava em uso passa a retornar 401 e o login é recusado; reativar devolve o acesso. `API`
+- [ ] **Proteções**: o administrador não desativa a própria conta (409); valor de `ativo` inválido 400; id inexistente ou de um morador 404. O
+  **último administrador ativo** nunca é desativado (409) — pela API só se alcança pelo script, porque quem pede já é um administrador ativo. `API` / `DB/Integridade`
+- [ ] **Redefinir a senha de outro**: a antiga cai e a nova vale; a própria senha na lista retorna 400; senha curta 400. `API`
+- [ ] **Trocar a própria senha** (`POST /auth/trocar-senha`): senha atual errada 400; nova curta 400; nova igual à atual 400; sem login 401;
+  com sucesso a antiga cai. Vale também para proprietário e inquilino. `API`
+- [ ] **Histórico**: criar, desativar, reativar, redefinir e trocar senha geram registro (entidade "usuário"); **nenhuma senha** aparece no histórico. `API`
+- [ ] **Tela**: Cadastro → Administradores mostra a tabela com a etiqueta "você"; "Desativar" fica desabilitado na própria linha (com a dica) e "Redefinir
+  senha" também; criar valida e-mail, senha e confirmação; "Minha senha" exige a atual; desativar pede confirmação. `E2E`
+- [ ] **Script** `npm run admin -- ...`: `listar`; `criar` com senha informada e gerada (mostrada uma vez); duplicado, senha curta, e-mail inexistente e comando
+  desconhecido saem com erro; `desativar` do último administrador ativo é recusado; `ativar`/`desativar` repetidos dizem "nada a fazer"; o histórico
+  registra o autor "script" e nenhuma senha. `DB/Integridade`
 
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 
