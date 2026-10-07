@@ -1,6 +1,6 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import type { MenuProps } from 'antd';
+import { Spin, type MenuProps } from 'antd';
 import {
   UserAddOutlined,
   DollarCircleOutlined,
@@ -22,8 +22,11 @@ import { AppLayout } from './components/AppLayout';
 import { Login } from './pages/Login';
 import { EsqueciSenha } from './pages/EsqueciSenha';
 import { Home } from './pages/Home';
+import { useCondominio } from './context/CondominioContext';
 
 // Telas carregadas sob demanda: cada uma vira um arquivo separado (a biblioteca de gráficos só baixa na Evolução).
+const ConfiguracaoInicial = lazy(() => import('./pages/admin/ConfiguracaoInicial').then((m) => ({ default: m.ConfiguracaoInicial })));
+const NomesDoCondominio = lazy(() => import('./pages/admin/NomesDoCondominio').then((m) => ({ default: m.NomesDoCondominio })));
 const CadastroMoradores = lazy(() => import('./pages/admin/CadastroMoradores').then((m) => ({ default: m.CadastroMoradores })));
 const CadastroFinanceiro = lazy(() => import('./pages/admin/CadastroFinanceiro').then((m) => ({ default: m.CadastroFinanceiro })));
 const HistoricoAlteracoes = lazy(() => import('./pages/admin/HistoricoAlteracoes').then((m) => ({ default: m.HistoricoAlteracoes })));
@@ -50,6 +53,7 @@ const ADMIN_MENU: MenuProps['items'] = [
       { key: '/admin/cadastro/moradores', label: 'Moradores' },
       { key: '/admin/cadastro/financeiro', label: 'Receitas / Despesas' },
       { key: '/admin/cadastro/configuracoes', label: 'Configurações financeiras' },
+      { key: '/admin/cadastro/nomes', label: 'Nomes do condomínio' },
     ],
   },
   {
@@ -67,8 +71,8 @@ const ADMIN_MENU: MenuProps['items'] = [
   },
 ];
 
-const MORADOR_MENU: MenuProps['items'] = [
-  { key: '/minha-area/apartamentos', label: 'Meus Apartamentos', icon: <HomeOutlined /> },
+const moradorMenu = (unidadesNome: string): MenuProps['items'] => [
+  { key: '/minha-area/apartamentos', label: `Meus ${unidadesNome}`, icon: <HomeOutlined /> },
   { key: '/minha-area/dados', label: 'Meus Dados', icon: <IdcardOutlined /> },
   { key: '/minha-area/financeiro', label: 'Financeiro', icon: <DollarCircleOutlined /> },
   { key: '/minha-area/fundo-reserva', label: 'Fundo de reserva', icon: <BankOutlined /> },
@@ -81,12 +85,23 @@ function RedirecionarParaTaxasDoMes() {
 }
 
 function App() {
+  const { unidade } = useCondominio();
   return (
     <AjudaProvider>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/esqueci-senha" element={<EsqueciSenha />} />
       <Route path="/" element={<Home />} />
+      <Route
+        path="/configuracao-inicial"
+        element={
+          <ProtectedRoute roles={['admin']} semConfiguracao>
+            <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '120px auto' }} />}>
+              <ConfiguracaoInicial />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/admin"
@@ -103,6 +118,7 @@ function App() {
         <Route path="cadastro/taxas" element={<RedirecionarParaTaxasDoMes />} />
         <Route path="cadastro/financeiro" element={<CadastroFinanceiro />} />
         <Route path="cadastro/configuracoes" element={<ConfiguracoesFinanceiras />} />
+        <Route path="cadastro/nomes" element={<NomesDoCondominio />} />
         <Route path="visualizar/financeiro" element={<VisualizarFinanceiro />} />
         <Route path="visualizar/evolucao" element={<VisualizarEvolucao />} />
         <Route path="visualizar/moradores" element={<VisualizarMoradores />} />
@@ -115,7 +131,7 @@ function App() {
         path="/minha-area"
         element={
           <ProtectedRoute roles={['proprietario', 'inquilino']}>
-            <AppLayout title="Minha Área" items={MORADOR_MENU} />
+            <AppLayout title="Minha Área" items={moradorMenu(unidade.P)} />
           </ProtectedRoute>
         }
       >

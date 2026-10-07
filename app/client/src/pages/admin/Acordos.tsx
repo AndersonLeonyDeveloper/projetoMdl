@@ -5,6 +5,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
+import { useCondominio } from '../../context/CondominioContext';
 
 const { Title, Paragraph } = Typography;
 
@@ -90,6 +91,7 @@ const mesAno = (t: { mes_referencia: number; ano_referencia: number }) => `${MES
 // ---------- Novo acordo ----------
 
 function NovoAcordoModal({ aberto, onFechar, onCriado }: { aberto: boolean; onFechar: () => void; onCriado: () => void }) {
+  const { agrupador, unidade } = useCondominio();
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   const [apartamentos, setApartamentos] = useState<Apartamento[]>([]);
   const [blocoId, setBlocoId] = useState<number>();
@@ -193,25 +195,25 @@ function NovoAcordoModal({ aberto, onFechar, onCriado }: { aberto: boolean; onFe
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           style={{ width: 130 }}
-          placeholder="Bloco"
+          placeholder={agrupador.S}
           value={blocoId}
           onChange={escolherBloco}
-          options={blocos.map((b) => ({ value: b.id, label: `Bloco ${b.numero}` }))}
+          options={blocos.map((b) => ({ value: b.id, label: `${agrupador.S} ${b.numero}` }))}
           data-testid="select-acordo-bloco"
         />
         <Select
           style={{ width: 160 }}
-          placeholder="Apartamento"
+          placeholder={unidade.S}
           value={apartamentoId}
           onChange={escolherApartamento}
           disabled={!blocoId}
-          options={apartamentos.map((a) => ({ value: a.id, label: `Apartamento ${a.numero}` }))}
+          options={apartamentos.map((a) => ({ value: a.id, label: `${unidade.S} ${a.numero}` }))}
           data-testid="select-acordo-apartamento"
         />
       </Space>
 
       {apartamentoId && elegiveis.length === 0 && (
-        <Alert type="info" showIcon message="Este apartamento não tem taxas em atraso disponíveis para acordo." />
+        <Alert type="info" showIcon message={`${unidade.este[0].toUpperCase()}${unidade.este.slice(1)} ${unidade.s} não tem taxas em atraso disponíveis para acordo.`} />
       )}
       {elegiveis.length > 0 && (
         <>
@@ -292,6 +294,7 @@ function NovoAcordoModal({ aberto, onFechar, onCriado }: { aberto: boolean; onFe
 // ---------- Detalhe ----------
 
 function DetalheDoAcordo({ id, onFechar, onAlterado }: { id: number | null; onFechar: () => void; onAlterado: () => void }) {
+  const { rotuloDaUnidade } = useCondominio();
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null);
   const [versao, setVersao] = useState(0);
   const [pagando, setPagando] = useState<Parcela | null>(null);
@@ -356,7 +359,7 @@ function DetalheDoAcordo({ id, onFechar, onAlterado }: { id: number | null; onFe
 
   return (
     <Drawer
-      title={detalhe ? `Acordo ${detalhe.id} · Bl.${detalhe.bloco_numero}/Ap.${detalhe.apartamento_numero}` : 'Acordo'}
+      title={detalhe ? `Acordo ${detalhe.id} · ${rotuloDaUnidade(detalhe.bloco_numero, detalhe.apartamento_numero)}` : 'Acordo'}
       open={id !== null}
       onClose={() => { onFechar(); setDetalhe(null); }}
       size="large"
@@ -432,6 +435,7 @@ function DetalheDoAcordo({ id, onFechar, onAlterado }: { id: number | null; onFe
 // ---------- Lista ----------
 
 export function Acordos() {
+  const { unidade, rotuloDaUnidade } = useCondominio();
   const [acordos, setAcordos] = useState<Acordo[]>([]);
   const [status, setStatus] = useState<string>();
   const [novo, setNovo] = useState(false);
@@ -444,7 +448,7 @@ export function Acordos() {
   }, [status, versao]);
 
   const colunas: ColumnsType<Acordo> = [
-    { title: 'Apartamento', key: 'apto', render: (_: unknown, a) => `Bl.${a.bloco_numero}/Ap.${a.apartamento_numero}` },
+    { title: unidade.S, key: 'apto', render: (_: unknown, a) => rotuloDaUnidade(a.bloco_numero, a.apartamento_numero) },
     { title: 'Situação', dataIndex: 'status', render: (s: StatusAcordo) => <Tag color={STATUS[s].cor} data-testid={`status-acordo-${s}`}>{STATUS[s].texto}</Tag> },
     { title: 'Total', dataIndex: 'valor_total', render: formatarMoeda },
     { title: 'Recebido', dataIndex: 'valor_pago', render: formatarMoeda },
@@ -462,7 +466,7 @@ export function Acordos() {
     <Card>
       <Title level={4}>Acordos de dívida</Title>
       <Paragraph type="secondary">
-        Um acordo renegocia taxas em atraso de um apartamento em parcelas. Enquanto está ativo ou quitado, as taxas deixam de contar
+        Um acordo renegocia taxas em atraso {unidade.do} {unidade.s} em parcelas. Enquanto está ativo ou quitado, as taxas deixam de contar
         como atraso; o dinheiro entra como receita no mês em que cada parcela é paga. Uma parcela vencida há mais de 5 dias sem
         pagamento torna o acordo descumprido, e as taxas voltam a contar como atraso.
       </Paragraph>

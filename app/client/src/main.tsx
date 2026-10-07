@@ -5,12 +5,15 @@ import 'antd/dist/reset.css'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext'
+import { CondominioProvider } from './context/CondominioContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <CondominioProvider>
+          <App />
+        </CondominioProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

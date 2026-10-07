@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { useCondominio } from '../../context/CondominioContext';
 import { Card, Select, InputNumber, Spin, Table, Typography, Space, Statistic, Row, Col } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../../api/client';
@@ -32,6 +33,7 @@ const MESES = [
 ];
 
 export function FinanceiroCondominio() {
+  const { agrupador } = useCondominio();
   const [ano, setAno] = useState(new Date().getFullYear());
   const [mes, setMes] = useState(new Date().getMonth() + 1);
   const [resumoMensal, setResumoMensal] = useState<ResumoMensal | null>(null);
@@ -49,9 +51,9 @@ export function FinanceiroCondominio() {
 
   const columns: ColumnsType<ResumoBloco> = [
     {
-      title: 'Bloco',
+      title: agrupador.S,
       dataIndex: 'bloco_numero',
-      filters: resumoBlocos.map((b) => ({ text: `Bloco ${b.bloco_numero}`, value: b.bloco_numero })),
+      filters: resumoBlocos.map((b) => ({ text: `${agrupador.S} ${b.bloco_numero}`, value: b.bloco_numero })),
       onFilter: (value, record) => record.bloco_numero === value,
     },
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
@@ -115,8 +117,7 @@ export function FinanceiroCondominio() {
 
       <Card>
         <Typography.Paragraph type="secondary">
-          Saldo do bloco = receitas do bloco (taxas pagas + parte das outras receitas) menos as despesas dele (as do próprio
-          bloco + a parte das despesas gerais, divididas por igual entre os blocos).
+          {`Saldo ${agrupador.do} ${agrupador.s} = receitas ${agrupador.do} ${agrupador.s} (taxas pagas + parte das outras receitas) menos as despesas ${agrupador.ao === 'à' ? 'dela' : 'dele'} (as ${agrupador.ao === 'à' ? 'da própria' : 'do próprio'} ${agrupador.s} + a parte das despesas gerais, divididas por igual entre ${agrupador.o === 'a' ? 'as' : 'os'} ${agrupador.p}).`}
         </Typography.Paragraph>
         <Table
           data-testid="tabela-resumo-blocos"

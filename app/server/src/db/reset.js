@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import { db, garantirAdmin, runMigrations, withTransaction } from './index.js';
+import { aplicarEstruturaPadrao } from './estrutura.js';
 import { COMPROVANTES_DIR } from '../utils/comprovantes.js';
 
 runMigrations();
+
+// Em um banco novo a estrutura nasce do assistente de primeiro acesso; os scripts de banco usam a padrão (12 x 16).
+if (aplicarEstruturaPadrao()) console.log('Estrutura padrão criada (12 blocos, térreo + 3 andares, 4 apartamentos por andar).');
 
 // Em um banco novo ainda não há administrador: cria o padrão para o sistema nunca ficar sem acesso.
 if (garantirAdmin()) console.log('Administrador padrão criado (senha padrão: "senha123").');

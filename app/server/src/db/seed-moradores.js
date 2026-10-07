@@ -1,17 +1,20 @@
 import { db, garantirAdmin, runMigrations, SENHA_PADRAO, withTransaction } from './index.js';
 import bcrypt from 'bcryptjs';
 import { gerarPessoasUnicas } from './fake-data.js';
+import { aplicarEstruturaPadrao, exigirEstruturaDeDemonstracao } from './estrutura.js';
 
 const INQUILINOS_POR_APTO = 3;
 
 runMigrations();
+aplicarEstruturaPadrao();
+exigirEstruturaDeDemonstracao();
 garantirAdmin();
 
 const apartamentos = db
   .prepare(
     `SELECT a.id, b.numero AS bloco, a.numero
      FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id
-     ORDER BY b.numero, a.numero`
+     ORDER BY b.ordem, b.numero, a.ordem, a.numero`
   )
   .all();
 

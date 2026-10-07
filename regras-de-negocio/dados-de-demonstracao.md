@@ -32,14 +32,16 @@ O comando antigo `db:seed` (7 moradores de exemplo) foi **removido**. Os logins 
 
 ## 2. O que mudou no sistema
 
-### 2.1 Blocos e apartamentos agora são uma estrutura fixa
+### 2.1 A estrutura de demonstração
 
-Antes, o `db:reset` apagava blocos e apartamentos, e a tela de cadastro de morador ficava com as listas vazias. Agora a estrutura do condomínio existe sempre:
+A estrutura do condomínio não nasce mais quando o servidor sobe: vem do assistente de primeiro acesso (regras, seção 3.5). Os scripts de
+banco (`db:reset`, `db:populate` e os seeds) criam, **se o condomínio ainda não estiver configurado**, a estrutura de demonstração:
 
-- Blocos de **01 a 12**.
-- Em cada bloco, **16 apartamentos**: `01, 02, 03, 04, 101–104, 201–204, 301–304`.
-- A estrutura é criada automaticamente quando o servidor sobe e nunca é apagada pelo reset.
-- O cadastro de morador apenas **vincula** uma pessoa a um apartamento que já existe.
+- Nomes **Bloco/Apartamento** e o condomínio **Morada da Lagoa**.
+- Blocos de **01 a 12**, cada um com **16 apartamentos**: térreo `01–04` e andares `101–104`, `201–204`, `301–304` (térreo + 3 andares, 4 por andar).
+- O reset nunca apaga a estrutura. O cadastro de morador apenas **vincula** uma pessoa a um apartamento que já existe.
+- Os seeds citam apartamentos específicos (Bl.08/203, Bl.07/301, Bl.09/204…). Se o banco tiver **outra** estrutura, eles param com uma
+  mensagem em vez de quebrar no meio: apague o arquivo do banco e rode de novo para voltar à demonstração.
 
 ### 2.2 Um apartamento pode ter vários inquilinos
 

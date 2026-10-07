@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Form, Input, Select, Button, Alert, Typography, Space } from 'antd';
 import { api } from '../../api/client';
+import { useCondominio } from '../../context/CondominioContext';
 
 const { Title } = Typography;
 
@@ -26,6 +27,7 @@ interface FormValues {
 }
 
 export function CadastroMoradores() {
+  const { agrupador, unidade } = useCondominio();
   const [form] = Form.useForm<FormValues>();
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   const [apartamentos, setApartamentos] = useState<Apartamento[]>([]);
@@ -87,9 +89,9 @@ export function CadastroMoradores() {
       >
         <Space wrap size="large" align="start">
           <Form.Item
-            label="Bloco"
+            label={agrupador.S}
             name="bloco_id"
-            rules={[{ required: true, message: 'Selecione o bloco.' }]}
+            rules={[{ required: true, message: `Selecione ${agrupador.o} ${agrupador.s}.` }]}
           >
             <Select
               style={{ width: 160 }}
@@ -100,9 +102,9 @@ export function CadastroMoradores() {
             />
           </Form.Item>
           <Form.Item
-            label="Apartamento"
+            label={unidade.S}
             name="apartamento_id"
-            rules={[{ required: true, message: 'Selecione o apartamento.' }]}
+            rules={[{ required: true, message: `Selecione ${unidade.o} ${unidade.s}.` }]}
           >
             <Select
               style={{ width: 160 }}

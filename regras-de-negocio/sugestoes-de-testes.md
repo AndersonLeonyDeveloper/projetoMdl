@@ -125,7 +125,7 @@
 - [ ] **Estrutura sobrevive ao reset**: após `db:reset`, devem existir 12 blocos (01–12) e 192 apartamentos
   (16 por bloco: `01–04`, `101–104`, `201–204`, `301–304`); a tela de cadastro de morador lista blocos e
   apartamentos (regressão do bug de listas vazias). `DB/Integridade` / `E2E`
-- [ ] **Estrutura é idempotente** (rodar várias vezes dá o mesmo resultado): subir o servidor várias vezes não duplica nem apaga blocos/apartamentos.
+- [ ] **A estrutura não é criada no boot**: subir o servidor várias vezes num banco já configurado não duplica nem apaga blocos/apartamentos; `db:populate` duas vezes dá o mesmo resultado (12 blocos, 192 apartamentos). Num banco vazio, subir o servidor **não** cria estrutura (ver 7.22). `DB/Integridade`
   `DB/Integridade`
 - [ ] **Vários inquilinos ativos**: inserir 3 ou mais inquilinos ativos no mesmo apartamento funciona; um 2º
   proprietário ativo retorna 409 ("Já existe um proprietário ativo para este apartamento."). `API`
@@ -751,6 +751,41 @@
   resumo mostra o cartão "Em acordo". `E2E`
 - [ ] **Dados dos Moradores**: etiqueta roxa "N em acordo" ao lado da situação; a taxa do acordo não aparece em "N em atraso". `E2E`
 - [ ] **Resumos**: coluna "Em acordo" no resumo por bloco (admin e morador) e na inadimplência anual, e o total "Em acordo" na inadimplência. `E2E`
+
+### 7.22 Configuração do condomínio (estrutura e nomes)
+
+> Cenários levantados em 07/10/2026 (item 2.22 do backlog). Regras nas seções 3.4 e 3.5 de [`regras-de-negocio.md`](./regras-de-negocio.md).
+> Os `API` têm teste em `test/restassured`: `ConfiguracaoCondominioApiTest` (banco já configurado: prévia, recusa do segundo acesso e nomes; compilado e ainda
+> não executado) e `PrimeiroAcessoApiTest` (banco **vazio**, segunda API na porta 3002, perfil `-Pprimeiro-acesso`; 12 testes encadeados; compilado e ainda não executado).
+> Roteiro em [`../test/roteiro-primeiro-acesso.md`](../test/roteiro-primeiro-acesso.md). Os nomes são estado global: `ConfiguracaoCondominioApiTest` restaura o original a cada teste.
+
+- [ ] **Estado**: todo perfil logado lê `GET /condominio` (`configurado`, nomes, totais); sem login 401. No banco de demonstração: Bloco/Apartamento,
+  `Bl.`/`Ap.`, térreo + 3 andares, 4 por andar. `API`
+- [ ] **Prévia por andar**: 3 agrupadores × 2 andares (sem térreo) × 3 por andar = 18 unidades, com 101–103 e 201–203. `API`
+- [ ] **Prévia com térreo** (12 × térreo + 3 × 4) reproduz a estrutura padrão: 192 unidades, `01–04` no térreo e `101–104` no 1º andar. `API`
+- [ ] **Numeração sequencial**: 01, 02, 03… contínuos no agrupador, sem relação com o andar. `API`
+- [ ] **Sem andares (casas)**: só uma lista `01..N` por agrupador, sem rótulo de andar. `API`
+- [ ] **Prévia inválida** retorna 400: zero agrupadores; nenhum andar e sem térreo; zero por andar; formato desconhecido; mais de 10.000
+  unidades; corpo vazio. `API`
+- [ ] **Permissões**: prévia, primeiro acesso e edição de nomes só o Admin (403 para proprietário e inquilino, 401 sem login). `API`
+- [ ] **Não repete o primeiro acesso**: com o condomínio configurado, `POST /condominio` retorna 409 e o total de unidades não muda. `API`
+- [ ] **Primeiro acesso completo** (banco vazio: `npm run db:vazio` e `npm run start:vazio`; a API tem `PrimeiroAcessoApiTest`, o fluxo de tela é o roteiro manual): o login do admin padrão leva ao assistente; qualquer
+  outra rota o redireciona; proprietário/inquilino veem "Configuração pendente"; após concluir, a estrutura existe com a numeração da prévia,
+  o assistente não abre mais (volta para a administração) e a senha nova, se informada, vale no lugar de `senha123` (senha com menos de 6
+  caracteres é recusada). `E2E` / `DB/Integridade`
+- [ ] **Assistente**: escolher um modelo (Blocos, Torres, Edifícios, Ruas, Quadras) preenche os nomes; a prévia atualiza ao mudar os números; com
+  "sem andares" some andares/térreo/numeração; "Criar estrutura" só habilita com a prévia válida. `E2E`
+- [ ] **Trocar os nomes** (Cadastro → Nomes do condomínio): as telas, as colunas, a ajuda e as mensagens da API passam a usar o novo nome com a
+  concordância de gênero (ex.: "Número da torre é obrigatório."); números e totais não mudam; gera registro no Histórico de alterações
+  (`editar_rotulos`). `API` / `E2E`
+- [ ] **Nomes inválidos** retornam 400: gênero diferente de m/f; nome com mais de 30 caracteres (80 no do condomínio); abreviação com mais de 6.
+  Plural e abreviação omitidos são deduzidos do singular ("Sala" → "Salas", "Sa."). `API`
+- [ ] **Histórico mantém o rótulo da época**: registros gravados antes da troca de nomes continuam exibindo `Bl.08/Ap.203`. `E2E`
+- [ ] **Banco antigo**: abrir um banco criado antes desta mudança o trata como configurado (Bloco/Apartamento, Morada da Lagoa, 192 unidades), com
+  o `andar` deduzido do número (`01` → 0, `203` → 2) e a mesma ordem de antes. `DB/Integridade`
+- [ ] **Ordem**: agrupador ou unidade cadastrado depois (`POST /blocos`, `POST /apartamentos`) aparece no **fim** da lista, mesmo que o número seja "menor" que os existentes; a ordem não depende do número como texto. `API`
+- [ ] **Seeds em outra estrutura**: `db:seed:moradores` e `db:seed:financeiro` num banco com estrutura diferente da demonstração param com
+  mensagem clara. `DB/Integridade`
 
 ## 8. Sugestão de Uso com IA (Playwright + IA)
 

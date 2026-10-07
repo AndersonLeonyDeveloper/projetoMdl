@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Checkbox, Form, Select } from 'antd';
 import { api } from '../api/client';
+import { useCondominio } from '../context/CondominioContext';
 
 interface Bloco {
   id: number;
@@ -9,21 +10,23 @@ interface Bloco {
 
 // Bloco da despesa (opcional): vazio = despesa geral, dividida igualmente entre os blocos; preenchido = só desse bloco.
 export function CampoBlocoDespesa({ testId }: { testId: string }) {
+  const { agrupador } = useCondominio();
+  const todos = agrupador.o === 'a' ? 'todas as' : 'todos os';
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   useEffect(() => {
     api.get<Bloco[]>('/blocos').then((res) => setBlocos(res.data));
   }, []);
   return (
     <Form.Item
-      label="Bloco (opcional)"
+      label={`${agrupador.S} (opcional)`}
       name="bloco_id"
-      extra="Sem bloco = despesa geral, dividida por igual entre os blocos."
+      extra={`Sem ${agrupador.s} = despesa geral, dividida por igual entre ${agrupador.o === 'a' ? 'as' : 'os'} ${agrupador.p}.`}
     >
       <Select
         allowClear
         style={{ width: 240 }}
-        placeholder="Geral (todos os blocos)"
-        options={blocos.map((b) => ({ value: b.id, label: `Bloco ${b.numero}` }))}
+        placeholder={`Geral (${todos} ${agrupador.p})`}
+        options={blocos.map((b) => ({ value: b.id, label: `${agrupador.S} ${b.numero}` }))}
         data-testid={testId}
       />
     </Form.Item>

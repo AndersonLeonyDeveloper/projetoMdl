@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Form, InputNumber, Select, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
+import { useCondominio } from '../../context/CondominioContext';
 
 const { Title, Paragraph } = Typography;
 
@@ -32,6 +33,9 @@ interface ApartamentoComFator {
 
 // Fator da taxa por apartamento: multiplica o valor-base do ano na geração das taxas do mês (1 = valor-base).
 function FatorPorApartamento() {
+  const { agrupador, unidade } = useCondominio();
+  const femA = agrupador.o === 'a';
+  const femU = unidade.o === 'a';
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   const [apartamentos, setApartamentos] = useState<ApartamentoComFator[]>([]);
   const [blocoId, setBlocoId] = useState<number>();
@@ -69,15 +73,15 @@ function FatorPorApartamento() {
     setMensagem(null);
     try {
       const { data } = await api.post<{ alterados: number }>(`/blocos/${blocoId}/fator-taxa`, { fator: fatorDoBloco });
-      setMensagem({ tipo: 'success', texto: `Fator ${fatorDoBloco} aplicado ao bloco ${blocoAtual?.numero}: ${data.alterados} apartamento(s) alterado(s).` });
+      setMensagem({ tipo: 'success', texto: `Fator ${fatorDoBloco} aplicado ${agrupador.ao} ${agrupador.s} ${blocoAtual?.numero}: ${data.alterados} ${unidade.s}(s) alterad${femU ? 'a' : 'o'}(s).` });
       setVersao((v) => v + 1);
     } catch (err) {
-      setMensagem({ tipo: 'error', texto: mensagemDeErro(err, 'Erro ao aplicar o fator ao bloco.') });
+      setMensagem({ tipo: 'error', texto: mensagemDeErro(err, `Erro ao aplicar o fator ${agrupador.ao} ${agrupador.s}.`) });
     }
   }
 
   const colunas: ColumnsType<ApartamentoComFator> = [
-    { title: 'Apartamento', dataIndex: 'numero' },
+    { title: unidade.S, dataIndex: 'numero' },
     {
       title: 'Fator',
       dataIndex: 'fator_taxa',
@@ -111,17 +115,17 @@ function FatorPorApartamento() {
 
   return (
     <Card data-testid="fator-por-apartamento">
-      <Title level={4}>Fator da taxa por apartamento</Title>
+      <Title level={4}>Fator da taxa por {unidade.s}</Title>
       <Paragraph type="secondary">
-        O valor da taxa de cada apartamento é o valor do ano multiplicado pelo fator (1,00 = valor padrão; por exemplo, 1,20
+        O valor da taxa de cada {unidade.s} é o valor do ano multiplicado pelo fator (1,00 = valor padrão; por exemplo, 1,20
         para uma cobertura). O fator só vale para as taxas geradas daqui para a frente; taxas já lançadas não mudam.{' '}
         <strong data-testid="resumo-fatores">
-          {diferentes === 0 ? 'Todos os apartamentos usam o fator 1,00.' : `${diferentes} apartamento(s) com fator diferente de 1,00.`}
+          {diferentes === 0 ? `${femU ? 'Todas as' : 'Todos os'} ${unidade.p} usam o fator 1,00.` : `${diferentes} ${unidade.s}(s) com fator diferente de 1,00.`}
         </strong>
       </Paragraph>
       <Space wrap style={{ marginBottom: 16 }} align="end">
         <div>
-          <div>Bloco</div>
+          <div>{agrupador.S}</div>
           <Select
             style={{ width: 120 }}
             value={blocoId}
@@ -131,7 +135,7 @@ function FatorPorApartamento() {
           />
         </div>
         <div>
-          <div>Aplicar a todo o bloco</div>
+          <div>Aplicar {femA ? 'a toda a' : 'a todo o'} {agrupador.s}</div>
           <Space.Compact>
             <InputNumber value={fatorDoBloco} onChange={setFatorDoBloco} min={0.1} max={5} step={0.05} data-testid="input-fator-bloco" />
             <Button onClick={aplicarAoBloco} data-testid="botao-aplicar-fator-bloco">Aplicar</Button>
@@ -145,6 +149,7 @@ function FatorPorApartamento() {
 }
 
 export function ConfiguracoesFinanceiras() {
+  const { unidade } = useCondominio();
   const [parametros] = Form.useForm();
   const [novaTaxa] = Form.useForm<TaxaPadrao>();
   const [taxasPadrao, setTaxasPadrao] = useState<TaxaPadrao[]>([]);
@@ -294,7 +299,7 @@ export function ConfiguracoesFinanceiras() {
         <Title level={4}>Valor da taxa de condomínio por ano</Title>
         <Paragraph type="secondary">
           O valor do ano já vem preenchido ao lançar uma taxa e é usado em "Gerar taxas do mês" (o valor-base, antes do fator
-          de cada apartamento). O percentual do fundo de reserva é a parte do valor da taxa paga (sem juros) que vai para o
+          de cada {unidade.s}). O percentual do fundo de reserva é a parte do valor da taxa paga (sem juros) que vai para o
           fundo. Alterar um valor ou um percentual não muda taxas já lançadas.
         </Paragraph>
         <Table

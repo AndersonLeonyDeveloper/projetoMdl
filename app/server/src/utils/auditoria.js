@@ -1,4 +1,5 @@
 import { db } from '../db/index.js';
+import { rotulos } from './rotulos.js';
 
 // Histórico de alterações financeiras (regras-de-negocio.md, seção 4.10). Só se grava; nada é editado nem apagado.
 // A linha é gravada logo depois da alteração, na mesma requisição.
@@ -36,7 +37,8 @@ export function rotuloDoApartamento(apartamentoId) {
   const apto = db
     .prepare('SELECT a.numero AS apartamento, b.numero AS bloco FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id WHERE a.id = ?')
     .get(apartamentoId);
-  return `Bl.${apto?.bloco ?? '?'}/Ap.${apto?.apartamento ?? '?'}`;
+  const { agrupador, unidade } = rotulos();
+  return `${agrupador.abrev}${apto?.bloco ?? '?'}/${unidade.abrev}${apto?.apartamento ?? '?'}`;
 }
 
 // "Bl.08/Ap.203 · 03/2026", para a lista do histórico.
@@ -45,7 +47,8 @@ export function rotuloDaTaxa(taxa) {
     .prepare('SELECT a.numero AS apartamento, b.numero AS bloco FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id WHERE a.id = ?')
     .get(taxa.apartamento_id);
   const mes = String(taxa.mes_referencia).padStart(2, '0');
-  return `Bl.${apto?.bloco ?? '?'}/Ap.${apto?.apartamento ?? '?'} · ${mes}/${taxa.ano_referencia}`;
+  const { agrupador, unidade } = rotulos();
+  return `${agrupador.abrev}${apto?.bloco ?? '?'}/${unidade.abrev}${apto?.apartamento ?? '?'} · ${mes}/${taxa.ano_referencia}`;
 }
 
 export function consultarAuditoria({ entidade, acao, entidade_id, usuario, de, ate, pagina = 1, limite = 50 }) {

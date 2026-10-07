@@ -43,7 +43,15 @@ const testIds = new Set([
   ...[...telas.matchAll(/testId="([^"]+)"/g)].map((m) => m[1]),
 ]);
 
+// Marcadores {a.X} (agrupador) e {u.X} (unidade): X precisa ser uma forma válida de Termo (CondominioContext.tsx).
+const FORMAS = ['s', 'S', 'p', 'P', 'abrev', 'o', 'do', 'no', 'um', 'este', 'esse', 'nesse', 'deste', 'ao'];
+const marcadores = [...conteudo.matchAll(/\{([A-Za-z]\.[^{}\s]*)\}/g)].map((m) => m[1]);
+
 const erros = [];
+for (const m of marcadores) {
+  const ok = /^[au]\.(\w+)$/.exec(m);
+  if (!ok || !FORMAS.includes(ok[1])) erros.push(`marcador inválido "{${m}}" (use {a.X} ou {u.X} com X em: ${FORMAS.join(', ')})`);
+}
 const avisos = [];
 for (const alvo of new Set(alvos)) {
   if (!testIds.has(alvo)) erros.push(`alvo "${alvo}" não existe como data-testid em nenhuma tela`);
@@ -57,7 +65,7 @@ for (const rota of new Set(rotasDeGuia)) {
 }
 
 console.log(
-  `Ajuda: ${new Set(alvos).size} alvos, ${rotasComTour.length} telas com tour, ${new Set(rotasDeGuia).size} rotas de guia verificados.`
+  `Ajuda: ${new Set(alvos).size} alvos, ${rotasComTour.length} telas com tour, ${new Set(rotasDeGuia).size} rotas de guia e ${marcadores.length} marcadores verificados.`
 );
 for (const a of avisos) console.warn(`  aviso: ${a}`);
 if (erros.length) {

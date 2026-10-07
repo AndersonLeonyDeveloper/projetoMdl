@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { calcularJuros, hojeISO, sqlVencida } from '../utils/juros.js';
 import { atualizarStatusDosAcordos, sqlEmAcordo } from '../utils/acordos.js';
 import { instantaneo, registrarAuditoria, rotuloDoApartamento } from '../utils/auditoria.js';
+import { rotulos } from '../utils/rotulos.js';
 
 export const cadastroRouter = Router();
 cadastroRouter.use(requireAuth);
@@ -11,7 +12,7 @@ cadastroRouter.use(requireAuth);
 // ---------- Blocos ----------
 
 cadastroRouter.get('/blocos', (_req, res) => {
-  res.json(db.prepare('SELECT * FROM blocos ORDER BY numero').all());
+  res.json(db.prepare('SELECT * FROM blocos ORDER BY ordem, numero').all());
 });
 
 // Número de bloco ou de apartamento: 1 a 5 letras ou dígitos, sem espaços. Bloco só com um dígito ("5") vira "05",
@@ -24,19 +25,22 @@ function lerNumero(valor, { bloco = false } = {}) {
 }
 
 cadastroRouter.post('/blocos', requireRole('admin'), (req, res) => {
+  const { agrupador: a } = rotulos();
   if (req.body?.numero === undefined || String(req.body.numero).trim() === '') {
-    return res.status(400).json({ error: 'Número do bloco é obrigatório.' });
+    return res.status(400).json({ error: `Número ${a.do} ${a.min} é obrigatório.` });
   }
   const numero = lerNumero(req.body.numero, { bloco: true });
   if (!numero) {
-    return res.status(400).json({ error: 'O número do bloco deve ter de 1 a 5 letras ou números, sem espaços.' });
+    return res.status(400).json({ error: `O número ${a.do} ${a.min} deve ter de 1 a 5 letras ou números, sem espaços.` });
   }
   try {
-    const info = db.prepare('INSERT INTO blocos (numero) VALUES (?)').run(numero);
+    const info = db
+      .prepare('INSERT INTO blocos (numero, ordem) VALUES (?, (SELECT COALESCE(MAX(ordem), 0) + 1 FROM blocos))')
+      .run(numero);
     res.status(201).json({ id: info.lastInsertRowid, numero });
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      return res.status(409).json({ error: 'Já existe um bloco com esse número.' });
+      return res.status(409).json({ error: `Já existe ${a.um} ${a.min} com esse número.` });
     }
     throw err;
   }
@@ -48,32 +52,37 @@ cadastroRouter.get('/apartamentos', (req, res) => {
   const { bloco_id } = req.query;
   const apartamentos = bloco_id
     ? db
-        .prepare('SELECT * FROM apartamentos WHERE bloco_id = ? ORDER BY numero')
+        .prepare('SELECT * FROM apartamentos WHERE bloco_id = ? ORDER BY ordem, numero')
         .all(Number(bloco_id))
-    : db.prepare('SELECT * FROM apartamentos ORDER BY bloco_id, numero').all();
+    : db.prepare('SELECT a.* FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id ORDER BY b.ordem, b.numero, a.ordem, a.numero').all();
   res.json(apartamentos);
 });
 
 cadastroRouter.post('/apartamentos', requireRole('admin'), (req, res) => {
   const { bloco_id } = req.body ?? {};
+  const { agrupador: a, unidade: u } = rotulos();
   if (!bloco_id || req.body?.numero === undefined || String(req.body.numero).trim() === '') {
     return res.status(400).json({ error: 'bloco_id e numero são obrigatórios.' });
   }
   const numero = lerNumero(req.body.numero);
   if (!numero) {
-    return res.status(400).json({ error: 'O número do apartamento deve ter de 1 a 5 letras ou números, sem espaços.' });
+    return res.status(400).json({ error: `O número ${u.do} ${u.min} deve ter de 1 a 5 letras ou números, sem espaços.` });
   }
   if (!db.prepare('SELECT 1 FROM blocos WHERE id = ?').get(bloco_id)) {
-    return res.status(404).json({ error: 'Bloco não encontrado.' });
+    return res.status(404).json({ error: `${a.Min} não ${a.encontrado}.` });
   }
+  const andar = Number.isInteger(Number(req.body?.andar)) && req.body?.andar !== '' && req.body?.andar !== null ? Number(req.body.andar) : null;
   try {
     const info = db
-      .prepare('INSERT INTO apartamentos (bloco_id, numero) VALUES (?, ?)')
-      .run(bloco_id, numero);
+      .prepare(
+        `INSERT INTO apartamentos (bloco_id, numero, andar, ordem)
+         VALUES (?, ?, ?, (SELECT COALESCE(MAX(ordem), 0) + 1 FROM apartamentos WHERE bloco_id = ?))`
+      )
+      .run(bloco_id, numero, andar, bloco_id);
     res.status(201).json({ id: info.lastInsertRowid, bloco_id, numero });
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      return res.status(409).json({ error: 'Esse apartamento já existe nesse bloco.' });
+      return res.status(409).json({ error: `${rotulos().unidade.esse.replace(/^./, (c) => c.toUpperCase())} ${u.min} já existe ${a.nesse} ${a.min}.` });
     }
     throw err;
   }
@@ -90,7 +99,7 @@ const MENSAGEM_FATOR = 'fator deve ser um número entre 0,1 e 5.';
 
 cadastroRouter.put('/apartamentos/:id/fator-taxa', requireRole('admin'), (req, res) => {
   const apto = db.prepare('SELECT * FROM apartamentos WHERE id = ?').get(req.params.id);
-  if (!apto) return res.status(404).json({ error: 'Apartamento não encontrado.' });
+  if (!apto) return res.status(404).json({ error: `${rotulos().unidade.Min} não ${rotulos().unidade.encontrado}.` });
   const fator = lerFator(req.body?.fator);
   if (fator === null) return res.status(400).json({ error: MENSAGEM_FATOR });
   db.prepare('UPDATE apartamentos SET fator_taxa = ? WHERE id = ?').run(fator, apto.id);
@@ -106,7 +115,7 @@ cadastroRouter.put('/apartamentos/:id/fator-taxa', requireRole('admin'), (req, r
 // Aplica o mesmo fator a todos os apartamentos de um bloco.
 cadastroRouter.post('/blocos/:id/fator-taxa', requireRole('admin'), (req, res) => {
   const bloco = db.prepare('SELECT * FROM blocos WHERE id = ?').get(req.params.id);
-  if (!bloco) return res.status(404).json({ error: 'Bloco não encontrado.' });
+  if (!bloco) return res.status(404).json({ error: `${rotulos().agrupador.Min} não ${rotulos().agrupador.encontrado}.` });
   const fator = lerFator(req.body?.fator);
   if (fator === null) return res.status(400).json({ error: MENSAGEM_FATOR });
   const antes = db.prepare('SELECT id, fator_taxa FROM apartamentos WHERE bloco_id = ?').all(bloco.id);
@@ -116,7 +125,7 @@ cadastroRouter.post('/blocos/:id/fator-taxa', requireRole('admin'), (req, res) =
     registrarAuditoria(req, {
       entidade: 'apartamento', acao: 'editar_bloco',
       depois: { bloco: bloco.numero, fator_taxa: fator, apartamentos_alterados: alterados },
-      detalhe: `Bloco ${bloco.numero} · fator da taxa ${fator} em ${alterados} apartamento(s)`,
+      detalhe: `${rotulos().agrupador.singular} ${bloco.numero} · fator da taxa ${fator} em ${alterados} ${rotulos().unidade.min}(s)`,
     });
   }
   res.json({ bloco_id: bloco.id, fator_taxa: fator, apartamentos: antes.length, alterados });
@@ -190,7 +199,7 @@ cadastroRouter.post('/moradores', requireRole('admin'), (req, res) => {
   } catch (err) {
     if (isUniqueConstraintError(err)) {
       return res.status(409).json({
-        error: 'Já existe um proprietário ativo para este apartamento.',
+        error: `Já existe um proprietário ativo para ${rotulos().unidade.este} ${rotulos().unidade.min}.`,
       });
     }
     throw err;
@@ -211,7 +220,7 @@ cadastroRouter.delete('/moradores/:id', requireRole('admin'), (req, res) => {
 // "Meus Apartamentos": vínculos ativos da pessoa autenticada.
 cadastroRouter.get('/moradores/meus-apartamentos', (req, res) => {
   if (!req.user.pessoa_id) {
-    return res.status(403).json({ error: 'Usuário admin não possui apartamentos vinculados.' });
+    return res.status(403).json({ error: `Usuário admin não possui ${rotulos().unidade.pluralMin} vinculados.` });
   }
   const apartamentos = db
     .prepare(
@@ -220,7 +229,7 @@ cadastroRouter.get('/moradores/meus-apartamentos', (req, res) => {
        JOIN apartamentos a ON a.id = m.apartamento_id
        JOIN blocos b ON b.id = a.bloco_id
        WHERE m.pessoa_id = ? AND m.ativo = 1
-       ORDER BY b.numero, a.numero`
+       ORDER BY b.ordem, b.numero, a.ordem, a.numero`
     )
     .all(req.user.pessoa_id);
   res.json(apartamentos);
@@ -273,7 +282,7 @@ cadastroRouter.get('/dados-moradores', requireRole('admin'), (_req, res) => {
        JOIN blocos b ON b.id = a.bloco_id
        LEFT JOIN moradores m ON m.apartamento_id = a.id AND m.ativo = 1
        LEFT JOIN pessoas p ON p.id = m.pessoa_id
-       ORDER BY b.numero, a.numero, m.tipo`
+       ORDER BY b.ordem, b.numero, a.ordem, a.numero, m.tipo`
     )
     .all();
 

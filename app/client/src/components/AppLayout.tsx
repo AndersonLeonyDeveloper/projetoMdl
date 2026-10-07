@@ -5,6 +5,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../context/AuthContext';
 import { useAjuda } from '../ajuda/AjudaContext';
+import { useCondominio } from '../context/CondominioContext';
 import { PainelAjuda } from '../ajuda/PainelAjuda';
 import { TourDaTela } from '../ajuda/TourDaTela';
 
@@ -21,6 +22,9 @@ export function AppLayout({
   const [collapsed, setCollapsed] = useState(false);
   const { usuario, logout } = useAuth();
   const { abrirPainel } = useAjuda();
+  const { condominio } = useCondominio();
+  // Sigla do menu recolhido: iniciais das (até 3) primeiras palavras do nome.
+  const sigla = condominio.nome.split(/\s+/).filter((p) => p.length > 2).slice(0, 3).map((p) => p[0].toUpperCase()).join('') || 'CD';
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -44,7 +48,7 @@ export function AppLayout({
             whiteSpace: 'nowrap',
           }}
         >
-          {collapsed ? 'CML' : 'Morada da Lagoa'}
+          {collapsed ? sigla : condominio.nome}
         </div>
         <Menu
           theme="dark"

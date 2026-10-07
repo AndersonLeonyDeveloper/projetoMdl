@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useCondominio } from '../context/CondominioContext';
 import { Card, Col, Row, Space, Statistic, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { api, formatarMoeda } from '../api/client';
@@ -33,6 +34,7 @@ const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'o
 
 // Fundo de reserva: saldo, aportes (percentual da taxa paga) e retiradas (despesas pagas pelo fundo). Usada por todos os perfis.
 export function FundoDeReserva() {
+  const { agrupador } = useCondominio();
   const [fundo, setFundo] = useState<Fundo | null>(null);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function FundoDeReserva() {
   const colunasObras: ColumnsType<Obra> = [
     { title: 'Data', dataIndex: 'data' },
     { title: 'Obra ou despesa', dataIndex: 'descricao' },
-    { title: 'Bloco', dataIndex: 'bloco_numero', render: (v: string | null) => (v ? `Bloco ${v}` : 'Geral') },
+    { title: agrupador.S, dataIndex: 'bloco_numero', render: (v: string | null) => (v ? `${agrupador.S} ${v}` : 'Geral') },
     { title: 'Valor', dataIndex: 'valor', render: formatarMoeda },
   ];
 

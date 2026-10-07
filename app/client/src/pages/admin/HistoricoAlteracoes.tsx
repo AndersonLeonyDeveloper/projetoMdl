@@ -3,6 +3,7 @@ import { Card, DatePicker, Input, Select, Space, Table, Tag, Typography } from '
 import type { ColumnsType } from 'antd/es/table';
 import type { Dayjs } from 'dayjs';
 import { api } from '../../api/client';
+import { useCondominio, type Termo } from '../../context/CondominioContext';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -23,18 +24,18 @@ interface Resposta {
   itens: Registro[];
 }
 
-const ENTIDADES: Record<Registro['entidade'], string> = {
+const entidadesDe = (unidade: Termo): Record<Registro['entidade'], string> => ({
   taxa: 'Taxa',
   despesa: 'Despesa',
   outra_receita: 'Outra receita',
   configuracao: 'Configuração',
-  apartamento: 'Apartamento',
+  apartamento: unidade.S,
   acordo: 'Acordo',
-};
-const ACOES: Record<string, { texto: string; cor: string }> = {
+});
+const acoesDe = (agrupador: Termo): Record<string, { texto: string; cor: string }> => ({
   criar: { texto: 'Criado', cor: 'green' },
   editar: { texto: 'Editado', cor: 'blue' },
-  editar_bloco: { texto: 'Editado (bloco)', cor: 'blue' },
+  editar_bloco: { texto: `Editado (${agrupador.s})`, cor: 'blue' },
   pagar: { texto: 'Pagamento registrado', cor: 'cyan' },
   gerar_mes: { texto: 'Taxas geradas', cor: 'geekblue' },
   recalcular_juros: { texto: 'Juros recalculado', cor: 'purple' },
@@ -44,9 +45,11 @@ const ACOES: Record<string, { texto: string; cor: string }> = {
   retomar: { texto: 'Acordo retomado', cor: 'blue' },
   descumprir: { texto: 'Acordo descumprido', cor: 'red' },
   restaurar: { texto: 'Restaurado', cor: 'orange' },
-};
-const CAMPOS: Record<string, string> = {
-  apartamento_id: 'Apartamento (id)',
+  configurar_estrutura: { texto: 'Estrutura configurada', cor: 'purple' },
+  editar_rotulos: { texto: 'Nomes alterados', cor: 'blue' },
+});
+const camposDe = (agrupador: Termo, unidade: Termo): Record<string, string> => ({
+  apartamento_id: `${unidade.S} (id)`,
   mes_referencia: 'Mês de referência',
   ano_referencia: 'Ano de referência',
   valor: 'Valor',
@@ -63,7 +66,7 @@ const CAMPOS: Record<string, string> = {
   dia_vencimento: 'Dia de vencimento',
   fundo_saldo_inicial: 'Saldo inicial do fundo de reserva',
   fundo_reserva: 'Paga pelo fundo de reserva (1 = sim)',
-  bloco_id: 'Bloco (id)',
+  bloco_id: `${agrupador.S} (id)`,
   fator_taxa: 'Fator da taxa',
   status: 'Situação',
   valor_taxas: 'Valor das taxas',
@@ -75,12 +78,12 @@ const CAMPOS: Record<string, string> = {
   taxas: 'Taxas incluídas',
   parcelas: 'Parcelas',
   numero: 'Parcela (nº; 0 = entrada)',
-  bloco: 'Bloco',
-  apartamentos_alterados: 'Apartamentos alterados',
-  apartamentos_com_fator_diferente: 'Apartamentos com fator diferente de 1',
+  bloco: agrupador.S,
+  apartamentos_alterados: `${unidade.P} alterad${unidade.o === 'a' ? 'as' : 'os'}`,
+  apartamentos_com_fator_diferente: `${unidade.P} com fator diferente de 1`,
   criadas: 'Taxas criadas',
   ignoradas: 'Ignoradas (já existiam)',
-};
+});
 
 // Achata objetos aninhados (ex.: valor da taxa por ano) em "taxas_padrao.2026".
 function achatar(objeto: Record<string, unknown> | null, prefixo = ''): Record<string, unknown> {
@@ -92,7 +95,7 @@ function achatar(objeto: Record<string, unknown> | null, prefixo = ''): Record<s
   }
   return saida;
 }
-const rotuloDoCampo = (campo: string) =>
+const rotuloDoCampo = (campo: string, CAMPOS: Record<string, string>) =>
   campo.startsWith('taxas_padrao.')
     ? `Taxa de ${campo.split('.')[1]}`
     : campo.startsWith('fundo_percentuais.')
@@ -101,7 +104,7 @@ const rotuloDoCampo = (campo: string) =>
 const mostrar = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
 const emHorarioLocal = (utc: string) => new Date(`${utc.replace(' ', 'T')}Z`).toLocaleString('pt-BR');
 
-function Diferenca({ registro }: { registro: Registro }) {
+function Diferenca({ registro, campos: CAMPOS }: { registro: Registro; campos: Record<string, string> }) {
   const antes = achatar(registro.antes);
   const depois = achatar(registro.depois);
   const campos = [...new Set([...Object.keys(antes), ...Object.keys(depois)])].filter(
@@ -111,7 +114,7 @@ function Diferenca({ registro }: { registro: Registro }) {
     <ul style={{ margin: 0, paddingLeft: 18 }} data-testid="detalhe-alteracao">
       {campos.map((c) => (
         <li key={c}>
-          <strong>{rotuloDoCampo(c)}:</strong>{' '}
+          <strong>{rotuloDoCampo(c, CAMPOS)}:</strong>{' '}
           {registro.antes === null ? mostrar(depois[c]) : `${mostrar(antes[c])} → ${mostrar(depois[c])}`}
         </li>
       ))}
@@ -122,6 +125,10 @@ function Diferenca({ registro }: { registro: Registro }) {
 const TAMANHO_PAGINA = 20;
 
 export function HistoricoAlteracoes() {
+  const { agrupador, unidade } = useCondominio();
+  const ENTIDADES = entidadesDe(unidade);
+  const ACOES = acoesDe(agrupador);
+  const CAMPOS = camposDe(agrupador, unidade);
   const [entidade, setEntidade] = useState<string>();
   const [acao, setAcao] = useState<string>();
   const [periodo, setPeriodo] = useState<[Dayjs | null, Dayjs | null] | null>(null);
@@ -205,7 +212,7 @@ export function HistoricoAlteracoes() {
         columns={colunas}
         dataSource={dados.itens}
         loading={carregando}
-        expandable={{ expandedRowRender: (r) => <Diferenca registro={r} />, rowExpandable: (r) => r.antes !== null || r.depois !== null }}
+        expandable={{ expandedRowRender: (r) => <Diferenca registro={r} campos={CAMPOS} />, rowExpandable: (r) => r.antes !== null || r.depois !== null }}
         pagination={{ current: pagina, pageSize: TAMANHO_PAGINA, total: dados.total, showSizeChanger: false, onChange: setPagina }}
         locale={{ emptyText: 'Nenhuma alteração registrada para esse filtro.' }}
       />

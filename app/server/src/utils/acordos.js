@@ -1,6 +1,7 @@
 import { db, lerConfiguracao } from '../db/index.js';
 import { calcularJuros, ehDataValida, hojeISO, sqlVencida } from './juros.js';
 import { registrarAuditoria } from './auditoria.js';
+import { rotulos } from '../utils/rotulos.js';
 
 // Acordos de dívida (regras-de-negocio.md, seção 4.14).
 
@@ -102,7 +103,7 @@ export function montarAcordo(corpo, hoje = hojeISO()) {
   if (fora.length) {
     return {
       status: 409,
-      erro: 'Só podem entrar no acordo taxas em atraso deste apartamento que não estejam canceladas nem em outro acordo.',
+      erro: `Só podem entrar no acordo taxas em atraso ${rotulos().unidade.deste} ${rotulos().unidade.min} que não estejam canceladas nem em outro acordo.`,
     };
   }
   const taxas = taxaIds.map((id) => elegiveis.get(id)).sort((a, b) => a.ano_referencia - b.ano_referencia || a.mes_referencia - b.mes_referencia);

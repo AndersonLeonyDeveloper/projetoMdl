@@ -3,6 +3,7 @@ import { Alert, Button, Card, Popover, Space, Table, Typography, Tag } from 'ant
 import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
 import { api, formatarMoeda } from '../../api/client';
+import { useCondominio } from '../../context/CondominioContext';
 
 const { Title } = Typography;
 
@@ -99,6 +100,7 @@ function MensalidadesDoApartamento({ atrasos, linha }: { atrasos: DadoMorador['t
 }
 
 export function VisualizarMoradores() {
+  const { agrupador, unidade } = useCondominio();
   const [dados, setDados] = useState<DadoMorador[]>([]);
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   const [soSemProprietario, setSoSemProprietario] = useState(false);
@@ -110,16 +112,16 @@ export function VisualizarMoradores() {
 
   const columns: ColumnsType<DadoMorador> = [
     {
-      title: 'Bloco',
+      title: agrupador.S,
       dataIndex: 'bloco',
-      filters: blocos.map((b) => ({ text: `Bloco ${b.numero}`, value: b.numero })),
+      filters: blocos.map((b) => ({ text: `${agrupador.S} ${b.numero}`, value: b.numero })),
       onFilter: (value, record) => record.bloco === value,
-      sorter: (a, b) => a.bloco.localeCompare(b.bloco),
+      sorter: (a, b) => a.bloco.localeCompare(b.bloco, 'pt-BR', { numeric: true }),
     },
     {
-      title: 'Apartamento',
+      title: unidade.S,
       dataIndex: 'apartamento',
-      sorter: (a, b) => a.apartamento.localeCompare(b.apartamento),
+      sorter: (a, b) => a.apartamento.localeCompare(b.apartamento, 'pt-BR', { numeric: true }),
     },
     {
       title: 'Tipo',
@@ -172,10 +174,10 @@ export function VisualizarMoradores() {
           showIcon
           style={{ marginBottom: 16 }}
           data-testid="aviso-sem-proprietario"
-          message={`${semDono.size} apartamento(s) sem proprietário (${vazios} vazio(s), ${semDono.size - vazios} só com inquilinos).`}
+          message={`${semDono.size} ${unidade.s}(s) sem proprietário (${vazios} vazio(s), ${semDono.size - vazios} só com inquilinos).`}
           description={
             comAtraso.length > 0
-              ? `${comAtraso.length} deles com mensalidades em atraso (total devido hoje: ${formatarMoeda(totalDevido)}).`
+              ? `${comAtraso.length} ${unidade.o === 'a' ? 'delas' : 'deles'} com mensalidades em atraso (total devido hoje: ${formatarMoeda(totalDevido)}).`
               : undefined
           }
           action={

@@ -1,5 +1,6 @@
 import { db, runMigrations, withTransaction } from './index.js';
 import { criarPrng } from './fake-data.js';
+import { aplicarEstruturaPadrao, exigirEstruturaDeDemonstracao } from './estrutura.js';
 import { gerarComprovantesExemplo, NOMES_COMPROVANTES_EXEMPLO } from './comprovantes-exemplo.js';
 
 // Histórico financeiro fictício (jan/2020 → set/2026) de um condomínio de 192 unidades.
@@ -110,10 +111,12 @@ function sortearAtraso(i) {
 
 // ---------- Apartamentos e perfis ----------
 runMigrations();
+aplicarEstruturaPadrao();
+exigirEstruturaDeDemonstracao();
 
 const apartamentos = db
   .prepare(
-    `SELECT a.id FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id ORDER BY b.numero, a.numero`
+    `SELECT a.id FROM apartamentos a JOIN blocos b ON b.id = a.bloco_id ORDER BY b.ordem, b.numero, a.ordem, a.numero`
   )
   .all()
   .map((a) => a.id);

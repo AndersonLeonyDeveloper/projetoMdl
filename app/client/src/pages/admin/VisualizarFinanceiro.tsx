@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useCondominio } from '../../context/CondominioContext';
 import { Button, Card, Select, InputNumber, Table, Typography, Space, Statistic, Row, Col } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
@@ -28,6 +29,7 @@ const MESES = [
 ];
 
 export function VisualizarFinanceiro() {
+  const { agrupador } = useCondominio();
   const [ano, setAno] = useState(new Date().getFullYear());
   const [mes, setMes] = useState(new Date().getMonth() + 1);
   const [resumoMensal, setResumoMensal] = useState<ResumoMensal | null>(null);
@@ -44,7 +46,7 @@ export function VisualizarFinanceiro() {
   }, [ano, mes, regime]);
 
   const colunasBlocos: ColumnsType<ResumoBloco> = [
-    { title: 'Bloco', dataIndex: 'bloco_numero' },
+    { title: agrupador.S, dataIndex: 'bloco_numero' },
     { title: 'Adimplente', dataIndex: 'adimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'Inadimplente', dataIndex: 'inadimplente', render: (v: number) => `R$ ${v.toFixed(2)}` },
     { title: 'A vencer', dataIndex: 'a_vencer', render: (v: number) => `R$ ${v.toFixed(2)}` },
@@ -103,10 +105,9 @@ export function VisualizarFinanceiro() {
       )}
 
       <Card>
-        <Title level={4}>Resumo por bloco</Title>
+        <Title level={4}>{`Resumo por ${agrupador.s}`}</Title>
         <Paragraph type="secondary">
-          Saldo do bloco = receitas do bloco (taxas pagas + parte das outras receitas) menos as despesas dele (as do próprio
-          bloco + a parte das despesas gerais, divididas por igual entre os blocos).
+          {`Saldo ${agrupador.do} ${agrupador.s} = receitas ${agrupador.do} ${agrupador.s} (taxas pagas + parte das outras receitas) menos as despesas ${agrupador.ao === 'à' ? 'dela' : 'dele'} (as ${agrupador.ao === 'à' ? 'da própria' : 'do próprio'} ${agrupador.s} + a parte das despesas gerais, divididas por igual entre ${agrupador.o === 'a' ? 'as' : 'os'} ${agrupador.p}).`}
         </Paragraph>
         <Table
           data-testid="tabela-resumo-blocos"

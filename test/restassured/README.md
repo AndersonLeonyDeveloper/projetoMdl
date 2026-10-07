@@ -2,7 +2,7 @@
 
 Suíte de testes de API em Java/Maven (JUnit 5 + RestAssured). A API roda em `http://localhost:3001/api` e usa autenticação por token Bearer (`POST /auth/login`).
 
-> **Status:** as dezessete classes estão escritas e **compilam** (conferido com `javac` e os jars do `~/.m2`), mas **ainda não foram executadas**: o ambiente em que foram criadas não tinha Maven, acesso ao Maven Central nem permissão para abrir a porta da API. O comportamento esperado foi conferido contra a API por outro meio (requisições injetadas no app), mas rode a suíte e corrija o que precisar.
+> **Status:** as dezenove classes estão escritas e **compilam** (conferido com `javac` e os jars do `~/.m2`), mas **ainda não foram executadas**: o ambiente em que foram criadas não tinha Maven, acesso ao Maven Central nem permissão para abrir a porta da API. O comportamento esperado foi conferido contra a API por outro meio (requisições injetadas no app), mas rode a suíte e corrija o que precisar.
 
 ## Como rodar
 1. Subir a aplicação (`cd app && npm run dev`).
@@ -10,6 +10,8 @@ Suíte de testes de API em Java/Maven (JUnit 5 + RestAssured). A API roda em `ht
 3. Rodar a suíte: `cd test/restassured && mvn test`. Para outra URL: `mvn test -DapiUrl=http://host:porta/api`.
 
 Requisitos: Java 17+ e Maven 3.9+.
+
+**Primeiro acesso:** `PrimeiroAcessoApiTest` (grupo `primeiro-acesso`) não roda com `mvn test`: ela precisa de um banco **vazio** e de uma segunda API (porta 3002). Passo a passo em [`../roteiro-primeiro-acesso.md`](../roteiro-primeiro-acesso.md); resumo: `cd app && npm run db:vazio && npm run start:vazio`, e então `cd test/restassured && mvn test -Pprimeiro-acesso` (outra URL: `-DapiUrlVazio=...`).
 
 ## Testes
 | Classe | Cobre |

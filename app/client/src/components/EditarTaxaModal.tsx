@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useCondominio } from '../context/CondominioContext';
 import { Alert, Button, Checkbox, DatePicker, Descriptions, Form, InputNumber, Modal, Space } from 'antd';
 import type { UploadFile } from 'antd';
 import dayjs from 'dayjs';
@@ -43,6 +44,7 @@ export function EditarTaxaModal({ taxa, onFechar, onSalvo }: {
   onFechar: () => void;
   onSalvo: () => void;
 }) {
+  const { agrupador, unidade } = useCondominio();
   const [form] = Form.useForm<Valores>();
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -120,8 +122,8 @@ export function EditarTaxaModal({ taxa, onFechar, onSalvo }: {
     >
       {taxa && (
         <Descriptions size="small" column={2} style={{ marginBottom: 16 }}>
-          <Descriptions.Item label="Bloco">{taxa.bloco_numero}</Descriptions.Item>
-          <Descriptions.Item label="Apartamento">{taxa.apartamento_numero}</Descriptions.Item>
+          <Descriptions.Item label={agrupador.S}>{taxa.bloco_numero}</Descriptions.Item>
+          <Descriptions.Item label={unidade.S}>{taxa.apartamento_numero}</Descriptions.Item>
           <Descriptions.Item label="Referência">
             {String(taxa.mes_referencia).padStart(2, '0')}/{taxa.ano_referencia}
           </Descriptions.Item>

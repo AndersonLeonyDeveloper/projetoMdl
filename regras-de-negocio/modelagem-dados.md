@@ -94,7 +94,7 @@ erDiagram
     }
 ```
 
-Tabelas sem relacionamento no diagrama: `configuracao_financeira`, `taxa_padrao` e `auditoria` (seções 9.1 a 9.3).
+Tabelas sem relacionamento no diagrama: `condominio_config` (9.7), `configuracao_financeira`, `taxa_padrao` e `auditoria` (seções 9.1 a 9.3).
 
 ## 1. `blocos`
 
@@ -102,11 +102,15 @@ Tabelas sem relacionamento no diagrama: `configuracao_financeira`, `taxa_padrao`
 |---|---|---|
 | id | INTEGER | PK AUTOINCREMENT |
 | numero | TEXT | NOT NULL, UNIQUE |
+| ordem | INTEGER | NOT NULL DEFAULT 0 (posição de exibição; preenchida na criação e, em bancos antigos, pela ordem textual do número) |
+
+Na interface, a tabela é o **agrupador** (bloco, torre, rua…); o nome exibido vem de `condominio_config` (seção 9.7).
 
 ```sql
 CREATE TABLE blocos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  numero TEXT NOT NULL UNIQUE
+  numero TEXT NOT NULL UNIQUE,
+  ordem INTEGER NOT NULL DEFAULT 0
 );
 ```
 
@@ -118,6 +122,8 @@ CREATE TABLE blocos (
 | bloco_id | INTEGER | NOT NULL, FK → blocos.id |
 | numero | TEXT | NOT NULL |
 | fator_taxa | REAL | NOT NULL DEFAULT 1 (a API aceita de 0,1 a 5) |
+| andar | INTEGER | NULL (0 = térreo; NULL em condomínio sem andares) |
+| ordem | INTEGER | NOT NULL DEFAULT 0 (posição dentro do agrupador) |
 
 `fator_taxa` multiplica o valor-base do ano na geração das taxas do mês (regras, seção 4.6).
 
@@ -127,6 +133,8 @@ CREATE TABLE apartamentos (
   bloco_id INTEGER NOT NULL REFERENCES blocos(id) ON DELETE RESTRICT,
   numero TEXT NOT NULL,
   fator_taxa REAL NOT NULL DEFAULT 1,
+  andar INTEGER,
+  ordem INTEGER NOT NULL DEFAULT 0,
   UNIQUE (bloco_id, numero)
 );
 ```
@@ -209,11 +217,7 @@ CREATE TABLE usuarios (
   senha_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'proprietario', 'inquilino')),
   pessoa_id INTEGER REFERENCES pessoas(id) ON DELETE SET NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-```
-
-> **Invariante de aplicação (não expressável em CHECK entre tabelas no SQLite):**
+ de aplicação (não expressável em CHECK entre tabelas no SQLite):**
 > se `usuarios.role IN ('proprietario', 'inquilino')`, deve existir ao menos um registro em
 > `moradores` com `pessoa_id = usuarios.pessoa_id` e `tipo = usuarios.role` e `ativo = 1`.
 > Vale a pena cobrir isso com teste de integridade (ex.: job de auditoria ou teste de API).
@@ -499,6 +503,42 @@ CREATE TABLE acordo_parcelas (
 );
 ```
 
+## 9.7 `condominio_config`
+
+Uma única linha (`id = 1`), criada por `runMigrations()`: como o administrador chama os agrupadores e as unidades e a geometria usada no
+primeiro acesso. `setup_concluido = 0` enquanto o assistente não foi concluído. Bancos que já tinham blocos recebem a linha com
+`setup_concluido = 1`, os nomes "Bloco/Apartamento", o nome "Morada da Lagoa" e o `andar` das unidades deduzido do número.
+
+| Coluna | Tipo | Padrão / observação |
+|---|---|---|
+| nome | TEXT | 'Condomínio' (nome do condomínio, no menu lateral) |
+| agrupador_singular / agrupador_plural | TEXT | 'Bloco' / 'Blocos' |
+| agrupador_genero | TEXT | 'm' ou 'f' (concordância de artigos) |
+| agrupador_abrev | TEXT | 'Bl.' (rótulos curtos, ex.: `Bl.08/Ap.203`) |
+| unidade_singular / unidade_plural | TEXT | 'Apartamento' / 'Apartamentos' |
+| unidade_genero | TEXT | 'm' ou 'f' |
+| unidade_abrev | TEXT | 'Ap.' |
+| tem_terreo / rotulo_terreo | INTEGER / TEXT | 1 / 'Térreo' |
+| sem_andares | INTEGER | 0 (1 = condomínio horizontal, só uma lista de unidades) |
+| andares / unidades_por_andar | INTEGER | 3 / 4 (geometria do primeiro acesso; não muda depois) |
+| formato_numeracao | TEXT | 'andar_sequencia' ou 'sequencia' |
+| setup_concluido | INTEGER | 0 ou 1 |
+
+```sql
+CREATE TABLE condominio_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  nome TEXT NOT NULL DEFAULT 'Condomínio',
+  agrupador_singular TEXT NOT NULL DEFAULT 'Bloco', agrupador_plural TEXT NOT NULL DEFAULT 'Blocos',
+  agrupador_genero TEXT NOT NULL DEFAULT 'm' CHECK (agrupador_genero IN ('m', 'f')), agrupador_abrev TEXT NOT NULL DEFAULT 'Bl.',
+  unidade_singular TEXT NOT NULL DEFAULT 'Apartamento', unidade_plural TEXT NOT NULL DEFAULT 'Apartamentos',
+  unidade_genero TEXT NOT NULL DEFAULT 'm' CHECK (unidade_genero IN ('m', 'f')), unidade_abrev TEXT NOT NULL DEFAULT 'Ap.',
+  tem_terreo INTEGER NOT NULL DEFAULT 1, rotulo_terreo TEXT NOT NULL DEFAULT 'Térreo',
+  sem_andares INTEGER NOT NULL DEFAULT 0, andares INTEGER NOT NULL DEFAULT 3, unidades_por_andar INTEGER NOT NULL DEFAULT 4,
+  formato_numeracao TEXT NOT NULL DEFAULT 'andar_sequencia' CHECK (formato_numeracao IN ('andar_sequencia', 'sequencia')),
+  setup_concluido INTEGER NOT NULL DEFAULT 0
+);
+```
+
 ## 10. Índices recomendados
 
 ```sql
@@ -538,6 +578,12 @@ Para exercitar os cenários de teste automatizado, o seed inicial deve cobrir:
 - Despesas de bloco específico (`bloco_id` preenchido) e despesas pagas pelo fundo (`fundo_reserva = 1`), taxas canceladas e acordos em cada situação (ativo, quitado, descumprido, cancelado). O seed atual (`db:populate`) cobre as duas primeiras; taxas canceladas e acordos são criados pela aplicação ou pelos testes de API.
 
 ## 13. Changelog
+
+- **Rev. 5** (07/10/2026): estrutura do condomínio configurável. Nova tabela `condominio_config` (seção 9.7) e colunas
+  `blocos.ordem`, `apartamentos.ordem` e `apartamentos.andar`. A estrutura deixou de ser criada no boot
+  (`garantirEstrutura` foi removida): nasce do assistente de primeiro acesso ou de `aplicarEstruturaPadrao()` nos scripts de banco.
+  Bancos antigos ganham as colunas e a linha de configuração sozinhos (`garantirColunas`, `garantirCondominio` e `garantirOrdem`,
+  em `app/server/src/db/index.js`); a ordem antiga (textual) é preservada.
 
 - **Rev. 4** (02/10/2026): acrescentadas as tabelas `configuracao_financeira`, `taxa_padrao`, `auditoria`, `acordos`,
   `acordo_taxas` e `acordo_parcelas` (seções 9.1 a 9.6) e as colunas `apartamentos.fator_taxa`,

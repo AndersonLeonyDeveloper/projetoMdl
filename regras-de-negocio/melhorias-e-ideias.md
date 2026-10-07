@@ -25,7 +25,7 @@ Hoje o app mostra um mês (Financeiro) ou um ano (Taxa de Inadimplência) por ve
 Uma versão da tela de evolução, sem dados de inadimplência por apartamento, em "Minha Área → Financeiro". Serve como prestação de contas aos condôminos. *Implementado em 02/10/2026:* Minha Área → Financeiro ganhou a seção "Evolução do condomínio" (a mesma tela de Evolução do admin em modo público, só com receitas, despesas e saldo) e o endpoint `GET /financeiro/resumo/evolucao-publica`, que não envia faturamento, atraso nem unidades. Regras na seção 4.5. A tela carrega a biblioteca de gráficos sob demanda.
 
 ### [x] 1.3 Tela para cadastrar blocos e apartamentos — esforço P
-*Descartada em 02/10/2026:* a estrutura do condomínio é fixa e não serão adicionados blocos. A tela chegou a ser feita e foi removida no mesmo dia. Ficaram as rotas `POST /blocos` e `POST /apartamentos`, agora com validação do número (1 a 5 letras ou números, bloco de um dígito vira dois), da existência do bloco (404) e da duplicidade, sem tela. Regras na seção 3.4. A suíte de API não assume mais 192 apartamentos.
+*Descartada em 02/10/2026:* a estrutura do condomínio era fixa e não seriam adicionados blocos. A tela chegou a ser feita e foi removida no mesmo dia. *Em 07/10/2026* a estrutura deixou de ser fixa (item 2.22), mas a tela continua descartada: a estrutura nasce do assistente de primeiro acesso e só cresce pela API. Ficaram as rotas `POST /blocos` e `POST /apartamentos`, agora com validação do número (1 a 5 letras ou números, bloco de um dígito vira dois), da existência do bloco (404) e da duplicidade, sem tela. Regras na seção 3.4. A suíte de API não assume mais 192 apartamentos.
 
 ### [x] 1.4 Ajuda guiada (ícone de ajuda com tour e guias por tarefa) — esforço M
 *Identificada em 02/10/2026, depois que o admin teve dificuldade para seguir o ciclo da taxa entre telas.* *Implementada em 02/10/2026* em `app/client/src/ajuda/`: ícone `?` sempre visível no cabeçalho, painel com "Nesta tela" (botão "Iniciar tour da tela", que destaca os elementos) e "Como fazer…" (guias por tarefa com "Ir para a tela"), com conteúdo separado para admin e moradores. A primeira versão tinha um switch para desligar a ajuda e um tour que abria sozinho na primeira visita; ambos foram removidos no mesmo dia, por não serem necessários. Regras na seção 8 de `regras-de-negocio.md`.
@@ -104,6 +104,18 @@ Hoje um acordo aparece como vários meses pagos na mesma data. Não há registro
 ### [ ] 2.21 Regime de caixa em mais telas — esforço M
 *Identificada em 02/10/2026, ao implementar o item 2.2.* O seletor "Competência | Caixa" vale só para o resumo do mês. Falta oferecê-lo no resumo por bloco, na Evolução (mensal e anual) e na inadimplência.
 
+### [x] 2.22 Estrutura e nomes do condomínio configuráveis (primeiro acesso do administrador) — esforço G
+*Identificada e implementada em 07/10/2026, a pedido do usuário, para o sistema servir a outros condomínios.* No primeiro login o administrador cai num **assistente** (`/configuracao-inicial`) e define: o nome do condomínio; como chama o agrupador (bloco, torre, rua…) e a unidade (apartamento, casa…), com plural, abreviação e gênero; quantos agrupadores; se há térreo e como se chama; quantos andares; quantas unidades por andar (ou "sem andares", para casas); e o formato da numeração (`101, 102, 201…` ou sequencial). Há modelos prontos e uma **prévia** antes de gravar. Depois disso a estrutura só cresce (pela API) e os nomes são editáveis em Cadastro → Nomes do condomínio. Os nomes valem nas telas, na ajuda (marcadores `{a.X}`/`{u.X}`) e nas mensagens da API, com concordância de gênero; as chaves técnicas da API (`/blocos`, `bloco_id`…) não mudam. A estrutura deixou de ser criada no boot: `db:reset`/`db:populate` criam a de demonstração (12 × 16), e bancos antigos são tratados como configurados (Bloco/Apartamento, Morada da Lagoa). Tabela `condominio_config`, colunas `ordem` e `andar`; listas ordenadas por `ordem`. Regras nas seções 3.4 e 3.5; cenários na 7.22 de `sugestoes-de-testes.md`; teste de API em `ConfiguracaoCondominioApiTest`. **Decisões:** geometria uniforme, sempre dois níveis, estrutura só cresce, rateio por agrupador inalterado. **Teste do primeiro acesso:** como ele só acontece uma vez por banco, há o script `db:vazio` (banco vazio em arquivo próprio, nunca o de demonstração), a segunda instância da API (`start:vazio`, porta 3002; tela em `dev:vazio`, porta 5174), a classe `PrimeiroAcessoApiTest` (perfil `-Pprimeiro-acesso`) e o roteiro `test/roteiro-primeiro-acesso.md`. **Não feito** (vira itens abaixo): 2.23 a 2.25.
+
+### [ ] 2.23 Estrutura com prédios de tamanhos diferentes — esforço M
+*Identificada em 07/10/2026, ao fechar o item 2.22.* O assistente gera agrupadores iguais. Permitir uma linha por prédio (andares, unidades por andar e térreo próprios, com "repetir este") e tratar o rateio, que hoje divide a despesa geral por igual entre os agrupadores e deixaria de ser justo (ligar ao item 2.3, rateio proporcional).
+
+### [ ] 2.24 Acrescentar e organizar a estrutura pela interface — esforço M
+*Identificada em 07/10/2026, ao fechar o item 2.22.* Hoje acrescentar um agrupador ou uma unidade só é possível pela API (`POST /blocos`, `POST /apartamentos`), e a tela de cadastro foi descartada em 02/10/2026. Avaliar uma tela simples de acrescentar (com prévia e aviso de que as próximas taxas em lote incluem as unidades novas), e, separadamente, desativar/renumerar unidades, o que exige decidir o destino de moradores, taxas, acordos e histórico.
+
+### [ ] 2.25 Condomínio sem agrupador e trocar a senha do administrador no primeiro acesso — esforço P
+*Identificada em 07/10/2026, ao fechar o item 2.22.* Um prédio único hoje é configurado com 1 agrupador, que aparece nas telas; avaliar ocultá-lo quando houver só um. Também: a troca da senha padrão do administrador no assistente é opcional; avaliar torná-la obrigatória.
+
 ## 3. Dados de demonstração e ferramentas
 
 ### [x] 3.1 Comando único `db:populate` — esforço P
@@ -140,5 +152,22 @@ Os 768 moradores não têm usuário de acesso. Criar logins para uma amostra per
 *Identificada em 01/10/2026.* Agentes que leem as regras no Jira e geram ACs, TCs, testes automatizados e bugs rastreáveis, com um teste de regressão por bug. Mora no repositório vizinho `qa-orchestrator` (desenho em `docs/desenho-da-esteira.md`), e este projeto é o primeiro projeto-alvo. Fases: [ ] 0 regras em arquivo, [ ] 1 Jira somente leitura, [ ] 2 escrita controlada, [ ] 3 bugs com rastreabilidade completa.
 
 ### [ ] 3.12 Executar a suíte de API e criar a de interface (Playwright) — esforço G
-*Identificada em 02/10/2026, ao fechar as ondas de melhorias.* As 17 classes de teste de API estão escritas e **compilam, mas nunca foram executadas** (o ambiente de desenvolvimento não tinha Maven nem permitia abrir a porta da API). A suíte de interface (Playwright) não existe, e todos os cenários `E2E` de `sugestoes-de-testes.md` estão sem automação e sem terem sido vistos em navegador. Passos: instalar Maven, rodar `mvn test` com `db:populate` e corrigir o que falhar; criar o projeto Playwright e automatizar os cenários `E2E`; ligar as duas suítes ao pipeline de CI (item 3.7) junto com `npm run verificar:ajuda`.
+*Identificada em 02/10/2026, ao fechar as ondas de melhorias.* As 19 classes de teste de API estão escritas e **compilam, mas nunca foram executadas** (o ambiente de desenvolvimento não tinha Maven nem permitia abrir a porta da API). A suíte de interface (Playwright) não existe, e todos os cenários `E2E` de `sugestoes-de-testes.md` estão sem automação e sem terem sido vistos em navegador. Passos: instalar Maven, rodar `mvn test` com `db:populate` e corrigir o que falhar; criar o projeto Playwright e automatizar os cenários `E2E`; ligar as duas suítes ao pipeline de CI (item 3.7) junto com `npm run verificar:ajuda`.
 
+
+### [ ] 3.13 Conectar o Jira ao Claude Code (e ao Gemini CLI, escolhendo por uma flag) — esforço M
+*Identificada em 07/10/2026, ao avaliar um tutorial gerado pelo Google.* Pré-requisito prático do item 3.11 (fase 1, Jira somente leitura). Mora no repositório `qa-orchestrator` (`docs/integracao-jira.md`).
+
+**Avaliação do tutorial (passos: instalar o Claude Code, gerar token da Atlassian, `claude mcp add --scope user --transport sse atlassian …`, testar listando projetos):**
+- O **token do passo 2 não é usado** pelo comando do passo 3: o servidor remoto da Atlassian autentica por OAuth no navegador. Ou se usa OAuth (sem token) ou um servidor local da comunidade (ex.: `mcp-atlassian`, não verificado) que lê o token de variáveis de ambiente.
+- O **passo 1 não vale** para o Apple Claude Code: `npm install -g @anthropic-ai/claude-code` instalaria o Claude Code público por cima, sem o gateway da Apple.
+- `--scope user` registra o conector em **todos** os projetos; preferir `local` ou `project`. O comando aparece truncado no print, e o endereço `/v1/sse` pode estar sendo substituído por `/v1/mcp` (de memória, confirmar na documentação da Atlassian).
+- Faltam: liberar os domínios da Atlassian no Apple Claude Code (Dashboard → Domains; decisão do usuário), começar **somente leitura** e guardar o token no `.env`, nunca em arquivo versionado.
+
+**Desenho proposto para servir aos dois:**
+- Fonte única: `.env` com `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY` (com `.env.example` versionado) e **uma** definição do servidor MCP, o que favorece o servidor local com token (OAuth exigiria um login por ferramenta).
+- Dois arquivos finos: `.mcp.json` (Claude Code) e `.gemini/settings.json` → `mcpServers` (Gemini CLI, formato não verificado).
+- Script `./ia --claude | --gemini` que carrega o `.env` e abre a ferramenta escolhida.
+- **Atenção de política:** o Gemini CLI não passa pelo gateway nem pelo sandbox da Apple e envia os dados ao Google. Confirmar se o uso com dados de trabalho é permitido antes de incluir o Gemini.
+
+**Decisões em aberto:** qual Jira (Cloud `atlassian.net` do levantamento do `qa-orchestrator` ou um Jira interno); OAuth ou servidor local com token; incluir o Gemini já na primeira versão ou depois. Passos: [ ] decidir as três questões, [ ] liberar os domínios, [ ] teste de leitura (listar projetos), [ ] arquivos de configuração e script com a flag, [ ] documentar em `docs/integracao-jira.md`.

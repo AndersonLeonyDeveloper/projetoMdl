@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { authRouter } from './routes/auth.routes.js';
+import { condominioRouter } from './routes/condominio.routes.js';
 import { cadastroRouter } from './routes/cadastro.routes.js';
 import { financeiroRouter } from './routes/financeiro.routes.js';
 import { acordosRouter } from './routes/acordos.routes.js';
@@ -13,6 +14,7 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
   app.use('/api/auth', authRouter);
+  app.use('/api/condominio', condominioRouter);
   app.use('/api', cadastroRouter);
   app.use('/api/financeiro/acordos', acordosRouter);
   app.use('/api/financeiro', financeiroRouter);

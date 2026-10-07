@@ -7,6 +7,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd';
 import { api, formatarMoeda, mensagemDeErro } from '../../api/client';
+import { useCondominio } from '../../context/CondominioContext';
 import { CampoComprovante } from '../../components/CampoComprovante';
 import { CancelarRestaurar } from '../../components/CancelarRestaurar';
 import { ComprovanteLink } from '../../components/ComprovanteLink';
@@ -84,6 +85,8 @@ function GerarTaxasDoMes({ ano, mes, taxasPadrao, recarregarPadroes, onGerado }:
   recarregarPadroes: () => Promise<void>;
   onGerado: () => void;
 }) {
+  const { unidade } = useCondominio();
+  const todos = unidade.o === 'a' ? 'todas as' : 'todos os';
   const padrao = taxasPadrao.find((t) => t.ano === ano)?.valor;
   // Valor digitado para um ano; ao trocar de ano, volta a valer o padrão daquele ano.
   const [digitado, setDigitado] = useState<{ ano: number; valor: number | null } | null>(null);
@@ -135,7 +138,7 @@ function GerarTaxasDoMes({ ano, mes, taxasPadrao, recarregarPadroes, onGerado }:
             {previa.existentes > 0 ? ` (${previa.existentes} já existem e serão ignoradas)` : ''}.
             {valor !== padrao && ` O valor será salvo como o padrão de ${ano}.`}
             {previa.com_fator_diferente > 0 &&
-              ` ${previa.com_fator_diferente} apartamento(s) têm fator diferente de 1,00 e terão o valor ajustado (valor × fator).`}
+              ` ${previa.com_fator_diferente} ${unidade.s}(s) têm fator diferente de 1,00 e terão o valor ajustado (valor × fator).`}
           </div>
         ),
         onOk: () => executar(valor),
@@ -152,7 +155,7 @@ function GerarTaxasDoMes({ ano, mes, taxasPadrao, recarregarPadroes, onGerado }:
       {contextHolder}
       <Title level={5}>Gerar taxas de {referencia}</Title>
       <Paragraph type="secondary">
-        Cria a taxa de todos os apartamentos que ainda não têm uma no mês escolhido acima. Taxas já lançadas (inclusive as
+        Cria a taxa de {todos} {unidade.p} que ainda não têm uma no mês escolhido acima. Taxas já lançadas (inclusive as
         canceladas) não são alteradas.
       </Paragraph>
       <Space wrap align="start">
@@ -186,6 +189,7 @@ function GerarTaxasDoMes({ ano, mes, taxasPadrao, recarregarPadroes, onGerado }:
 }
 
 function LancarTaxa({ taxasPadrao, ano, mes, onLancada }: { taxasPadrao: TaxaPadrao[]; ano: number; mes: number; onLancada: () => void }) {
+  const { agrupador, unidade } = useCondominio();
   const [form] = Form.useForm();
   const [blocos, setBlocos] = useState<Bloco[]>([]);
   const [apartamentos, setApartamentos] = useState<Apartamento[]>([]);
@@ -248,7 +252,7 @@ function LancarTaxa({ taxasPadrao, ano, mes, onLancada }: { taxasPadrao: TaxaPad
       initialValues={{ ano_referencia: ano, mes_referencia: mes }}
     >
       <Space wrap size="large" align="start">
-        <Form.Item label="Bloco" name="bloco_id" rules={[{ required: true }]}>
+        <Form.Item label={agrupador.S} name="bloco_id" rules={[{ required: true }]}>
           <Select
             style={{ width: 160 }}
             placeholder="Selecione"
@@ -257,7 +261,7 @@ function LancarTaxa({ taxasPadrao, ano, mes, onLancada }: { taxasPadrao: TaxaPad
             options={blocos.map((b) => ({ value: b.id, label: b.numero }))}
           />
         </Form.Item>
-        <Form.Item label="Apartamento" name="apartamento_id" rules={[{ required: true }]}>
+        <Form.Item label={unidade.S} name="apartamento_id" rules={[{ required: true }]}>
           <Select
             style={{ width: 160 }}
             placeholder="Selecione"
@@ -285,7 +289,7 @@ function LancarTaxa({ taxasPadrao, ano, mes, onLancada }: { taxasPadrao: TaxaPad
           rules={[{ required: true }]}
           extra={
             valorPadrao !== undefined
-              ? `Valor padrão de ${anoReferencia}: ${formatarMoeda(valorPadrao)} (multiplicado pelo fator do apartamento, se houver)`
+              ? `Valor padrão de ${anoReferencia}: ${formatarMoeda(valorPadrao)} (multiplicado pelo fator ${unidade.do} ${unidade.s}, se houver)`
               : 'Sem valor padrão para este ano (Configurações financeiras).'
           }
         >
@@ -322,6 +326,8 @@ const soma = (taxas: Taxa[]) => taxas.reduce((s, t) => s + t.valor + t.juros, 0)
 
 // Tela única do ciclo da taxa: resumo do mês, gerar as taxas, registrar pagamentos, editar e cancelar, e lançar uma avulsa.
 export function TaxasDoMes() {
+  const { agrupador, unidade } = useCondominio();
+  const todos = unidade.o === 'a' ? 'todas as' : 'todos os';
   // ano, mes e apartamento_id podem vir da URL (os meses em atraso de Dados dos Moradores abrem esta tela).
   const [params, setParams] = useSearchParams();
   const apartamentoId = Number(params.get('apartamento_id')) || null;
@@ -377,12 +383,12 @@ export function TaxasDoMes() {
 
   const colunas: ColumnsType<Taxa> = [
     {
-      title: 'Bloco',
+      title: agrupador.S,
       dataIndex: 'bloco_numero',
-      filters: [...new Set(todas.map((t) => t.bloco_numero))].map((b) => ({ text: `Bloco ${b}`, value: b })),
+      filters: [...new Set(todas.map((t) => t.bloco_numero))].map((b) => ({ text: `${agrupador.S} ${b}`, value: b })),
       onFilter: (value, record) => record.bloco_numero === value,
     },
-    { title: 'Apartamento', dataIndex: 'apartamento_numero' },
+    { title: unidade.S, dataIndex: 'apartamento_numero' },
     {
       title: 'Situação',
       dataIndex: 'status',
@@ -534,8 +540,8 @@ export function TaxasDoMes() {
             data-testid="aviso-filtro-apartamento"
             message={
               rotuloApto
-                ? `Mostrando só as taxas do apartamento ${rotuloApto.bloco_numero}/${rotuloApto.apartamento_numero}.`
-                : 'Mostrando só as taxas de um apartamento (nenhuma neste mês).'
+                ? `Mostrando só as taxas ${unidade.do} ${unidade.s} ${rotuloApto.bloco_numero}/${rotuloApto.apartamento_numero}.`
+                : `Mostrando só as taxas de ${unidade.um} ${unidade.s} (nenhuma neste mês).`
             }
             action={
               <Button
@@ -547,7 +553,7 @@ export function TaxasDoMes() {
                 }}
                 data-testid="botao-limpar-filtro-apartamento"
               >
-                Ver todos os apartamentos
+                Ver {todos} {unidade.p}
               </Button>
             }
           />

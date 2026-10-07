@@ -21,6 +21,7 @@ import {
   registrarAuditoria,
   rotuloDaTaxa,
 } from '../utils/auditoria.js';
+import { rotulos } from '../utils/rotulos.js';
 
 const taxaPorId = (id) => db.prepare('SELECT * FROM taxas_condominio WHERE id = ?').get(id);
 
@@ -147,7 +148,7 @@ financeiroRouter.get('/taxas', (req, res) => {
        JOIN apartamentos a ON a.id = t.apartamento_id
        JOIN blocos b ON b.id = a.bloco_id
        ${where}
-       ORDER BY t.ano_referencia, t.mes_referencia, b.numero, a.numero`
+       ORDER BY t.ano_referencia, t.mes_referencia, b.ordem, b.numero, a.ordem, a.numero`
     )
     .all(params);
   const configuracao = lerConfiguracao();
@@ -419,7 +420,8 @@ function lerBlocoDaDespesa(corpo, atual) {
   if (vazio(corpo.bloco_id)) return { valor: null };
   const id = lerInteiro(corpo.bloco_id);
   if (!id || !db.prepare('SELECT 1 FROM blocos WHERE id = ?').get(id)) {
-    return { erro: 'bloco_id deve ser o de um bloco existente.' };
+    const { agrupador: a } = rotulos();
+    return { erro: `bloco_id deve ser ${a.o} de ${a.um} ${a.min} existente.` };
   }
   return { valor: id };
 }
@@ -699,7 +701,7 @@ financeiroRouter.get('/resumo/blocos', (req, res) => {
        LEFT JOIN taxas_condominio t
          ON t.apartamento_id = a.id AND t.ano_referencia = @ano AND t.mes_referencia = @mes AND t.cancelado_em IS NULL
        GROUP BY b.id
-       ORDER BY b.numero`
+       ORDER BY b.ordem, b.numero`
     )
     .all({ ano, mes, dia: lerConfiguracao().dia_vencimento, hoje: hojeISO() });
 

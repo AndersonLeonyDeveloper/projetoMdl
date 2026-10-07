@@ -38,13 +38,15 @@ cp client/.env.example client/.env.local
 
 # criar o banco e popular com dados de exemplo
 npm run db:migrate
-npm run db:populate   # admin, 768 moradores com logins de teste e o histórico financeiro
+npm run db:populate   # estrutura de demonstração (12 blocos × 16 apartamentos), admin, 768 moradores com logins de teste e o histórico financeiro
 
 # subir backend (porta 3001) e frontend (porta 5173) juntos
 npm run dev
 ```
 
 Acesse `http://localhost:5173`.
+
+**Primeiro acesso em um banco vazio** (sem `db:populate`): o servidor cria só o administrador padrão (`admin@condominio.com` / `senha123`). Ao entrar, o administrador cai no **assistente de configuração**, onde define como o condomínio é chamado (bloco, torre, rua…; apartamento, casa…), quantos agrupadores, andares e unidades existem e como são numeradas. Isso é feito uma vez; depois só é possível editar os nomes (Cadastro → Nomes do condomínio). Regras em `regras-de-negocio/regras-de-negocio.md`, seções 3.4 e 3.5.
 
 ### Usuários de teste (senha padrão: `senha123`)
 
@@ -91,7 +93,8 @@ Detalhes das regras em [`regras-de-negocio/regras-de-negocio.md`](regras-de-nego
 - `npm run dev` — sobe server + client em paralelo
 - `npm run dev:server` / `npm run dev:client` — sobem individualmente
 - `npm run db:migrate` — aplica o schema (`app/server/src/db/schema.sql`)
-- `npm run db:populate` — monta o banco completo de demonstração: `db:reset` + `db:seed:moradores` (com os logins de teste) + `db:seed:financeiro`
+- `npm run db:populate` — monta o banco completo de demonstração: `db:reset` (cria a estrutura de demonstração se o condomínio ainda não estiver configurado) + `db:seed:moradores` (com os logins de teste) + `db:seed:financeiro`. Os seeds só funcionam na estrutura de demonstração; com outra estrutura eles param com uma mensagem (apague o arquivo do banco para voltar)
+- `npm run db:vazio` — cria um banco **vazio** em `app/server/data/primeiro-acesso/` (só o admin, sem estrutura) para testar o primeiro acesso; nunca toca o banco de demonstração. Depois `npm run start:vazio` (API na porta 3002) e `npm run dev:vazio` (tela em `http://localhost:5174`). Roteiro em `test/roteiro-primeiro-acesso.md`
 - `npm run db:reset` — zera o banco, mantendo apenas o(s) usuário(s) admin (aborta se não houver admin)
 - `npm run db:seed:moradores` — 1 proprietário + 3 inquilinos em cada um dos 192 apartamentos
 - `npm run db:seed:financeiro` — histórico financeiro de jan/2020 a set/2026 (já gera os comprovantes de exemplo)

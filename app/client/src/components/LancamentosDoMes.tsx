@@ -6,6 +6,7 @@ import { CancelarRestaurar } from './CancelarRestaurar';
 import { ComprovanteLink } from './ComprovanteLink';
 import { EditarLancamentoModal, type Lancamento } from './EditarLancamentoModal';
 import { useAuth } from '../context/AuthContext';
+import { useCondominio } from '../context/CondominioContext';
 
 const { Title } = Typography;
 
@@ -40,15 +41,16 @@ const colunas: ColumnsType<Lancamento> = [
 function TabelaLancamentos({ titulo, rotulo, rota, ano, mes, testId }: {
   titulo: string; rotulo: string; rota: string; ano: number; mes: number; testId: string;
 }) {
+  const { agrupador } = useCondominio();
   // Só despesas têm bloco: "Geral" (dividida entre os blocos) ou o bloco da despesa.
   const colunasBase: ColumnsType<Lancamento> =
     rota === 'despesas'
       ? [
           ...colunas.slice(0, 2),
           {
-            title: 'Bloco',
+            title: agrupador.S,
             dataIndex: 'bloco_numero',
-            render: (v: string | null | undefined) => (v ? `Bloco ${v}` : 'Geral'),
+            render: (v: string | null | undefined) => (v ? `${agrupador.S} ${v}` : 'Geral'),
           },
           ...colunas.slice(2),
         ]

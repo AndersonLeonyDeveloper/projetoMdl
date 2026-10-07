@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { ehDataValida, hojeISO } from '../utils/juros.js';
 import { instantaneo, registrarAuditoria, rotuloDoApartamento } from '../utils/auditoria.js';
 import { atualizarStatusDosAcordos, CARENCIA_DIAS, montarAcordo, taxasElegiveis } from '../utils/acordos.js';
+import { rotulos } from '../utils/rotulos.js';
 
 // Acordos e parcelamentos de dívida (regras-de-negocio.md, seção 4.14). Só o Admin usa.
 export const acordosRouter = Router();
@@ -23,20 +24,20 @@ acordosRouter.get('/elegiveis', (req, res) => {
   if (!Number.isInteger(apartamentoId) || apartamentoId < 1) {
     return res.status(400).json({ error: 'apartamento_id é obrigatório.' });
   }
-  if (!apartamentoExiste(apartamentoId)) return res.status(404).json({ error: 'Apartamento não encontrado.' });
+  if (!apartamentoExiste(apartamentoId)) return res.status(404).json({ error: `${rotulos().unidade.Min} não ${rotulos().unidade.encontrado}.` });
   res.json(taxasElegiveis(apartamentoId));
 });
 
 // Calcula o acordo sem gravar nada: valores e as parcelas que seriam criadas.
 acordosRouter.post('/simular', (req, res) => {
-  if (!apartamentoExiste(Number(req.body?.apartamento_id))) return res.status(404).json({ error: 'Apartamento não encontrado.' });
+  if (!apartamentoExiste(Number(req.body?.apartamento_id))) return res.status(404).json({ error: `${rotulos().unidade.Min} não ${rotulos().unidade.encontrado}.` });
   const acordo = montarAcordo(req.body);
   if (acordo.erro) return res.status(acordo.status).json({ error: acordo.erro });
   res.json(acordo);
 });
 
 acordosRouter.post('/', (req, res) => {
-  if (!apartamentoExiste(Number(req.body?.apartamento_id))) return res.status(404).json({ error: 'Apartamento não encontrado.' });
+  if (!apartamentoExiste(Number(req.body?.apartamento_id))) return res.status(404).json({ error: `${rotulos().unidade.Min} não ${rotulos().unidade.encontrado}.` });
   const acordo = montarAcordo(req.body);
   if (acordo.erro) return res.status(acordo.status).json({ error: acordo.erro });
 

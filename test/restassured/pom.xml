@@ -14,6 +14,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <rest-assured.version>5.5.0</rest-assured.version>
     <junit.version>5.11.4</junit.version>
+    <!-- Grupos do surefire: a classe do primeiro acesso (tag primeiro-acesso) precisa de um banco vazio e só roda no perfil abaixo. -->
+    <grupos.incluir></grupos.incluir>
+    <grupos.excluir>primeiro-acesso</grupos.excluir>
   </properties>
 
   <dependencies>
@@ -37,7 +40,22 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.2</version>
+        <configuration>
+          <groups>${grupos.incluir}</groups>
+          <excludedGroups>${grupos.excluir}</excludedGroups>
+        </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- mvn test -Pprimeiro-acesso: só a classe do primeiro acesso, contra a API do banco vazio (porta 3002). -->
+    <profile>
+      <id>primeiro-acesso</id>
+      <properties>
+        <grupos.incluir>primeiro-acesso</grupos.incluir>
+        <grupos.excluir>nenhum-grupo</grupos.excluir>
+      </properties>
+    </profile>
+  </profiles>
 </project>

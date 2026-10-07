@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:vazio": "VITE_API_URL=http://localhost:3002/api vite --port 5174",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "verificar:ajuda": "node scripts/verificar-ajuda.mjs",

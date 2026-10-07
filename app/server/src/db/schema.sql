@@ -106,6 +106,29 @@ CREATE TABLE IF NOT EXISTS despesas (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Estrutura e nomes do condomínio (uma única linha, id = 1): como o administrador chama os agrupadores (bloco, torre...)
+-- e as unidades (apartamento, casa...), e a geometria usada para gerar a estrutura no primeiro acesso.
+-- A linha é criada por runMigrations(); setup_concluido = 0 enquanto o administrador não concluiu o assistente.
+CREATE TABLE IF NOT EXISTS condominio_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  nome TEXT NOT NULL DEFAULT 'Condomínio',
+  agrupador_singular TEXT NOT NULL DEFAULT 'Bloco',
+  agrupador_plural TEXT NOT NULL DEFAULT 'Blocos',
+  agrupador_genero TEXT NOT NULL DEFAULT 'm' CHECK (agrupador_genero IN ('m', 'f')),
+  agrupador_abrev TEXT NOT NULL DEFAULT 'Bl.',
+  unidade_singular TEXT NOT NULL DEFAULT 'Apartamento',
+  unidade_plural TEXT NOT NULL DEFAULT 'Apartamentos',
+  unidade_genero TEXT NOT NULL DEFAULT 'm' CHECK (unidade_genero IN ('m', 'f')),
+  unidade_abrev TEXT NOT NULL DEFAULT 'Ap.',
+  tem_terreo INTEGER NOT NULL DEFAULT 1,
+  rotulo_terreo TEXT NOT NULL DEFAULT 'Térreo',
+  sem_andares INTEGER NOT NULL DEFAULT 0,
+  andares INTEGER NOT NULL DEFAULT 3,
+  unidades_por_andar INTEGER NOT NULL DEFAULT 4,
+  formato_numeracao TEXT NOT NULL DEFAULT 'andar_sequencia' CHECK (formato_numeracao IN ('andar_sequencia', 'sequencia')),
+  setup_concluido INTEGER NOT NULL DEFAULT 0
+);
+
 -- Parâmetros financeiros (uma única linha, id = 1): multa, juros e vencimento.
 CREATE TABLE IF NOT EXISTS configuracao_financeira (
   id INTEGER PRIMARY KEY CHECK (id = 1),
